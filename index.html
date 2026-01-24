@@ -200,29 +200,19 @@
             <span class="tracker-title">SHIPS NEAR BRIDGE</span>
         </div>
         <div class="ship-list" id="shipList">
-            <div class="loading">Connecting to ship tracker...</div>
+            <div class="loading">Connecting to server...</div>
         </div>
         <div class="connection-status" id="connectionStatus">Connecting...</div>
     </div>
 
     <script>
-        // AISStream API Configuration
-        const API_KEY = "fe7a0e7dd439780159d6c3694023e6791ad63e2f";
+        // Backend proxy server running on Render.com
+        const PROXY_SERVER_URL = "wss://mackinac-ship-tracker.onrender.com";
 
         // Mackinac Bridge coordinates
         const BRIDGE_LAT = 45.8174;
         const BRIDGE_LON = -84.7278;
-
-        // Search radius in kilometers (25km = ~15.5 miles)
         const SEARCH_RADIUS_KM = 25;
-
-        // Bounding box around the bridge
-        const BBOX = {
-            minLat: BRIDGE_LAT - 0.23,  // ~15 miles south
-            maxLat: BRIDGE_LAT + 0.23,  // ~15 miles north
-            minLon: BRIDGE_LON - 0.35,  // ~15 miles west
-            maxLon: BRIDGE_LON + 0.35   // ~15 miles east
-        };
 
         let shipData = [];
         let ws = null;
@@ -231,7 +221,7 @@
 
         // Calculate distance between two coordinates (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Earth's radius in km
+            const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -241,109 +231,70 @@
             return R * c;
         }
 
-        // Convert km to miles
         function kmToMiles(km) {
             return km * 0.621371;
         }
 
-        // Get ship type name
         function getShipType(typeCode) {
             const types = {
-                70: "Cargo",
-                71: "Cargo - Hazardous",
-                72: "Cargo - Hazardous",
-                73: "Cargo - Hazardous",
-                74: "Cargo - Hazardous",
-                79: "Cargo",
-                80: "Tanker",
-                81: "Tanker - Hazardous",
-                82: "Tanker - Hazardous",
-                83: "Tanker - Hazardous",
-                84: "Tanker - Hazardous",
-                89: "Tanker",
+                70: "Cargo", 71: "Cargo - Hazardous", 72: "Cargo - Hazardous",
+                73: "Cargo - Hazardous", 74: "Cargo - Hazardous", 79: "Cargo",
+                80: "Tanker", 81: "Tanker - Hazardous", 82: "Tanker - Hazardous",
+                83: "Tanker - Hazardous", 84: "Tanker - Hazardous", 89: "Tanker",
                 1024: "Great Lakes Freighter"
             };
             return types[typeCode] || "Vessel";
         }
 
-        // Determine if ship is approaching or departing
         function getDirection(lat, lon, course) {
-            // Calculate bearing from ship to bridge
             const dLon = (BRIDGE_LON - lon) * Math.PI / 180;
             const y = Math.sin(dLon) * Math.cos(BRIDGE_LAT * Math.PI / 180);
             const x = Math.cos(lat * Math.PI / 180) * Math.sin(BRIDGE_LAT * Math.PI / 180) -
                       Math.sin(lat * Math.PI / 180) * Math.cos(BRIDGE_LAT * Math.PI / 180) * Math.cos(dLon);
             const bearingToBridge = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-            
-            // Compare ship's course with bearing to bridge
             const diff = Math.abs(course - bearingToBridge);
-            
-            if (diff < 90 || diff > 270) {
-                return "Approaching";
-            } else {
-                return "Departing";
-            }
+            return (diff < 90 || diff > 270) ? "Approaching" : "Departing";
         }
 
-        // Update connection status display
         function updateConnectionStatus(status, connected) {
             const statusEl = document.getElementById('connectionStatus');
             statusEl.textContent = status;
             statusEl.className = 'connection-status ' + (connected ? 'connected' : 'disconnected');
         }
 
-        // Connect to AISStream WebSocket
-        function connectWebSocket() {
+        function connectToProxy() {
             if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
                 console.error('Max reconnection attempts reached');
                 document.getElementById('shipList').innerHTML = 
-                    '<div class="no-ships">Unable to connect to ship tracker.<br>Please refresh the page.</div>';
+                    '<div class="no-ships">Unable to connect.<br>Please refresh the page.</div>';
                 updateConnectionStatus('Connection Failed', false);
                 return;
             }
 
-            console.log('Connecting to AISStream... (Attempt ' + (reconnectAttempts + 1) + ')');
+            console.log('Connecting to proxy server... (Attempt ' + (reconnectAttempts + 1) + ')');
             updateConnectionStatus('Connecting...', false);
 
-            console.log('Creating WebSocket connection to wss://stream.aisstream.io/v0/stream');
-            
-            try {
-                ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
-            } catch (error) {
-                console.error('❌ Failed to create WebSocket:', error);
-                updateConnectionStatus('Connection Failed: ' + error.message, false);
-                return;
-            }
+            ws = new WebSocket(PROXY_SERVER_URL);
             
             ws.onopen = function() {
-                console.log('✓ Connected to AISStream');
-                reconnectAttempts = 0; // Reset counter on successful connection
-                updateConnectionStatus('Connected • Live Updates', true);
-                
-                // Subscribe to vessels in our area
-                const subscription = {
-                    APIKey: API_KEY,
-                    BoundingBoxes: [[
-                        [BBOX.minLon, BBOX.minLat],
-                        [BBOX.maxLon, BBOX.maxLat]
-                    ]]
-                };
-                
-                ws.send(JSON.stringify(subscription));
-                console.log('✓ Subscribed to Mackinac Bridge area');
-                console.log('  Latitude:', BBOX.minLat.toFixed(4), 'to', BBOX.maxLat.toFixed(4));
-                console.log('  Longitude:', BBOX.minLon.toFixed(4), 'to', BBOX.maxLon.toFixed(4));
-                
+                console.log('✓ Connected to proxy server');
+                reconnectAttempts = 0;
+                updateConnectionStatus('Connected • Waiting for data', true);
                 document.getElementById('shipList').innerHTML = 
                     '<div class="loading">Scanning for vessels...</div>';
             };
             
             ws.onmessage = function(event) {
                 try {
-                    const data = JSON.parse(event.data);
+                    const message = JSON.parse(event.data);
                     
-                    if (data.MessageType === "PositionReport" && data.Message && data.Message.PositionReport) {
-                        processShipData(data);
+                    if (message.type === 'status') {
+                        console.log('Status:', message.message);
+                        if (message.connected) {
+                            updateConnectionStatus('Connected • Live Updates', true);
+                        }
+                    } else if (message.type === 'ship_data') {
+                        processShipData(message.data);
                     }
                 } catch (error) {
                     console.error('Error processing message:', error);
@@ -351,71 +302,59 @@
             };
             
             ws.onerror = function(error) {
-                console.error('❌ WebSocket error:', error);
-                console.error('WebSocket readyState:', ws.readyState);
-                console.error('0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED');
-                updateConnectionStatus('Connection Error - Check console', false);
+                console.error('WebSocket error:', error);
+                updateConnectionStatus('Connection Error', false);
             };
             
-            ws.onclose = function(event) {
-                console.log('❌ WebSocket closed');
-                console.log('Close code:', event.code);
-                console.log('Close reason:', event.reason);
-                console.log('Was clean:', event.wasClean);
+            ws.onclose = function() {
+                console.log('WebSocket closed');
                 updateConnectionStatus('Disconnected • Reconnecting...', false);
                 reconnectAttempts++;
                 
-                // Exponential backoff: 2s, 4s, 8s, 16s, max 30s
                 const delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000);
                 console.log('Reconnecting in ' + (delay / 1000) + ' seconds...');
                 
-                setTimeout(connectWebSocket, delay);
+                setTimeout(connectToProxy, delay);
             };
         }
 
-        // Process incoming ship data
         function processShipData(data) {
-            const position = data.Message.PositionReport;
-            const metadata = data.MetaData;
-            
-            const ship = {
-                mmsi: metadata.MMSI,
-                name: metadata.ShipName?.trim() || 'Unknown Vessel',
-                lat: position.Latitude,
-                lon: position.Longitude,
-                speed: position.Sog || 0, // Speed over ground in knots
-                course: position.Cog || 0, // Course over ground in degrees
-                type: getShipType(metadata.ShipType),
-                lastUpdate: Date.now()
-            };
-            
-            // Calculate distance from bridge
-            ship.distance = calculateDistance(BRIDGE_LAT, BRIDGE_LON, ship.lat, ship.lon);
-            
-            // Only track ships within our radius
-            if (ship.distance > SEARCH_RADIUS_KM) {
-                return;
+            if (data.MessageType === "PositionReport" && data.Message && data.Message.PositionReport) {
+                const position = data.Message.PositionReport;
+                const metadata = data.MetaData;
+                
+                const ship = {
+                    mmsi: metadata.MMSI,
+                    name: metadata.ShipName?.trim() || 'Unknown Vessel',
+                    lat: position.Latitude,
+                    lon: position.Longitude,
+                    speed: position.Sog || 0,
+                    course: position.Cog || 0,
+                    type: getShipType(metadata.ShipType),
+                    lastUpdate: Date.now()
+                };
+                
+                ship.distance = calculateDistance(BRIDGE_LAT, BRIDGE_LON, ship.lat, ship.lon);
+                
+                if (ship.distance > SEARCH_RADIUS_KM) return;
+                
+                ship.direction = getDirection(ship.lat, ship.lon, ship.course);
+                
+                const existingIndex = shipData.findIndex(s => s.mmsi === ship.mmsi);
+                if (existingIndex >= 0) {
+                    shipData[existingIndex] = ship;
+                } else {
+                    shipData.push(ship);
+                    console.log('➕ New vessel:', ship.name, '(' + ship.type + ')');
+                }
+                
+                const now = Date.now();
+                shipData = shipData.filter(s => now - s.lastUpdate < 600000);
+                
+                updateDisplay();
             }
-            
-            ship.direction = getDirection(ship.lat, ship.lon, ship.course);
-            
-            // Update or add ship to our tracking list
-            const existingIndex = shipData.findIndex(s => s.mmsi === ship.mmsi);
-            if (existingIndex >= 0) {
-                shipData[existingIndex] = ship;
-            } else {
-                shipData.push(ship);
-                console.log('➕ New vessel detected:', ship.name, '(' + ship.type + ')');
-            }
-            
-            // Remove ships older than 10 minutes
-            const now = Date.now();
-            shipData = shipData.filter(s => now - s.lastUpdate < 600000);
-            
-            updateDisplay();
         }
 
-        // Update the display
         function updateDisplay() {
             const shipList = document.getElementById('shipList');
             
@@ -424,7 +363,6 @@
                 return;
             }
             
-            // Sort by distance (closest first)
             const sortedShips = [...shipData].sort((a, b) => a.distance - b.distance);
             
             let html = '';
@@ -467,7 +405,6 @@
             shipList.innerHTML = html;
         }
 
-        // Clean up old ships periodically
         setInterval(() => {
             const now = Date.now();
             const oldCount = shipData.length;
@@ -477,13 +414,13 @@
                 console.log('🧹 Cleaned up ' + (oldCount - shipData.length) + ' old vessel(s)');
                 updateDisplay();
             }
-        }, 60000); // Check every minute
+        }, 60000);
 
-        // Start tracking
-        console.log('🚢 Starting Mackinac Bridge Ship Tracker');
+        console.log('🚢 Starting Mackinac Bridge Ship Tracker (Proxy Mode)');
         console.log('📍 Bridge Location:', BRIDGE_LAT.toFixed(4) + '°N,', BRIDGE_LON.toFixed(4) + '°W');
         console.log('📡 Search Radius:', SEARCH_RADIUS_KM, 'km (~' + kmToMiles(SEARCH_RADIUS_KM).toFixed(1) + ' miles)');
-        connectWebSocket();
+        console.log('🔌 Proxy Server:', PROXY_SERVER_URL);
+        connectToProxy();
     </script>
 </body>
 </html>
