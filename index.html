@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mackinac Bridge Ship Tracker</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .ship-tracker {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            min-width: 320px;
+            max-width: 400px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                0 0 20px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .tracker-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .ship-icon {
+            font-size: 24px;
+        }
+
+        .tracker-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .ship-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .ship-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ship-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .ship-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .ship-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .loading {
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .no-ships {
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .connection-status {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        .connection-status.connected {
+            color: #4caf50;
+        }
+
+        .connection-status.disconnected {
+            color: #f44336;
+        }
+
+        .ship-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .ship-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateX(-3px);
+        }
+
+        .ship-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .ship-type {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+        }
+
+        .ship-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+            color: white;
+        }
+
+        .ship-detail-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .detail-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .detail-value {
+            font-weight: bold;
+            color: white;
+        }
+
+        .approaching {
+            color: #4caf50;
+        }
+
+        .departing {
+            color: #ff9800;
+        }
+
+        .distance-close {
+            color: #f44336;
+            font-weight: bold;
+        }
+
+        .distance-medium {
+            color: #ff9800;
+        }
+
+        .distance-far {
+            color: #4caf50;
+        }
+    </style>
+</head>
+<body>
+    <div class="ship-tracker">
+        <div class="tracker-header">
+            <span class="ship-icon">🚢</span>
+            <span class="tracker-title">SHIPS NEAR BRIDGE</span>
+        </div>
+        <div class="ship-list" id="shipList">
+            <div class="loading">Connecting to ship tracker...</div>
+        </div>
+        <div class="connection-status" id="connectionStatus">Connecting...</div>
+    </div>
+
+    <script>
+        // AISStream API Configuration
+        const API_KEY = "fe7a0e7dd439780159d6c3694023e6791ad63e2f";
+
+        // Mackinac Bridge coordinates
+        const BRIDGE_LAT = 45.8174;
+        const BRIDGE_LON = -84.7278;
+
+        // Search radius in kilometers (25km = ~15.5 miles)
+        const SEARCH_RADIUS_KM = 25;
+
+        // Bounding box around the bridge
+        const BBOX = {
+            minLat: BRIDGE_LAT - 0.23,  // ~15 miles south
+            maxLat: BRIDGE_LAT + 0.23,  // ~15 miles north
+            minLon: BRIDGE_LON - 0.35,  // ~15 miles west
+            maxLon: BRIDGE_LON + 0.35   // ~15 miles east
+        };
+
+        let shipData = [];
+        let ws = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 10;
+
+        // Calculate distance between two coordinates (Haversine formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Convert km to miles
+        function kmToMiles(km) {
+            return km * 0.621371;
+        }
+
+        // Get ship type name
+        function getShipType(typeCode) {
+            const types = {
+                70: "Cargo",
+                71: "Cargo - Hazardous",
+                72: "Cargo - Hazardous",
+                73: "Cargo - Hazardous",
+                74: "Cargo - Hazardous",
+                79: "Cargo",
+                80: "Tanker",
+                81: "Tanker - Hazardous",
+                82: "Tanker - Hazardous",
+                83: "Tanker - Hazardous",
+                84: "Tanker - Hazardous",
+                89: "Tanker",
+                1024: "Great Lakes Freighter"
+            };
+            return types[typeCode] || "Vessel";
+        }
+
+        // Determine if ship is approaching or departing
+        function getDirection(lat, lon, course) {
+            // Calculate bearing from ship to bridge
+            const dLon = (BRIDGE_LON - lon) * Math.PI / 180;
+            const y = Math.sin(dLon) * Math.cos(BRIDGE_LAT * Math.PI / 180);
+            const x = Math.cos(lat * Math.PI / 180) * Math.sin(BRIDGE_LAT * Math.PI / 180) -
+                      Math.sin(lat * Math.PI / 180) * Math.cos(BRIDGE_LAT * Math.PI / 180) * Math.cos(dLon);
+            const bearingToBridge = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+            
+            // Compare ship's course with bearing to bridge
+            const diff = Math.abs(course - bearingToBridge);
+            
+            if (diff < 90 || diff > 270) {
+                return "Approaching";
+            } else {
+                return "Departing";
+            }
+        }
+
+        // Update connection status display
+        function updateConnectionStatus(status, connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.textContent = status;
+            statusEl.className = 'connection-status ' + (connected ? 'connected' : 'disconnected');
+        }
+
+        // Connect to AISStream WebSocket
+        function connectWebSocket() {
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                console.error('Max reconnection attempts reached');
+                document.getElementById('shipList').innerHTML = 
+                    '<div class="no-ships">Unable to connect to ship tracker.<br>Please refresh the page.</div>';
+                updateConnectionStatus('Connection Failed', false);
+                return;
+            }
+
+            console.log('Connecting to AISStream... (Attempt ' + (reconnectAttempts + 1) + ')');
+            updateConnectionStatus('Connecting...', false);
+
+            ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
+            
+            ws.onopen = function() {
+                console.log('✓ Connected to AISStream');
+                reconnectAttempts = 0; // Reset counter on successful connection
+                updateConnectionStatus('Connected • Live Updates', true);
+                
+                // Subscribe to vessels in our area
+                const subscription = {
+                    APIKey: API_KEY,
+                    BoundingBoxes: [[
+                        [BBOX.minLon, BBOX.minLat],
+                        [BBOX.maxLon, BBOX.maxLat]
+                    ]]
+                };
+                
+                ws.send(JSON.stringify(subscription));
+                console.log('✓ Subscribed to Mackinac Bridge area');
+                console.log('  Latitude:', BBOX.minLat.toFixed(4), 'to', BBOX.maxLat.toFixed(4));
+                console.log('  Longitude:', BBOX.minLon.toFixed(4), 'to', BBOX.maxLon.toFixed(4));
+                
+                document.getElementById('shipList').innerHTML = 
+                    '<div class="loading">Scanning for vessels...</div>';
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.MessageType === "PositionReport" && data.Message && data.Message.PositionReport) {
+                        processShipData(data);
+                    }
+                } catch (error) {
+                    console.error('Error processing message:', error);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus('Connection Error', false);
+            };
+            
+            ws.onclose = function() {
+                console.log('WebSocket closed');
+                updateConnectionStatus('Disconnected • Reconnecting...', false);
+                reconnectAttempts++;
+                
+                // Exponential backoff: 2s, 4s, 8s, 16s, max 30s
+                const delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000);
+                console.log('Reconnecting in ' + (delay / 1000) + ' seconds...');
+                
+                setTimeout(connectWebSocket, delay);
+            };
+        }
+
+        // Process incoming ship data
+        function processShipData(data) {
+            const position = data.Message.PositionReport;
+            const metadata = data.MetaData;
+            
+            const ship = {
+                mmsi: metadata.MMSI,
+                name: metadata.ShipName?.trim() || 'Unknown Vessel',
+                lat: position.Latitude,
+                lon: position.Longitude,
+                speed: position.Sog || 0, // Speed over ground in knots
+                course: position.Cog || 0, // Course over ground in degrees
+                type: getShipType(metadata.ShipType),
+                lastUpdate: Date.now()
+            };
+            
+            // Calculate distance from bridge
+            ship.distance = calculateDistance(BRIDGE_LAT, BRIDGE_LON, ship.lat, ship.lon);
+            
+            // Only track ships within our radius
+            if (ship.distance > SEARCH_RADIUS_KM) {
+                return;
+            }
+            
+            ship.direction = getDirection(ship.lat, ship.lon, ship.course);
+            
+            // Update or add ship to our tracking list
+            const existingIndex = shipData.findIndex(s => s.mmsi === ship.mmsi);
+            if (existingIndex >= 0) {
+                shipData[existingIndex] = ship;
+            } else {
+                shipData.push(ship);
+                console.log('➕ New vessel detected:', ship.name, '(' + ship.type + ')');
+            }
+            
+            // Remove ships older than 10 minutes
+            const now = Date.now();
+            shipData = shipData.filter(s => now - s.lastUpdate < 600000);
+            
+            updateDisplay();
+        }
+
+        // Update the display
+        function updateDisplay() {
+            const shipList = document.getElementById('shipList');
+            
+            if (shipData.length === 0) {
+                shipList.innerHTML = '<div class="no-ships">No vessels detected in area<br><small>(Scanning 15-mile radius)</small></div>';
+                return;
+            }
+            
+            // Sort by distance (closest first)
+            const sortedShips = [...shipData].sort((a, b) => a.distance - b.distance);
+            
+            let html = '';
+            sortedShips.forEach(ship => {
+                const distanceMiles = kmToMiles(ship.distance).toFixed(1);
+                const speedKnots = ship.speed.toFixed(1);
+                
+                let distanceClass = 'distance-far';
+                if (ship.distance < 5) distanceClass = 'distance-close';
+                else if (ship.distance < 10) distanceClass = 'distance-medium';
+                
+                const directionClass = ship.direction === 'Approaching' ? 'approaching' : 'departing';
+                
+                html += `
+                    <div class="ship-item">
+                        <div class="ship-name">${ship.name}</div>
+                        <div class="ship-type">${ship.type}</div>
+                        <div class="ship-details">
+                            <div class="ship-detail-row">
+                                <span class="detail-label">Distance:</span>
+                                <span class="detail-value ${distanceClass}">${distanceMiles} mi</span>
+                            </div>
+                            <div class="ship-detail-row">
+                                <span class="detail-label">Direction:</span>
+                                <span class="detail-value ${directionClass}">${ship.direction}</span>
+                            </div>
+                            <div class="ship-detail-row">
+                                <span class="detail-label">Speed:</span>
+                                <span class="detail-value">${speedKnots} knots</span>
+                            </div>
+                            <div class="ship-detail-row">
+                                <span class="detail-label">Heading:</span>
+                                <span class="detail-value">${Math.round(ship.course)}°</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            shipList.innerHTML = html;
+        }
+
+        // Clean up old ships periodically
+        setInterval(() => {
+            const now = Date.now();
+            const oldCount = shipData.length;
+            shipData = shipData.filter(s => now - s.lastUpdate < 600000);
+            
+            if (shipData.length !== oldCount) {
+                console.log('🧹 Cleaned up ' + (oldCount - shipData.length) + ' old vessel(s)');
+                updateDisplay();
+            }
+        }, 60000); // Check every minute
+
+        // Start tracking
+        console.log('🚢 Starting Mackinac Bridge Ship Tracker');
+        console.log('📍 Bridge Location:', BRIDGE_LAT.toFixed(4) + '°N,', BRIDGE_LON.toFixed(4) + '°W');
+        console.log('📡 Search Radius:', SEARCH_RADIUS_KM, 'km (~' + kmToMiles(SEARCH_RADIUS_KM).toFixed(1) + ' miles)');
+        connectWebSocket();
+    </script>
+</body>
+</html>
