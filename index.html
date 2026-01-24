@@ -191,6 +191,60 @@
         .distance-far {
             color: #4caf50;
         }
+
+        .section-divider {
+            height: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 15px 0;
+        }
+
+        .recent-ships-section {
+            margin-top: 10px;
+        }
+
+        .recent-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .recent-icon {
+            font-size: 18px;
+        }
+
+        .recent-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 1px;
+        }
+
+        .recent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .recent-ship {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .recent-ship-name {
+            font-weight: bold;
+            color: #90caf9;
+            margin-bottom: 4px;
+        }
+
+        .recent-ship-info {
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            justify-content: space-between;
+        }
     </style>
 </head>
 <body>
@@ -202,6 +256,16 @@
         <div class="ship-list" id="shipList">
             <div class="loading">Connecting to server...</div>
         </div>
+        
+        <div class="recent-ships-section" id="recentShipsSection" style="display: none;">
+            <div class="section-divider"></div>
+            <div class="recent-header">
+                <span class="recent-icon">🕒</span>
+                <span class="recent-title">RECENT SHIPS</span>
+            </div>
+            <div class="recent-list" id="recentList"></div>
+        </div>
+        
         <div class="connection-status" id="connectionStatus">Connecting...</div>
     </div>
 
@@ -215,9 +279,11 @@
         const SEARCH_RADIUS_KM = 25;
 
         let shipData = [];
+        let recentShips = []; // Track ships that left the area
         let ws = null;
         let reconnectAttempts = 0;
         const MAX_RECONNECT_ATTEMPTS = 10;
+        const MAX_RECENT_SHIPS = 3;
 
         // Calculate distance between two coordinates (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -254,6 +320,17 @@
             const bearingToBridge = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
             const diff = Math.abs(course - bearingToBridge);
             return (diff < 90 || diff > 270) ? "Approaching" : "Departing";
+        }
+
+        function formatTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return seconds + 's ago';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return minutes + 'm ago';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + 'h ago';
+            const days = Math.floor(hours / 24);
+            return days + 'd ago';
         }
 
         function updateConnectionStatus(status, connected) {
@@ -360,59 +437,114 @@
             
             if (shipData.length === 0) {
                 shipList.innerHTML = '<div class="no-ships">No vessels detected in area<br><small>(Scanning 15-mile radius)</small></div>';
+            } else {
+                const sortedShips = [...shipData].sort((a, b) => a.distance - b.distance);
+                
+                let html = '';
+                sortedShips.forEach(ship => {
+                    const distanceMiles = kmToMiles(ship.distance).toFixed(1);
+                    const speedKnots = ship.speed.toFixed(1);
+                    
+                    let distanceClass = 'distance-far';
+                    if (ship.distance < 5) distanceClass = 'distance-close';
+                    else if (ship.distance < 10) distanceClass = 'distance-medium';
+                    
+                    const directionClass = ship.direction === 'Approaching' ? 'approaching' : 'departing';
+                    
+                    html += `
+                        <div class="ship-item">
+                            <div class="ship-name">${ship.name}</div>
+                            <div class="ship-type">${ship.type}</div>
+                            <div class="ship-details">
+                                <div class="ship-detail-row">
+                                    <span class="detail-label">Distance:</span>
+                                    <span class="detail-value ${distanceClass}">${distanceMiles} mi</span>
+                                </div>
+                                <div class="ship-detail-row">
+                                    <span class="detail-label">Direction:</span>
+                                    <span class="detail-value ${directionClass}">${ship.direction}</span>
+                                </div>
+                                <div class="ship-detail-row">
+                                    <span class="detail-label">Speed:</span>
+                                    <span class="detail-value">${speedKnots} knots</span>
+                                </div>
+                                <div class="ship-detail-row">
+                                    <span class="detail-label">Heading:</span>
+                                    <span class="detail-value">${Math.round(ship.course)}°</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                shipList.innerHTML = html;
+            }
+            
+            // Update recent ships section
+            updateRecentShips();
+        }
+
+        function updateRecentShips() {
+            const recentSection = document.getElementById('recentShipsSection');
+            const recentList = document.getElementById('recentList');
+            
+            if (recentShips.length === 0) {
+                recentSection.style.display = 'none';
                 return;
             }
             
-            const sortedShips = [...shipData].sort((a, b) => a.distance - b.distance);
+            recentSection.style.display = 'block';
             
             let html = '';
-            sortedShips.forEach(ship => {
-                const distanceMiles = kmToMiles(ship.distance).toFixed(1);
-                const speedKnots = ship.speed.toFixed(1);
-                
-                let distanceClass = 'distance-far';
-                if (ship.distance < 5) distanceClass = 'distance-close';
-                else if (ship.distance < 10) distanceClass = 'distance-medium';
-                
-                const directionClass = ship.direction === 'Approaching' ? 'approaching' : 'departing';
+            recentShips.slice(0, MAX_RECENT_SHIPS).forEach(ship => {
+                const timeAgo = formatTimeAgo(ship.leftTime);
+                const direction = ship.direction === 'Approaching' ? 'was approaching' : 'was departing';
                 
                 html += `
-                    <div class="ship-item">
-                        <div class="ship-name">${ship.name}</div>
-                        <div class="ship-type">${ship.type}</div>
-                        <div class="ship-details">
-                            <div class="ship-detail-row">
-                                <span class="detail-label">Distance:</span>
-                                <span class="detail-value ${distanceClass}">${distanceMiles} mi</span>
-                            </div>
-                            <div class="ship-detail-row">
-                                <span class="detail-label">Direction:</span>
-                                <span class="detail-value ${directionClass}">${ship.direction}</span>
-                            </div>
-                            <div class="ship-detail-row">
-                                <span class="detail-label">Speed:</span>
-                                <span class="detail-value">${speedKnots} knots</span>
-                            </div>
-                            <div class="ship-detail-row">
-                                <span class="detail-label">Heading:</span>
-                                <span class="detail-value">${Math.round(ship.course)}°</span>
-                            </div>
+                    <div class="recent-ship">
+                        <div class="recent-ship-name">${ship.name}</div>
+                        <div class="recent-ship-info">
+                            <span>${direction}</span>
+                            <span>${timeAgo}</span>
                         </div>
                     </div>
                 `;
             });
             
-            shipList.innerHTML = html;
+            recentList.innerHTML = html;
         }
 
         setInterval(() => {
             const now = Date.now();
-            const oldCount = shipData.length;
+            const oldShips = shipData.filter(s => now - s.lastUpdate >= 600000);
+            
+            // Add old ships to recent ships list
+            oldShips.forEach(ship => {
+                // Check if not already in recent ships
+                if (!recentShips.find(r => r.mmsi === ship.mmsi)) {
+                    recentShips.unshift({
+                        mmsi: ship.mmsi,
+                        name: ship.name,
+                        direction: ship.direction,
+                        leftTime: now
+                    });
+                }
+            });
+            
+            // Keep only last 10 recent ships
+            recentShips = recentShips.slice(0, 10);
+            
+            // Remove old ships from active tracking
             shipData = shipData.filter(s => now - s.lastUpdate < 600000);
             
-            if (shipData.length !== oldCount) {
-                console.log('🧹 Cleaned up ' + (oldCount - shipData.length) + ' old vessel(s)');
+            if (oldShips.length > 0) {
+                console.log('🧹 Moved ' + oldShips.length + ' ship(s) to recent');
                 updateDisplay();
+            }
+            
+            // Update time ago display every minute
+            if (recentShips.length > 0) {
+                updateRecentShips();
             }
         }, 60000);
 
