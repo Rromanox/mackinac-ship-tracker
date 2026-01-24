@@ -305,7 +305,15 @@
             console.log('Connecting to AISStream... (Attempt ' + (reconnectAttempts + 1) + ')');
             updateConnectionStatus('Connecting...', false);
 
-            ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
+            console.log('Creating WebSocket connection to wss://stream.aisstream.io/v0/stream');
+            
+            try {
+                ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
+            } catch (error) {
+                console.error('❌ Failed to create WebSocket:', error);
+                updateConnectionStatus('Connection Failed: ' + error.message, false);
+                return;
+            }
             
             ws.onopen = function() {
                 console.log('✓ Connected to AISStream');
@@ -343,12 +351,17 @@
             };
             
             ws.onerror = function(error) {
-                console.error('WebSocket error:', error);
-                updateConnectionStatus('Connection Error', false);
+                console.error('❌ WebSocket error:', error);
+                console.error('WebSocket readyState:', ws.readyState);
+                console.error('0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED');
+                updateConnectionStatus('Connection Error - Check console', false);
             };
             
-            ws.onclose = function() {
-                console.log('WebSocket closed');
+            ws.onclose = function(event) {
+                console.log('❌ WebSocket closed');
+                console.log('Close code:', event.code);
+                console.log('Close reason:', event.reason);
+                console.log('Was clean:', event.wasClean);
                 updateConnectionStatus('Disconnected • Reconnecting...', false);
                 reconnectAttempts++;
                 
