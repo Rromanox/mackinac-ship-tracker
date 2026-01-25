@@ -1,11 +1,39 @@
-// server.js - Glitch Backend for AISStream Proxy
+// server.js - Ship Tracker Backend with MongoDB
 const express = require('express');
 const WebSocket = require('ws');
 const http = require('http');
+const { MongoClient } = require('mongodb');
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+
+// MongoDB configuration
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const DB_NAME = 'shiptracker';
+let db = null;
+let shipsCollection = null;
+
+// Connect to MongoDB
+async function connectToMongoDB() {
+  try {
+    const client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    db = client.db(DB_NAME);
+    shipsCollection = db.collection('ships');
+    
+    // Create indexes for better performance
+    await shipsCollection.createIndex({ mmsi: 1 });
+    await shipsCollection.createIndex({ timestamp: -1 });
+    await shipsCollection.createIndex({ passedBridge: 1 });
+    
+    console.log('✓ Connected to MongoDB');
+    console.log('📊 Database:', DB_NAME);
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error.message);
+    console.error('⚠️ Running without database - data will not be saved');
+  }
+}
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -15,10 +43,13 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
+  const stats = await getShipStats();
   res.json({ 
     status: 'Ship Tracker Proxy Server Running',
     connections: wss.clients.size,
+    database: db ? 'Connected' : 'Disconnected',
+    stats: stats,
     timestamp: new Date().toISOString()
   });
 });
@@ -39,6 +70,116 @@ const BBOX = {
 let aisConnection = null;
 let reconnectTimeout = null;
 let isConnecting = false;
+
+// Database helper functions
+async function saveShipToDatabase(shipData) {
+  if (!shipsCollection) return;
+  
+  try {
+    const shipRecord = {
+      mmsi: shipData.mmsi,
+      name: shipData.name,
+      type: shipData.type || 'Unknown',
+      destination: shipData.destination || null,
+      dimensions: shipData.dimensions || null,
+      firstSeen: new Date(),
+      lastSeen: new Date(),
+      direction: shipData.direction,
+      maxSpeed: shipData.speed || 0,
+      passedBridge: false,
+      passedBridgeTime: null
+    };
+    
+    await shipsCollection.updateOne(
+      { 
+        mmsi: shipData.mmsi,
+        passedBridge: false
+      },
+      { 
+        $set: {
+          lastSeen: new Date(),
+          direction: shipData.direction,
+          maxSpeed: Math.max(shipData.speed || 0, shipRecord.maxSpeed)
+        },
+        $setOnInsert: {
+          mmsi: shipRecord.mmsi,
+          name: shipRecord.name,
+          type: shipRecord.type,
+          destination: shipRecord.destination,
+          dimensions: shipRecord.dimensions,
+          firstSeen: shipRecord.firstSeen,
+          passedBridge: false
+        }
+      },
+      { upsert: true }
+    );
+    
+    console.log('💾 Saved ship to database:', shipData.name);
+  } catch (error) {
+    console.error('❌ Error saving ship:', error.message);
+  }
+}
+
+async function markShipAsPassed(mmsi, name) {
+  if (!shipsCollection) return;
+  
+  try {
+    await shipsCollection.updateOne(
+      { mmsi: mmsi, passedBridge: false },
+      { 
+        $set: { 
+          passedBridge: true,
+          passedBridgeTime: new Date()
+        }
+      }
+    );
+    console.log('🌉 Marked ship as passed:', name);
+  } catch (error) {
+    console.error('❌ Error marking ship as passed:', error.message);
+  }
+}
+
+async function getRecentShips(limit = 10) {
+  if (!shipsCollection) return [];
+  
+  try {
+    const recentShips = await shipsCollection
+      .find({ passedBridge: true })
+      .sort({ passedBridgeTime: -1 })
+      .limit(limit)
+      .toArray();
+    
+    return recentShips.map(ship => ({
+      mmsi: ship.mmsi,
+      name: ship.name,
+      direction: ship.direction,
+      passedTime: ship.passedBridgeTime
+    }));
+  } catch (error) {
+    console.error('❌ Error getting recent ships:', error.message);
+    return [];
+  }
+}
+
+async function getShipStats() {
+  if (!shipsCollection) return null;
+  
+  try {
+    const total = await shipsCollection.countDocuments({ passedBridge: true });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayCount = await shipsCollection.countDocuments({
+      passedBridge: true,
+      passedBridgeTime: { $gte: today }
+    });
+    
+    return { total, today: todayCount };
+  } catch (error) {
+    console.error('❌ Error getting stats:', error.message);
+    return null;
+  }
+}
 
 // Connect to AISStream
 function connectToAISStream() {
@@ -77,6 +218,22 @@ function connectToAISStream() {
   aisConnection.on('message', (data) => {
     try {
       const message = JSON.parse(data);
+      
+      // Save ship data to database when received
+      if (message.MessageType === "PositionReport" && message.MetaData) {
+        const shipInfo = {
+          mmsi: message.MetaData.MMSI,
+          name: message.MetaData.ShipName?.trim() || 'Unknown',
+          type: message.MetaData.ShipType || null,
+          speed: message.Message?.PositionReport?.Sog || 0,
+          direction: null // Will be calculated by frontend
+        };
+        
+        // Save to database (async, don't wait)
+        saveShipToDatabase(shipInfo).catch(err => 
+          console.error('Database save error:', err.message)
+        );
+      }
       
       // Forward all messages to connected clients
       broadcastToClients({
@@ -178,11 +335,18 @@ wss.on('connection', (ws) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚢 Ship Tracker Proxy Server running on port ${PORT}`);
-  console.log(`📍 Monitoring Mackinac Bridge area`);
-  console.log(`📡 Lat: ${BBOX.minLat.toFixed(4)} to ${BBOX.maxLat.toFixed(4)}`);
-  console.log(`📡 Lon: ${BBOX.minLon.toFixed(4)} to ${BBOX.maxLon.toFixed(4)}`);
+
+// Initialize MongoDB first, then start server
+connectToMongoDB().then(() => {
+  server.listen(PORT, () => {
+    console.log(`🚢 Ship Tracker Proxy Server running on port ${PORT}`);
+    console.log(`📍 Monitoring Mackinac Bridge area`);
+    console.log(`📡 Lat: ${BBOX.minLat.toFixed(4)} to ${BBOX.maxLat.toFixed(4)}`);
+    console.log(`📡 Lon: ${BBOX.minLon.toFixed(4)} to ${BBOX.maxLon.toFixed(4)}`);
+  });
+}).catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
 
 // Graceful shutdown

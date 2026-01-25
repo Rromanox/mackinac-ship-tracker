@@ -1,14 +1,15 @@
 {
   "name": "mackinac-ship-tracker-proxy",
   "version": "1.0.0",
-  "description": "Proxy server for AISStream ship tracking data",
+  "description": "Proxy server for AISStream ship tracking data with MongoDB storage",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "ws": "^8.14.2"
+    "ws": "^8.14.2",
+    "mongodb": "^6.3.0"
   },
   "engines": {
     "node": "18.x"
