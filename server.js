@@ -60,6 +60,7 @@ function connectToAISStream() {
         [BBOX.minLon, BBOX.minLat],
         [BBOX.maxLon, BBOX.maxLat]
       ]]
+      // No FilterMessageTypes - get all message types including ShipStaticData
     };
     
     aisConnection.send(JSON.stringify(subscription));
