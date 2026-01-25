@@ -268,12 +268,10 @@ function connectToAISStream() {
       connected: false
     });
     
-    // Reconnect after 5 seconds
+    // Always reconnect after 5 seconds (24/7 monitoring)
     reconnectTimeout = setTimeout(() => {
-      if (wss.clients.size > 0) {
-        console.log('Reconnecting to AISStream...');
-        connectToAISStream();
-      }
+      console.log('Reconnecting to AISStream...');
+      connectToAISStream();
     }, 5000);
   });
 }
@@ -314,18 +312,8 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     console.log('Client disconnected. Total clients:', wss.clients.size);
     
-    // If no clients left, close AISStream connection
-    if (wss.clients.size === 0) {
-      console.log('No clients connected. Closing AISStream connection.');
-      if (aisConnection) {
-        aisConnection.close();
-        aisConnection = null;
-      }
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = null;
-      }
-    }
+    // Note: We keep AISStream connected even with 0 clients
+    // This allows continuous ship tracking when UptimeRobot pings keep server awake
   });
   
   ws.on('error', (error) => {
@@ -343,6 +331,9 @@ connectToMongoDB().then(() => {
     console.log(`📍 Monitoring Mackinac Bridge area`);
     console.log(`📡 Lat: ${BBOX.minLat.toFixed(4)} to ${BBOX.maxLat.toFixed(4)}`);
     console.log(`📡 Lon: ${BBOX.minLon.toFixed(4)} to ${BBOX.maxLon.toFixed(4)}`);
+    
+    // Connect to AISStream immediately for 24/7 monitoring
+    connectToAISStream();
   });
 }).catch(err => {
   console.error('Failed to start server:', err);
