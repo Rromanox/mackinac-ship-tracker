@@ -457,10 +457,43 @@
             }
         }
 
+        function selectShipsToDisplay(ships) {
+            // Separate ships by direction
+            const approaching = ships.filter(s => s.direction === 'Approaching');
+            const movingAway = ships.filter(s => s.direction !== 'Approaching');
+            
+            // Sort both by distance (closest first)
+            approaching.sort((a, b) => a.distance - b.distance);
+            movingAway.sort((a, b) => a.distance - b.distance);
+            
+            let selectedShips = [];
+            
+            // Priority 1: Show up to 2 approaching ships (closest ones)
+            if (approaching.length >= 2) {
+                selectedShips = approaching.slice(0, 2);
+            } else if (approaching.length === 1) {
+                // 1 approaching + 1 closest moving away
+                selectedShips.push(approaching[0]);
+                if (movingAway.length > 0) {
+                    selectedShips.push(movingAway[0]);
+                }
+            } else {
+                // No approaching ships, show 2 closest overall
+                selectedShips = movingAway.slice(0, 2);
+            }
+            
+            return selectedShips;
+        }
+
+        function checkIfPassedBridge(ship) {
+            // Ship passed if within 0.5 miles of bridge center
+            return ship.distance < 0.8; // ~0.5 miles in km
+        }
+
         function generateTestData() {
             console.log('🧪 TEST MODE ENABLED - Generating simulated ships');
             
-            // Simulate 2 active ships
+            // Simulate 3 ships at different distances
             shipData = [
                 {
                     mmsi: 366972000,
@@ -470,7 +503,7 @@
                     speed: 12.5,
                     course: 135,
                     type: 'Great Lakes Freighter',
-                    distance: 3.2,
+                    distance: 5.2,  // Start further out
                     direction: 'Approaching',
                     lastUpdate: Date.now()
                 },
@@ -482,8 +515,20 @@
                     speed: 9.8,
                     course: 320,
                     type: 'Cargo',
-                    distance: 6.7,
+                    distance: 8.5,  // Further away, moving away
                     direction: 'Departing',
+                    lastUpdate: Date.now()
+                },
+                {
+                    mmsi: 366710000,
+                    name: 'EDWIN H. GOTT',
+                    lat: 45.82,
+                    lon: -84.73,
+                    speed: 11.2,
+                    course: 180,
+                    type: 'Great Lakes Freighter',
+                    distance: 3.8,  // Closer, also approaching
+                    direction: 'Approaching',
                     lastUpdate: Date.now()
                 }
             ];
@@ -501,25 +546,32 @@
                     name: 'AMERICAN SPIRIT',
                     length: 1004,
                     width: 105
+                },
+                366710000: {
+                    destination: 'SUPERIOR WI',
+                    name: 'EDWIN H. GOTT',
+                    length: 1004,
+                    width: 105
                 }
             };
             
-            // Mark ships as known so alert triggers in test mode
+            // Mark ships as known
             knownShipMMSIs.add(366972000);
             knownShipMMSIs.add(367364000);
+            knownShipMMSIs.add(366710000);
             
             // Simulate 1 recent ship
             recentShips = [
                 {
-                    mmsi: 366710000,
-                    name: 'EDWIN H. GOTT',
+                    mmsi: 367430000,
+                    name: 'JAMES R. BARKER',
                     direction: 'Approaching',
-                    leftTime: Date.now() - (1000 * 60 * 12) // 12 minutes ago
+                    leftTime: Date.now() - (1000 * 60 * 8) // 8 minutes ago
                 }
             ];
             
             lastUpdateTime = Date.now();
-            updateConnectionStatus('TEST MODE - Simulated Data', true);
+            updateConnectionStatus('TEST MODE - Dynamic Simulation', true);
             updateDisplay();
             updateTimestamp();
             
@@ -528,6 +580,101 @@
                 console.log('🧪 Triggering test alert');
                 triggerAlert();
             }, 2000);
+            
+            // Start dynamic updates
+            startDynamicTestMode();
+        }
+
+        function startDynamicTestMode() {
+            console.log('🎬 Starting dynamic ship simulation...');
+            
+            // Update ship positions every 5 seconds
+            setInterval(() => {
+                shipData.forEach(ship => {
+                    if (ship.direction === 'Approaching') {
+                        // Move closer to bridge (decrease distance)
+                        ship.distance -= 0.3;  // ~0.3 km closer every 5 seconds
+                        
+                        // Check if passed bridge
+                        if (ship.distance < 0.5) {
+                            console.log('🌉 Ship passed bridge:', ship.name);
+                            // Will be handled by main cleanup interval
+                        }
+                    } else {
+                        // Moving away - increase distance
+                        ship.distance += 0.2;
+                        
+                        // Remove if too far
+                        if (ship.distance > 25) {
+                            console.log('👋 Ship left tracking area:', ship.name);
+                        }
+                    }
+                    
+                    ship.lastUpdate = Date.now();
+                });
+                
+                // Remove ships that are too far or passed
+                const beforeCount = shipData.length;
+                shipData = shipData.filter(s => s.distance < 25 && s.distance >= 0);
+                
+                if (shipData.length < beforeCount) {
+                    console.log('🔄 Ships removed, adding new ship...');
+                    // Add a new ship randomly
+                    addRandomTestShip();
+                }
+                
+                lastUpdateTime = Date.now();
+                updateDisplay();
+                updateTimestamp();
+                
+            }, 5000);  // Update every 5 seconds
+        }
+
+        function addRandomTestShip() {
+            const shipNames = [
+                { name: 'MESABI MINER', mmsi: 366999000, dest: 'GARY IN' },
+                { name: 'BURNS HARBOR', mmsi: 366998000, dest: 'CLEVELAND OH' },
+                { name: 'INDIANA HARBOR', mmsi: 366997000, dest: 'CHICAGO IL' },
+                { name: 'CASON J CALLAWAY', mmsi: 366996000, dest: 'TOLEDO OH' }
+            ];
+            
+            const randomShip = shipNames[Math.floor(Math.random() * shipNames.length)];
+            const isApproaching = Math.random() > 0.3;  // 70% chance of approaching
+            
+            const newShip = {
+                mmsi: randomShip.mmsi,
+                name: randomShip.name,
+                lat: 45.80 + (Math.random() - 0.5) * 0.1,
+                lon: -84.72 + (Math.random() - 0.5) * 0.1,
+                speed: 8 + Math.random() * 6,  // 8-14 knots
+                course: isApproaching ? 135 : 315,
+                type: 'Great Lakes Freighter',
+                distance: isApproaching ? 10 + Math.random() * 5 : 5 + Math.random() * 3,
+                direction: isApproaching ? 'Approaching' : 'Departing',
+                lastUpdate: Date.now()
+            };
+            
+            // Don't add duplicates
+            if (!shipData.find(s => s.mmsi === newShip.mmsi)) {
+                shipData.push(newShip);
+                
+                shipStaticData[newShip.mmsi] = {
+                    destination: randomShip.dest,
+                    name: newShip.name,
+                    length: 600 + Math.floor(Math.random() * 400),  // 600-1000 ft
+                    width: 68 + Math.floor(Math.random() * 40)  // 68-108 ft
+                };
+                
+                console.log('➕ New test ship added:', newShip.name, 
+                           '(' + newShip.direction + ', ' + newShip.distance.toFixed(1) + ' km)');
+                
+                // Trigger alert if approaching and new
+                if (isApproaching && !knownShipMMSIs.has(newShip.mmsi)) {
+                    triggerAlert();
+                }
+                
+                knownShipMMSIs.add(newShip.mmsi);
+            }
         }
 
         function updateConnectionStatus(status, connected) {
@@ -672,10 +819,11 @@
             if (shipData.length === 0) {
                 shipList.innerHTML = '<div class="no-ships">No vessels detected in area<br><small>(Scanning 15-mile radius)</small></div>';
             } else {
-                const sortedShips = [...shipData].sort((a, b) => a.distance - b.distance);
+                // Select max 2 ships to display based on priority
+                const displayShips = selectShipsToDisplay(shipData);
                 
                 let html = '';
-                sortedShips.forEach(ship => {
+                displayShips.forEach(ship => {
                     const distanceMiles = kmToMiles(ship.distance).toFixed(1);
                     const speedKnots = ship.speed.toFixed(1);
                     
@@ -789,10 +937,18 @@
 
         setInterval(() => {
             const now = Date.now();
-            const oldShips = shipData.filter(s => now - s.lastUpdate >= 600000);
             
-            // Add old ships to recent ships list
-            oldShips.forEach(ship => {
+            // Check for ships that passed under the bridge (within 0.5 miles)
+            const passedShips = shipData.filter(s => checkIfPassedBridge(s));
+            
+            // Check for ships that are stale (no update in 10 minutes)
+            const staleShips = shipData.filter(s => now - s.lastUpdate >= 600000);
+            
+            // Combine both - either passed or went stale
+            const shipsToMove = [...new Set([...passedShips, ...staleShips])];
+            
+            // Add to recent ships list
+            shipsToMove.forEach(ship => {
                 // Check if not already in recent ships
                 if (!recentShips.find(r => r.mmsi === ship.mmsi)) {
                     recentShips.unshift({
@@ -801,17 +957,19 @@
                         direction: ship.direction,
                         leftTime: now
                     });
+                    
+                    console.log('📤 Ship moved to recent:', ship.name, 
+                               checkIfPassedBridge(ship) ? '(passed bridge)' : '(left area)');
                 }
             });
             
-            // Keep only last 10 recent ships
+            // Keep only last 10 recent ships in memory
             recentShips = recentShips.slice(0, 10);
             
-            // Remove old ships from active tracking
-            shipData = shipData.filter(s => now - s.lastUpdate < 600000);
+            // Remove ships from active tracking
+            shipData = shipData.filter(s => !checkIfPassedBridge(s) && now - s.lastUpdate < 600000);
             
-            if (oldShips.length > 0) {
-                console.log('🧹 Moved ' + oldShips.length + ' ship(s) to recent');
+            if (shipsToMove.length > 0) {
                 updateDisplay();
             }
             
