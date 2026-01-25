@@ -818,91 +818,147 @@
             
             if (shipData.length === 0) {
                 shipList.innerHTML = '<div class="no-ships">No vessels detected in area<br><small>(Scanning 15-mile radius)</small></div>';
-            } else {
-                // Select max 2 ships to display based on priority
-                const displayShips = selectShipsToDisplay(shipData);
-                
+                return;
+            }
+            
+            // Select max 2 ships to display based on priority
+            const displayShips = selectShipsToDisplay(shipData);
+            
+            // Get current ship MMSIs in display
+            const currentShipElements = Array.from(shipList.querySelectorAll('.ship-item'));
+            const currentMMSIs = currentShipElements.map(el => el.dataset.mmsi);
+            const newMMSIs = displayShips.map(s => s.mmsi.toString());
+            
+            // Check if ship list changed (different ships or different order)
+            const shipsChanged = JSON.stringify(currentMMSIs) !== JSON.stringify(newMMSIs);
+            
+            if (shipsChanged) {
+                // Ships changed - rebuild HTML
                 let html = '';
                 displayShips.forEach(ship => {
-                    const distanceMiles = kmToMiles(ship.distance).toFixed(1);
-                    const speedKnots = ship.speed.toFixed(1);
-                    
-                    let distanceClass = 'distance-far';
-                    if (ship.distance < 5) distanceClass = 'distance-close';
-                    else if (ship.distance < 10) distanceClass = 'distance-medium';
-                    
-                    const directionClass = ship.direction === 'Approaching' ? 'approaching' : 'departing';
-                    
-                    // Calculate ETA for approaching ships
-                    let etaHtml = '';
-                    if (ship.direction === 'Approaching' && ship.speed > 1) {
-                        const eta = calculateETA(ship.distance, ship.speed);
-                        if (eta) {
-                            etaHtml = `
-                                <div class="ship-detail-row">
-                                    <span class="detail-label">ETA to bridge:</span>
-                                    <span class="detail-value eta-highlight">${eta}</span>
-                                </div>
-                            `;
-                        }
-                    }
-                    
-                    // Get destination from static data if available
-                    let destinationHtml = '';
-                    let dimensionsText = '';
-                    const staticInfo = shipStaticData[ship.mmsi];
-                    
-                    if (staticInfo) {
-                        if (staticInfo.destination) {
-                            destinationHtml = `
-                                <div class="ship-detail-row">
-                                    <span class="detail-label">Destination:</span>
-                                    <span class="detail-value destination-text">${staticInfo.destination}</span>
-                                </div>
-                            `;
-                        }
-                        
-                        if (staticInfo.length && staticInfo.width) {
-                            dimensionsText = `<span class="ship-dimensions">${staticInfo.length} × ${staticInfo.width} ft</span>`;
-                        }
-                    }
-                    
-                    html += `
-                        <div class="ship-item">
-                            <div class="ship-name">
-                                <span>${ship.name}</span>
-                                ${dimensionsText}
-                            </div>
-                            <div class="ship-type">${ship.type}</div>
-                            <div class="ship-details">
-                                <div class="ship-detail-row">
-                                    <span class="detail-label">Distance:</span>
-                                    <span class="detail-value ${distanceClass}">${distanceMiles} mi</span>
-                                </div>
-                                <div class="ship-detail-row">
-                                    <span class="detail-label">Direction:</span>
-                                    <span class="detail-value ${directionClass}">${ship.direction === 'Approaching' ? 'Approaching' : 'Moving Away'}</span>
-                                </div>
-                                ${etaHtml}
-                                ${destinationHtml}
-                                <div class="ship-detail-row">
-                                    <span class="detail-label">Speed:</span>
-                                    <span class="detail-value">${speedKnots} knots</span>
-                                </div>
-                                <div class="ship-detail-row">
-                                    <span class="detail-label">Heading:</span>
-                                    <span class="detail-value">${Math.round(ship.course)}°</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    html += buildShipHTML(ship);
                 });
-                
                 shipList.innerHTML = html;
+            } else {
+                // Same ships - just update values without rebuilding
+                displayShips.forEach((ship, index) => {
+                    updateShipValues(currentShipElements[index], ship);
+                });
             }
             
             // Update recent ships section
             updateRecentShips();
+        }
+
+        function buildShipHTML(ship) {
+            const distanceMiles = kmToMiles(ship.distance).toFixed(1);
+            const speedKnots = ship.speed.toFixed(1);
+            
+            let distanceClass = 'distance-far';
+            if (ship.distance < 5) distanceClass = 'distance-close';
+            else if (ship.distance < 10) distanceClass = 'distance-medium';
+            
+            const directionClass = ship.direction === 'Approaching' ? 'approaching' : 'departing';
+            
+            // Calculate ETA for approaching ships
+            let etaHtml = '';
+            if (ship.direction === 'Approaching' && ship.speed > 1) {
+                const eta = calculateETA(ship.distance, ship.speed);
+                if (eta) {
+                    etaHtml = `
+                        <div class="ship-detail-row">
+                            <span class="detail-label">ETA to bridge:</span>
+                            <span class="detail-value eta-highlight" data-eta>${eta}</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Get destination from static data if available
+            let destinationHtml = '';
+            let dimensionsText = '';
+            const staticInfo = shipStaticData[ship.mmsi];
+            
+            if (staticInfo) {
+                if (staticInfo.destination) {
+                    destinationHtml = `
+                        <div class="ship-detail-row">
+                            <span class="detail-label">Destination:</span>
+                            <span class="detail-value destination-text">${staticInfo.destination}</span>
+                        </div>
+                    `;
+                }
+                
+                if (staticInfo.length && staticInfo.width) {
+                    dimensionsText = `<span class="ship-dimensions">${staticInfo.length} × ${staticInfo.width} ft</span>`;
+                }
+            }
+            
+            return `
+                <div class="ship-item" data-mmsi="${ship.mmsi}">
+                    <div class="ship-name">
+                        <span>${ship.name}</span>
+                        ${dimensionsText}
+                    </div>
+                    <div class="ship-type">${ship.type}</div>
+                    <div class="ship-details">
+                        <div class="ship-detail-row">
+                            <span class="detail-label">Distance:</span>
+                            <span class="detail-value ${distanceClass}" data-distance>${distanceMiles} mi</span>
+                        </div>
+                        <div class="ship-detail-row">
+                            <span class="detail-label">Direction:</span>
+                            <span class="detail-value ${directionClass}">${ship.direction === 'Approaching' ? 'Approaching' : 'Moving Away'}</span>
+                        </div>
+                        ${etaHtml}
+                        ${destinationHtml}
+                        <div class="ship-detail-row">
+                            <span class="detail-label">Speed:</span>
+                            <span class="detail-value" data-speed>${speedKnots} knots</span>
+                        </div>
+                        <div class="ship-detail-row">
+                            <span class="detail-label">Heading:</span>
+                            <span class="detail-value" data-heading>${Math.round(ship.course)}°</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateShipValues(shipElement, ship) {
+            if (!shipElement) return;
+            
+            const distanceMiles = kmToMiles(ship.distance).toFixed(1);
+            const speedKnots = ship.speed.toFixed(1);
+            
+            // Update distance
+            const distanceEl = shipElement.querySelector('[data-distance]');
+            if (distanceEl) {
+                distanceEl.textContent = distanceMiles + ' mi';
+                
+                // Update distance color class
+                distanceEl.classList.remove('distance-close', 'distance-medium', 'distance-far');
+                if (ship.distance < 5) distanceEl.classList.add('distance-close');
+                else if (ship.distance < 10) distanceEl.classList.add('distance-medium');
+                else distanceEl.classList.add('distance-far');
+            }
+            
+            // Update ETA if exists
+            if (ship.direction === 'Approaching' && ship.speed > 1) {
+                const etaEl = shipElement.querySelector('[data-eta]');
+                if (etaEl) {
+                    const eta = calculateETA(ship.distance, ship.speed);
+                    if (eta) etaEl.textContent = eta;
+                }
+            }
+            
+            // Update speed
+            const speedEl = shipElement.querySelector('[data-speed]');
+            if (speedEl) speedEl.textContent = speedKnots + ' knots';
+            
+            // Update heading
+            const headingEl = shipElement.querySelector('[data-heading]');
+            if (headingEl) headingEl.textContent = Math.round(ship.course) + '°';
         }
 
         function updateRecentShips() {
