@@ -141,6 +141,16 @@
             color: #4fc3f7;
             margin-bottom: 5px;
             text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ship-dimensions {
+            font-size: 11px;
+            font-weight: normal;
+            color: rgba(255, 255, 255, 0.6);
+            text-shadow: none;
         }
 
         .ship-type {
@@ -245,6 +255,62 @@
             display: flex;
             justify-content: space-between;
         }
+
+        .eta-highlight {
+            color: #ffeb3b !important;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255, 235, 59, 0.5);
+        }
+
+        .destination-text {
+            color: #81c784 !important;
+            font-weight: bold;
+        }
+
+        @keyframes alertGlow {
+            0% {
+                box-shadow: 0 0 10px rgba(255, 0, 0, 0),
+                           0 0 20px rgba(255, 0, 0, 0),
+                           inset 0 0 10px rgba(255, 0, 0, 0);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+            10% {
+                box-shadow: 0 0 30px rgba(255, 0, 0, 0.6),
+                           0 0 50px rgba(255, 0, 0, 0.4),
+                           inset 0 0 20px rgba(255, 0, 0, 0.3);
+                border-color: rgba(255, 0, 0, 0.8);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(255, 0, 0, 1),
+                           0 0 70px rgba(255, 0, 0, 0.6),
+                           inset 0 0 30px rgba(255, 0, 0, 0.4);
+                border-color: rgba(255, 0, 0, 1);
+            }
+            90% {
+                box-shadow: 0 0 30px rgba(255, 0, 0, 0.6),
+                           0 0 50px rgba(255, 0, 0, 0.4),
+                           inset 0 0 20px rgba(255, 0, 0, 0.3);
+                border-color: rgba(255, 0, 0, 0.8);
+            }
+            100% {
+                box-shadow: 0 0 10px rgba(255, 0, 0, 0),
+                           0 0 20px rgba(255, 0, 0, 0),
+                           inset 0 0 10px rgba(255, 0, 0, 0);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+        }
+
+        .ship-tracker.alert-active {
+            animation: alertGlow 2s ease-in-out 5;
+        }
+
+        .last-update {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            margin-top: 8px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -267,9 +333,14 @@
         </div>
         
         <div class="connection-status" id="connectionStatus">Connecting...</div>
+        <div class="last-update" id="lastUpdate">Waiting for data...</div>
     </div>
 
     <script>
+        // ===== TEST MODE CONFIGURATION =====
+        // Set this to true to see simulated ships, false for real data
+        const TEST_MODE = true;
+        
         // Backend proxy server running on Render.com
         const PROXY_SERVER_URL = "wss://mackinac-ship-tracker.onrender.com";
 
@@ -279,11 +350,15 @@
         const SEARCH_RADIUS_KM = 25;
 
         let shipData = [];
+        let shipStaticData = {}; // Store static data (destination, etc.) by MMSI
         let recentShips = []; // Track ships that left the area
         let ws = null;
         let reconnectAttempts = 0;
         const MAX_RECONNECT_ATTEMPTS = 10;
         const MAX_RECENT_SHIPS = 3;
+        let alertTimeout = null;
+        let lastUpdateTime = Date.now();
+        let knownShipMMSIs = new Set(); // Track which ships we've already alerted for
 
         // Calculate distance between two coordinates (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -331,6 +406,140 @@
             if (hours < 24) return hours + 'h ago';
             const days = Math.floor(hours / 24);
             return days + 'd ago';
+        }
+
+        function calculateETA(distanceKm, speedKnots) {
+            if (speedKnots < 1) return null; // Ship is stopped
+            
+            const distanceMiles = kmToMiles(distanceKm);
+            const distanceNauticalMiles = distanceMiles * 0.868976; // Convert to nautical miles
+            const hoursToArrival = distanceNauticalMiles / speedKnots;
+            const minutesToArrival = Math.round(hoursToArrival * 60);
+            
+            if (minutesToArrival < 1) return "< 1 min";
+            if (minutesToArrival < 60) return minutesToArrival + " min";
+            
+            const hours = Math.floor(minutesToArrival / 60);
+            const mins = minutesToArrival % 60;
+            if (mins === 0) return hours + " hr";
+            return hours + " hr " + mins + " min";
+        }
+
+        function triggerAlert() {
+            const tracker = document.querySelector('.ship-tracker');
+            
+            // Clear any existing alert
+            if (alertTimeout) {
+                clearTimeout(alertTimeout);
+            }
+            
+            // Add alert class
+            tracker.classList.add('alert-active');
+            
+            // Remove after 10 seconds
+            alertTimeout = setTimeout(() => {
+                tracker.classList.remove('alert-active');
+            }, 10000);
+        }
+
+        function updateTimestamp() {
+            const now = Date.now();
+            const secondsAgo = Math.floor((now - lastUpdateTime) / 1000);
+            const timestampEl = document.getElementById('lastUpdate');
+            
+            if (secondsAgo < 5) {
+                timestampEl.textContent = 'Just now';
+            } else if (secondsAgo < 60) {
+                timestampEl.textContent = secondsAgo + ' seconds ago';
+            } else {
+                const minutesAgo = Math.floor(secondsAgo / 60);
+                timestampEl.textContent = minutesAgo + ' minute' + (minutesAgo > 1 ? 's' : '') + ' ago';
+            }
+        }
+
+        function generateTestData() {
+            console.log('🧪 TEST MODE ENABLED - Generating simulated ships');
+            
+            // Simulate 2 active ships
+            shipData = [
+                {
+                    mmsi: 366972000,
+                    name: 'PAUL R. TREGURTHA',
+                    lat: 45.84,
+                    lon: -84.75,
+                    speed: 12.5,
+                    course: 135,
+                    type: 'Great Lakes Freighter',
+                    distance: 3.2,
+                    direction: 'Approaching',
+                    lastUpdate: Date.now()
+                },
+                {
+                    mmsi: 367364000,
+                    name: 'AMERICAN SPIRIT',
+                    lat: 45.79,
+                    lon: -84.70,
+                    speed: 9.8,
+                    course: 320,
+                    type: 'Cargo',
+                    distance: 6.7,
+                    direction: 'Departing',
+                    lastUpdate: Date.now()
+                }
+            ];
+            
+            // Add static data with destinations and dimensions
+            shipStaticData = {
+                366972000: {
+                    destination: 'DULUTH MN',
+                    name: 'PAUL R. TREGURTHA',
+                    length: 1013,
+                    width: 105
+                },
+                367364000: {
+                    destination: 'DETROIT MI',
+                    name: 'AMERICAN SPIRIT',
+                    length: 1004,
+                    width: 105
+                }
+            };
+            
+            // Mark ships as known so alert triggers in test mode
+            knownShipMMSIs.add(366972000);
+            knownShipMMSIs.add(367364000);
+            
+            // Simulate 3 recent ships
+            recentShips = [
+                {
+                    mmsi: 366710000,
+                    name: 'EDWIN H. GOTT',
+                    direction: 'Approaching',
+                    leftTime: Date.now() - (1000 * 60 * 12) // 12 minutes ago
+                },
+                {
+                    mmsi: 367430000,
+                    name: 'JAMES R. BARKER',
+                    direction: 'Departing',
+                    leftTime: Date.now() - (1000 * 60 * 45) // 45 minutes ago
+                },
+                {
+                    mmsi: 366904000,
+                    name: 'ALGOMA DISCOVERY',
+                    direction: 'Approaching',
+                    leftTime: Date.now() - (1000 * 60 * 60 * 2.5) // 2.5 hours ago
+                }
+            ];
+            
+            lastUpdateTime = Date.now();
+            updateConnectionStatus('TEST MODE - Simulated Data', true);
+            updateDisplay();
+            updateTimestamp();
+            
+            // Trigger test alert after 2 seconds
+            setTimeout(() => {
+                console.log('🧪 Triggering test alert');
+                triggerAlert();
+            }, 2000);
         }
 
         function updateConnectionStatus(status, connected) {
@@ -396,6 +605,33 @@
         }
 
         function processShipData(data) {
+            // Handle ShipStaticData messages (contains destination)
+            if (data.MessageType === "ShipStaticData" && data.Message && data.Message.ShipStaticData) {
+                const staticData = data.Message.ShipStaticData;
+                const mmsi = data.MetaData.MMSI;
+                
+                // Calculate total length and width from AIS dimension data
+                const dimension = staticData.Dimension || {};
+                const length = (dimension.A || 0) + (dimension.B || 0);
+                const width = (dimension.C || 0) + (dimension.D || 0);
+                
+                shipStaticData[mmsi] = {
+                    destination: staticData.Destination?.trim() || null,
+                    name: staticData.Name?.trim() || null,
+                    callSign: staticData.CallSign?.trim() || null,
+                    length: length > 0 ? length : null,
+                    width: width > 0 ? width : null
+                };
+                
+                console.log('📋 Static data for', mmsi, '- Destination:', shipStaticData[mmsi].destination, 
+                           'Size:', length, 'x', width, 'meters');
+                
+                // Update display in case this ship is already being tracked
+                updateDisplay();
+                return;
+            }
+            
+            // Handle PositionReport messages (contains position/speed/heading)
             if (data.MessageType === "PositionReport" && data.Message && data.Message.PositionReport) {
                 const position = data.Message.PositionReport;
                 const metadata = data.MetaData;
@@ -423,12 +659,22 @@
                 } else {
                     shipData.push(ship);
                     console.log('➕ New vessel:', ship.name, '(' + ship.type + ')');
+                    
+                    // Trigger alert if approaching and not seen before
+                    if (ship.direction === 'Approaching' && !knownShipMMSIs.has(ship.mmsi)) {
+                        console.log('🔔 Alert: New approaching ship -', ship.name);
+                        triggerAlert();
+                    }
+                    
+                    knownShipMMSIs.add(ship.mmsi);
                 }
                 
                 const now = Date.now();
                 shipData = shipData.filter(s => now - s.lastUpdate < 600000);
                 
+                lastUpdateTime = now;
                 updateDisplay();
+                updateTimestamp();
             }
         }
 
@@ -451,9 +697,46 @@
                     
                     const directionClass = ship.direction === 'Approaching' ? 'approaching' : 'departing';
                     
+                    // Calculate ETA for approaching ships
+                    let etaHtml = '';
+                    if (ship.direction === 'Approaching' && ship.speed > 1) {
+                        const eta = calculateETA(ship.distance, ship.speed);
+                        if (eta) {
+                            etaHtml = `
+                                <div class="ship-detail-row">
+                                    <span class="detail-label">ETA to bridge:</span>
+                                    <span class="detail-value eta-highlight">${eta}</span>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // Get destination from static data if available
+                    let destinationHtml = '';
+                    let dimensionsText = '';
+                    const staticInfo = shipStaticData[ship.mmsi];
+                    
+                    if (staticInfo) {
+                        if (staticInfo.destination) {
+                            destinationHtml = `
+                                <div class="ship-detail-row">
+                                    <span class="detail-label">Destination:</span>
+                                    <span class="detail-value destination-text">${staticInfo.destination}</span>
+                                </div>
+                            `;
+                        }
+                        
+                        if (staticInfo.length && staticInfo.width) {
+                            dimensionsText = `<span class="ship-dimensions">${staticInfo.length} × ${staticInfo.width} ft</span>`;
+                        }
+                    }
+                    
                     html += `
                         <div class="ship-item">
-                            <div class="ship-name">${ship.name}</div>
+                            <div class="ship-name">
+                                <span>${ship.name}</span>
+                                ${dimensionsText}
+                            </div>
                             <div class="ship-type">${ship.type}</div>
                             <div class="ship-details">
                                 <div class="ship-detail-row">
@@ -462,8 +745,10 @@
                                 </div>
                                 <div class="ship-detail-row">
                                     <span class="detail-label">Direction:</span>
-                                    <span class="detail-value ${directionClass}">${ship.direction}</span>
+                                    <span class="detail-value ${directionClass}">${ship.direction === 'Approaching' ? 'Approaching' : 'Moving Away'}</span>
                                 </div>
+                                ${etaHtml}
+                                ${destinationHtml}
                                 <div class="ship-detail-row">
                                     <span class="detail-label">Speed:</span>
                                     <span class="detail-value">${speedKnots} knots</span>
@@ -498,7 +783,7 @@
             let html = '';
             recentShips.slice(0, MAX_RECENT_SHIPS).forEach(ship => {
                 const timeAgo = formatTimeAgo(ship.leftTime);
-                const direction = ship.direction === 'Approaching' ? 'was approaching' : 'was departing';
+                const direction = ship.direction === 'Approaching' ? 'approached Mackinac Bridge' : 'passed Mackinac Bridge';
                 
                 html += `
                     <div class="recent-ship">
@@ -546,13 +831,25 @@
             if (recentShips.length > 0) {
                 updateRecentShips();
             }
+            
+            // Update timestamp
+            updateTimestamp();
         }, 60000);
+
+        // Update timestamp every 5 seconds for more accuracy
+        setInterval(updateTimestamp, 5000);
 
         console.log('🚢 Starting Mackinac Bridge Ship Tracker (Proxy Mode)');
         console.log('📍 Bridge Location:', BRIDGE_LAT.toFixed(4) + '°N,', BRIDGE_LON.toFixed(4) + '°W');
         console.log('📡 Search Radius:', SEARCH_RADIUS_KM, 'km (~' + kmToMiles(SEARCH_RADIUS_KM).toFixed(1) + ' miles)');
         console.log('🔌 Proxy Server:', PROXY_SERVER_URL);
-        connectToProxy();
+        
+        if (TEST_MODE) {
+            console.log('⚠️ TEST MODE ENABLED');
+            generateTestData();
+        } else {
+            connectToProxy();
+        }
     </script>
 </body>
 </html>
