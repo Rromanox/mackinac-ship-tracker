@@ -229,6 +229,9 @@ function connectToAISStream() {
           direction: null // Will be calculated by frontend
         };
         
+        // Log ship received from AISStream
+        console.log(`🚢 Ship received: ${shipInfo.name} (MMSI: ${shipInfo.mmsi}) Speed: ${shipInfo.speed} kts`);
+        
         // Save to database (async, don't wait)
         saveShipToDatabase(shipInfo).catch(err => 
           console.error('Database save error:', err.message)
