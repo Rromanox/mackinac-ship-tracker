@@ -4,19 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mackinac Bridge Ship Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: transparent;
+            background: #1a1a2e;
             overflow: hidden;
             font-family: 'Arial', sans-serif;
         }
 
+        #map {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        .bridge-icon { font-size: 22px; line-height: 1; }
+
+        .map-counter {
+            position: fixed;
+            bottom: 20px; left: 20px;
+            background: rgba(0,0,0,0.82);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 10px;
+            padding: 10px 16px;
+            color: #fff;
+            font-size: 12px;
+            z-index: 1000;
+            line-height: 1.7;
+            backdrop-filter: blur(6px);
+        }
+        .map-counter .counter-title { font-weight: bold; font-size: 11px; letter-spacing: 1px; color: rgba(255,255,255,0.6); text-transform: uppercase; margin-bottom: 4px; }
+        .map-counter .counter-value { font-size: 20px; font-weight: bold; color: #4fc3f7; }
+        .map-counter .counter-label { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+        .map-legend {
+            position: fixed;
+            bottom: 20px; left: 180px;
+            background: rgba(0,0,0,0.82);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 11px;
+            z-index: 1000;
+            backdrop-filter: blur(6px);
+            line-height: 2;
+        }
+        .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
         .ship-tracker {
-            position: absolute;
+            position: fixed;
             top: 20px;
             right: 20px;
+            z-index: 1000;
             background: rgba(0, 0, 0, 0.85);
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 15px;
@@ -314,6 +358,22 @@
     </style>
 </head>
 <body>
+    <div id="map"></div>
+
+    <div class="map-counter">
+        <div class="counter-title">AIS Messages</div>
+        <div class="counter-value" id="aisCount">0</div>
+        <div class="counter-label">received from AISStream</div>
+        <div style="margin-top:6px;"><span id="mapShipCount">0</span> vessel(s) on map</div>
+    </div>
+
+    <div class="map-legend">
+        <div><span class="legend-dot" style="background:#00e676"></span>Approaching bridge</div>
+        <div><span class="legend-dot" style="background:#ff9800"></span>Moving away</div>
+        <div><span class="legend-dot" style="background:#90caf9"></span>Position only</div>
+        <div><span class="legend-dot" style="background:#ef5350"></span>Near bridge (&lt;5km)</div>
+    </div>
+
     <div class="ship-tracker">
         <div class="tracker-header">
             <span class="ship-icon">🚢</span>
@@ -365,15 +425,79 @@
         const SEARCH_RADIUS_KM = 25;
 
         let shipData = [];
-        let shipStaticData = {}; // Store static data (destination, etc.) by MMSI
-        let recentShips = []; // Track ships that left the area
+        let shipStaticData = {};
+        let recentShips = [];
         let ws = null;
         let reconnectAttempts = 0;
         const MAX_RECONNECT_ATTEMPTS = 10;
-        const MAX_RECENT_SHIPS = 1; // Show only last ship
+        const MAX_RECENT_SHIPS = 1;
         let alertTimeout = null;
         let lastUpdateTime = Date.now();
-        let knownShipMMSIs = new Set(); // Track which ships we've already alerted for
+        let knownShipMMSIs = new Set();
+
+        // Map state
+        let map = null;
+        let shipMapMarkers = {};
+        let aisMessageCount = 0;
+
+        function initMap() {
+            map = L.map('map', { center: [BRIDGE_LAT, BRIDGE_LON], zoom: 11 });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+                maxZoom: 18
+            }).addTo(map);
+            L.marker([BRIDGE_LAT, BRIDGE_LON], {
+                icon: L.divIcon({ html: '🌉', className: 'bridge-icon', iconSize: [28, 28], iconAnchor: [14, 14] })
+            }).addTo(map).bindPopup('<b>Mackinac Bridge</b>');
+            // 25km tracking radius
+            L.circle([BRIDGE_LAT, BRIDGE_LON], {
+                radius: 25000, color: '#4fc3f7', weight: 1.5, dashArray: '6 6', fillOpacity: 0.04
+            }).addTo(map);
+            // 0.8km bridge passage zone
+            L.circle([BRIDGE_LAT, BRIDGE_LON], {
+                radius: 800, color: '#ef5350', weight: 1.5, dashArray: '4 4', fillOpacity: 0.06
+            }).addTo(map);
+        }
+
+        function getMarkerColor(ship) {
+            if (ship.distance < 5) return '#ef5350';
+            if (ship.direction === 'Approaching') return '#00e676';
+            if (ship.direction === 'Departing') return '#ff9800';
+            return '#90caf9';
+        }
+
+        function updateMapMarker(ship) {
+            if (!map || !ship.lat || !ship.lon) return;
+            const color = getMarkerColor(ship);
+            const popup = `<b>${ship.name || 'Unknown'}</b><br>
+                MMSI: ${ship.mmsi}<br>
+                Speed: ${ship.speed ? ship.speed.toFixed(1) + ' kts' : '—'}<br>
+                Distance: ${ship.distance ? ship.distance.toFixed(1) + ' km from bridge' : '—'}<br>
+                Direction: ${ship.direction || '—'}`;
+            if (shipMapMarkers[ship.mmsi]) {
+                shipMapMarkers[ship.mmsi].setLatLng([ship.lat, ship.lon])
+                    .setStyle({ fillColor: color })
+                    .setPopupContent(popup);
+            } else {
+                shipMapMarkers[ship.mmsi] = L.circleMarker([ship.lat, ship.lon], {
+                    radius: 8, fillColor: color, color: '#fff', weight: 1.5, fillOpacity: 0.9
+                }).addTo(map).bindPopup(popup);
+            }
+            document.getElementById('mapShipCount').textContent = Object.keys(shipMapMarkers).length;
+        }
+
+        function removeMapMarker(mmsi) {
+            if (shipMapMarkers[mmsi] && map) {
+                map.removeLayer(shipMapMarkers[mmsi]);
+                delete shipMapMarkers[mmsi];
+                document.getElementById('mapShipCount').textContent = Object.keys(shipMapMarkers).length;
+            }
+        }
+
+        function incrementAISCounter() {
+            aisMessageCount++;
+            document.getElementById('aisCount').textContent = aisMessageCount;
+        }
 
         // Calculate distance between two coordinates (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -800,10 +924,12 @@
                 };
                 
                 ship.distance = calculateDistance(BRIDGE_LAT, BRIDGE_LON, ship.lat, ship.lon);
-                
-                if (ship.distance > SEARCH_RADIUS_KM) return;
-                
                 ship.direction = getDirection(ship.lat, ship.lon, ship.course);
+
+                incrementAISCounter();
+                updateMapMarker(ship); // plot ALL ships regardless of distance
+
+                if (ship.distance > SEARCH_RADIUS_KM) return;
                 
                 const existingIndex = shipData.findIndex(s => s.mmsi === ship.mmsi);
                 if (existingIndex >= 0) {
@@ -1047,8 +1173,9 @@
             
             // Keep only last 10 recent ships in memory
             recentShips = recentShips.slice(0, 10);
-            
-            // Remove ships from active tracking
+
+            // Remove ships from active tracking and map
+            shipsToMove.forEach(s => removeMapMarker(s.mmsi));
             shipData = shipData.filter(s => !checkIfPassedBridge(s) && now - s.lastUpdate < 600000);
             
             if (shipsToMove.length > 0) {
@@ -1067,6 +1194,7 @@
         // Update timestamp every 5 seconds for more accuracy
         setInterval(updateTimestamp, 5000);
 
+        initMap();
         console.log('🚢 Starting Mackinac Bridge Ship Tracker (Proxy Mode)');
         console.log('📍 Bridge Location:', BRIDGE_LAT.toFixed(4) + '°N,', BRIDGE_LON.toFixed(4) + '°W');
         console.log('📡 Search Radius:', SEARCH_RADIUS_KM, 'km (~' + kmToMiles(SEARCH_RADIUS_KM).toFixed(1) + ' miles)');
