@@ -431,7 +431,6 @@
 </head>
 <body>
     <div id="map"></div>
-    <div class="version-badge">v25</div>
 
     <div class="map-counter">
         <div class="counter-title">AIS Messages</div>
@@ -451,7 +450,11 @@
         <div class="panel-header" onclick="togglePanel()">
             <span class="panel-title">🚢 All Tracked Vessels</span>
             <span class="panel-count" id="panelCount">0 ships</span>
-            <span class="panel-toggle" id="panelToggle">▲ collapse</span>
+            <span class="panel-toggle" id="panelToggle">‹</span>
+        </div>
+        <div style="padding:4px 12px 6px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:rgba(255,255,255,0.3);">AIS data is real-time · positions refresh every 2–10 sec</span>
+            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v26</span>
         </div>
         <div class="panel-body">
             <table class="ships-table">
@@ -461,7 +464,7 @@
                         <th>Destination</th>
                         <th>Speed</th>
                         <th>Dist. to Bridge</th>
-                        <th>Status</th>
+                        <th>Updated</th>
                     </tr>
                 </thead>
                 <tbody id="shipsTableBody">
@@ -715,22 +718,25 @@
                 const distMi = kmToMiles(ship.distance).toFixed(0);
                 const speed = ship.speed ? ship.speed.toFixed(1) + ' kts' : '—';
 
-                let badge = '';
+                let statusBadge = '';
                 if (ship.distance < 5)
-                    badge = '<span class="badge-near">Near bridge</span>';
+                    statusBadge = '<span class="badge-near">Near bridge</span>';
                 else if (ship.direction === 'Approaching')
-                    badge = '<span class="badge-approaching">Approaching</span>';
+                    statusBadge = '<span class="badge-approaching">▲ Approaching</span>';
                 else if (ship.direction === 'Departing')
-                    badge = '<span class="badge-departing">Departing</span>';
+                    statusBadge = '<span class="badge-departing">▼ Departing</span>';
 
-                const flag = thru ? '<span class="flag-bridge" title="Route passes through Mackinac Straits">⚓ thru straits</span>' : '';
+                const flag = thru ? ' <span class="flag-bridge" title="Route passes through Mackinac Straits">⚓ thru straits</span>' : '';
+                const secsAgo = Math.floor((Date.now() - ship.lastUpdate) / 1000);
+                const updated = secsAgo < 60 ? secsAgo + 's ago' : Math.floor(secsAgo / 60) + 'm ago';
+                const freshColor = secsAgo < 15 ? '#00e676' : secsAgo < 60 ? '#fff' : 'rgba(255,255,255,0.35)';
 
                 return `<tr class="${thru ? 'through-bridge' : ''}">
                     <td><b>${ship.name}</b>${flag}<br><span style="color:rgba(255,255,255,0.35);font-size:10px;">${ship.type}</span></td>
-                    <td><span class="dest-text">${dest}</span></td>
+                    <td><span class="dest-text">${dest}</span><br><span style="color:rgba(255,255,255,0.3);font-size:10px;">${statusBadge}</span></td>
                     <td>${speed}</td>
-                    <td>${distKm} km / ${distMi} mi</td>
-                    <td>${badge}</td>
+                    <td>${distKm} km<br><span style="color:rgba(255,255,255,0.4);font-size:10px;">${distMi} mi</span></td>
+                    <td style="color:${freshColor};font-family:monospace;font-size:11px;font-weight:bold;">${updated}</td>
                 </tr>`;
             }).join('');
 
@@ -1512,6 +1518,9 @@
 
         // Update timestamp every 5 seconds for more accuracy
         setInterval(updateTimestamp, 5000);
+
+        // Refresh ship list every 5 seconds so "X sec ago" column ticks live
+        setInterval(updateShipsList, 5000);
 
         initMap();
         console.log('🚢 Starting Mackinac Bridge Ship Tracker (Proxy Mode)');
