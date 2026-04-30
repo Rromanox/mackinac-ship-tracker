@@ -457,7 +457,7 @@
         </div>
         <div style="padding:4px 12px 6px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:10px;color:rgba(255,255,255,0.3);">AIS data is real-time · positions refresh every 2–10 sec</span>
-            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v29</span>
+            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v30</span>
         </div>
         <div class="panel-body">
             <table class="ships-table">
@@ -603,21 +603,65 @@
             return null;
         }
 
-        // Does a straight line between two points cross within ~60km of the bridge?
-        function routeCrossesStrait(fromLat, fromLon, toLat, toLon) {
-            // Ships on Lake Michigan (lon < -84.5) going to Lake Huron/Erie (lon > -84.5) or vice versa
-            // must pass through the Mackinac Straits — no other water route exists
-            const fromWest = fromLon < -84.5;
-            const toWest   = toLon   < -84.5;
-            if (fromWest !== toWest) return true;
-            // Also catch ships coming from Lake Superior heading south
-            const fromNorth = fromLat > 46.2;
-            const toSouth   = toLat   < 46.2 && toLon > -87.0;
-            if (fromNorth && toSouth) return true;
-            const toNorth = toLat > 46.2;
-            const fromSouth = fromLat < 46.2 && fromLon > -87.0;
-            if (toNorth && fromSouth) return true;
-            return false;
+        // Classify a position into a Great Lakes region
+        function getLakeRegion(lat, lon) {
+            if (lat > 46.4 && lon < -84.5) return 'SUPERIOR';
+            if (lat > 45.8 && lon < -87.0) return 'SUPERIOR';
+            if (lon < -84.6 && lat >= 41.5 && lat < 46.4) return 'MICHIGAN';
+            if (lat < 42.95 && lat > 41.3 && lon > -83.6 && lon < -78.5) return 'ERIE';
+            if (lat > 43.2 && lat < 44.6 && lon > -79.5) return 'ONTARIO';
+            if (lat > 42.9 && lat < 46.5 && lon > -84.7 && lon < -79.5) return 'HURON';
+            if (lat > 45.5 && lat < 46.6 && lon > -84.5 && lon < -82.0) return 'HURON';
+            return 'UNKNOWN';
+        }
+
+        // Ordered passage waypoints between adjacent lake pairs
+        const PASSAGE_WPT = {
+            'SUPERIOR-HURON': [[46.50, -84.35]],
+            'HURON-SUPERIOR': [[46.50, -84.35]],
+            'MICHIGAN-HURON': [[BRIDGE_LAT, BRIDGE_LON]],
+            'HURON-MICHIGAN': [[BRIDGE_LAT, BRIDGE_LON]],
+            'HURON-ERIE':     [[43.00, -82.43], [42.45, -82.68], [42.05, -83.08]],
+            'ERIE-HURON':     [[42.05, -83.08], [42.45, -82.68], [43.00, -82.43]],
+            'ERIE-ONTARIO':   [[42.88, -79.25], [43.26, -79.22]],
+            'ONTARIO-ERIE':   [[43.26, -79.22], [42.88, -79.25]],
+        };
+        const LAKE_ADJ = {
+            SUPERIOR: ['HURON'],
+            MICHIGAN: ['HURON'],
+            HURON: ['SUPERIOR', 'MICHIGAN', 'ERIE'],
+            ERIE: ['HURON', 'ONTARIO'],
+            ONTARIO: ['ERIE']
+        };
+
+        // BFS through lake graph to build ordered passage waypoints
+        function findWaterWaypoints(from, to) {
+            if (from === to || from === 'UNKNOWN' || to === 'UNKNOWN') return [];
+            const queue = [[from, [from]]];
+            const visited = new Set([from]);
+            while (queue.length) {
+                const [cur, path] = queue.shift();
+                if (cur === to) {
+                    const wpts = [];
+                    for (let i = 0; i < path.length - 1; i++)
+                        wpts.push(...(PASSAGE_WPT[`${path[i]}-${path[i+1]}`] || []));
+                    return wpts;
+                }
+                for (const nb of (LAKE_ADJ[cur] || [])) {
+                    if (!visited.has(nb)) { visited.add(nb); queue.push([nb, [...path, nb]]); }
+                }
+            }
+            return [];
+        }
+
+        function buildWaterRoute(fromLat, fromLon, toLat, toLon) {
+            const passages = findWaterWaypoints(getLakeRegion(fromLat, fromLon), getLakeRegion(toLat, toLon));
+            return [[fromLat, fromLon], ...passages, [toLat, toLon]];
+        }
+
+        function routePassesMackinac(fromLat, fromLon, toLat, toLon) {
+            return buildWaterRoute(fromLat, fromLon, toLat, toLon)
+                .some(p => p[0] === BRIDGE_LAT && p[1] === BRIDGE_LON);
         }
 
         // Route lines keyed by MMSI
@@ -634,15 +678,10 @@
 
             if (!port) return;
 
-            const crosses = routeCrossesStrait(ship.lat, ship.lon, port.lat, port.lon);
-            const color   = crosses ? '#00e676' : '#90caf9';
-            const opacity = crosses ? 0.85 : 0.4;
-
-            // For routes crossing the straits, draw via the bridge as waypoint
-            // so the path visually goes THROUGH Mackinac — not straight through land
-            const waypoints = crosses
-                ? [[ship.lat, ship.lon], [BRIDGE_LAT, BRIDGE_LON], [port.lat, port.lon]]
-                : [[ship.lat, ship.lon], [port.lat, port.lon]];
+            const crosses  = routePassesMackinac(ship.lat, ship.lon, port.lat, port.lon);
+            const color    = crosses ? '#00e676' : '#90caf9';
+            const opacity  = crosses ? 0.85 : 0.4;
+            const waypoints = buildWaterRoute(ship.lat, ship.lon, port.lat, port.lon);
 
             routeLines[ship.mmsi] = L.polyline(waypoints, {
                 color, weight: crosses ? 3 : 1.5, opacity,
@@ -660,24 +699,12 @@
             if (portMarkers[mmsi]) { map.removeLayer(portMarkers[mmsi]); delete portMarkers[mmsi]; }
         }
 
-        // Ports that require passing through Mackinac Straits
-        // Lake Michigan ports → must pass bridge to reach Lake Huron/Erie/Superior
-        const LAKE_MICHIGAN_PORTS = ['CHICAGO','MILWAUKEE','GREEN BAY','GARY','INDIANA','CALUMET',
-            'WAUKEGAN','MUSKEGON','TRAVERSE','ESCANABA','MENOMINEE','MANITOWOC','SHEBOYGAN',
-            'KENOSHA','RACINE','STURGEON BAY','HOLLAND','GRAND HAVEN','BENTON HARBOR','ST JOSEPH'];
-        const LAKE_HURON_ERIE_PORTS = ['DETROIT','TOLEDO','CLEVELAND','BUFFALO','ERIE','HAMILTON',
-            'SARNIA','PORT HURON','ALPENA','ROGERS CITY','CALCITE','PRESQUE ISLE','WINDSOR',
-            'NANTICOKE','GODERICH','SAULT','DULUTH','SUPERIOR','TWO HARBORS','SILVER BAY',
-            'MARQUETTE','ASHLAND','THUNDER BAY','BURNS HARBOR'];
-
         function goesThruBridge(ship) {
-            // Only flag if we know BOTH the ship's position AND its destination port,
-            // and the route actually crosses the Mackinac Straits
             if (!ship || !ship.lat || !ship.lon) return false;
             const static_ = shipStaticData[ship.mmsi] || {};
             const port = findPort(static_.destination);
             if (!port) return false;
-            return routeCrossesStrait(ship.lat, ship.lon, port.lat, port.lon);
+            return routePassesMackinac(ship.lat, ship.lon, port.lat, port.lon);
         }
 
         function togglePanel() {
