@@ -444,6 +444,9 @@
         <div><span class="legend-dot" style="background:#ff9800"></span>Moving away</div>
         <div><span class="legend-dot" style="background:#90caf9"></span>Position only</div>
         <div><span class="legend-dot" style="background:#ef5350"></span>Near bridge (&lt;5km)</div>
+        <div style="margin-top:6px;border-top:1px solid rgba(255,255,255,0.15);padding-top:6px;">
+            <button onclick="resetMapView()" style="background:rgba(79,195,247,0.15);border:1px solid rgba(79,195,247,0.4);color:#4fc3f7;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;width:100%;">🌉 Reset to Bridge</button>
+        </div>
     </div>
 
     <div id="shipsPanel">
@@ -454,7 +457,7 @@
         </div>
         <div style="padding:4px 12px 6px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:10px;color:rgba(255,255,255,0.3);">AIS data is real-time · positions refresh every 2–10 sec</span>
-            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v28</span>
+            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v29</span>
         </div>
         <div class="panel-body">
             <table class="ships-table">
@@ -522,7 +525,7 @@
         // Mackinac Bridge coordinates
         const BRIDGE_LAT = 45.8174;
         const BRIDGE_LON = -84.7278;
-        const SEARCH_RADIUS_KM = 25;
+        const SEARCH_RADIUS_KM = 100;
 
         let shipData = [];
         let shipStaticData = {};
@@ -747,8 +750,12 @@
         let shipMapMarkers = {};
         let aisMessageCount = 0;
 
+        function resetMapView() {
+            if (map) map.setView([BRIDGE_LAT, BRIDGE_LON], 10);
+        }
+
         function initMap() {
-            map = L.map('map', { center: [44.5, -84.5], zoom: 7 }); // zoomed out to see full Great Lakes region
+            map = L.map('map', { center: [BRIDGE_LAT, BRIDGE_LON], zoom: 10 }); // centered on Mackinac Bridge
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
                 maxZoom: 18
@@ -756,9 +763,9 @@
             L.marker([BRIDGE_LAT, BRIDGE_LON], {
                 icon: L.divIcon({ html: '🌉', className: 'bridge-icon', iconSize: [28, 28], iconAnchor: [14, 14] })
             }).addTo(map).bindPopup('<b>Mackinac Bridge</b>');
-            // 25km tracking radius
+            // 100km tracking radius
             L.circle([BRIDGE_LAT, BRIDGE_LON], {
-                radius: 25000, color: '#4fc3f7', weight: 1.5, dashArray: '6 6', fillOpacity: 0.04
+                radius: 100000, color: '#4fc3f7', weight: 1.5, dashArray: '6 6', fillOpacity: 0.04
             }).addTo(map);
             // 0.8km bridge passage zone
             L.circle([BRIDGE_LAT, BRIDGE_LON], {
