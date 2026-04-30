@@ -457,7 +457,7 @@
         </div>
         <div style="padding:4px 12px 6px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:10px;color:rgba(255,255,255,0.3);">AIS data is real-time · positions refresh every 2–10 sec</span>
-            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v30</span>
+            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v31</span>
         </div>
         <div class="panel-body">
             <table class="ships-table">
@@ -525,7 +525,7 @@
         // Mackinac Bridge coordinates
         const BRIDGE_LAT = 45.8174;
         const BRIDGE_LON = -84.7278;
-        const SEARCH_RADIUS_KM = 100;
+        const SEARCH_RADIUS_KM = 500;
 
         let shipData = [];
         let shipStaticData = {};
@@ -1308,7 +1308,7 @@
             const shipList = document.getElementById('shipList');
             
             if (shipData.length === 0) {
-                shipList.innerHTML = '<div class="no-ships">No vessels detected in area<br><small>(Scanning 15-mile radius)</small></div>';
+                shipList.innerHTML = '<div class="no-ships">No vessels detected in area<br><small>(Scanning ' + Math.round(kmToMiles(SEARCH_RADIUS_KM)) + '-mile radius)</small></div>';
                 return;
             }
             
