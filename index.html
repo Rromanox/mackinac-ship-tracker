@@ -523,6 +523,126 @@
         let allShipsData = {};
         let panelCollapsed = false;
 
+        // ── Port coordinates database (Great Lakes) ──────────────────────────
+        const PORTS = [
+            // Lake Michigan ports (west of straits)
+            { names: ['CHICAGO','CHGO','CHI '],          lat: 41.883, lon: -87.623 },
+            { names: ['CALUMET','CAL '],                  lat: 41.710, lon: -87.540 },
+            { names: ['GARY','BURNS HARBOR','BURNS HBR'], lat: 41.625, lon: -87.131 },
+            { names: ['INDIANA HARBOR','IND HBR'],        lat: 41.680, lon: -87.436 },
+            { names: ['WAUKEGAN'],                        lat: 42.364, lon: -87.845 },
+            { names: ['KENOSHA'],                         lat: 42.585, lon: -87.822 },
+            { names: ['RACINE'],                          lat: 42.726, lon: -87.782 },
+            { names: ['MILWAUKEE','MKE'],                 lat: 43.039, lon: -87.907 },
+            { names: ['MANITOWOC'],                       lat: 44.096, lon: -87.660 },
+            { names: ['GREEN BAY','GRN BAY'],             lat: 44.513, lon: -87.990 },
+            { names: ['STURGEON BAY'],                    lat: 44.834, lon: -87.377 },
+            { names: ['MUSKEGON'],                        lat: 43.234, lon: -86.248 },
+            { names: ['GRAND HAVEN'],                     lat: 43.063, lon: -86.228 },
+            { names: ['HOLLAND'],                         lat: 42.787, lon: -86.109 },
+            { names: ['BENTON HARBOR','ST JOSEPH'],       lat: 42.107, lon: -86.454 },
+            { names: ['TRAVERSE','TRAV CITY'],            lat: 44.763, lon: -85.621 },
+            { names: ['ESCANABA'],                        lat: 45.745, lon: -87.065 },
+            { names: ['MENOMINEE'],                       lat: 45.108, lon: -87.614 },
+            // Lake Huron / Erie / Ontario ports (east of straits)
+            { names: ['PORT HURON','PT HURON'],           lat: 42.971, lon: -82.425 },
+            { names: ['SARNIA'],                          lat: 42.999, lon: -82.409 },
+            { names: ['DETROIT','DET '],                  lat: 42.331, lon: -83.046 },
+            { names: ['WINDSOR'],                         lat: 42.315, lon: -83.036 },
+            { names: ['TOLEDO','TOL '],                   lat: 41.664, lon: -83.555 },
+            { names: ['LORAIN'],                          lat: 41.465, lon: -82.182 },
+            { names: ['CLEVELAND','CLEVE'],               lat: 41.499, lon: -81.694 },
+            { names: ['ASHTABULA'],                       lat: 41.865, lon: -80.790 },
+            { names: ['CONNEAUT'],                        lat: 41.957, lon: -80.560 },
+            { names: ['ERIE'],                            lat: 42.129, lon: -80.085 },
+            { names: ['BUFFALO','BUF '],                  lat: 42.886, lon: -78.878 },
+            { names: ['HAMILTON'],                        lat: 43.256, lon: -79.871 },
+            { names: ['NANTICOKE'],                       lat: 42.789, lon: -80.038 },
+            { names: ['GODERICH'],                        lat: 43.742, lon: -81.716 },
+            { names: ['ALPENA'],                          lat: 45.062, lon: -83.433 },
+            { names: ['ROGERS CITY','ROGERS CTY'],        lat: 45.422, lon: -83.819 },
+            { names: ['CALCITE'],                         lat: 45.415, lon: -83.808 },
+            { names: ['PRESQUE ISLE','PRESQUE'],          lat: 44.342, lon: -83.956 },
+            // Lake Superior / Soo Locks (north of straits)
+            { names: ['SAULT','SOO','SAULT STE'],         lat: 46.495, lon: -84.345 },
+            { names: ['MARQUETTE'],                       lat: 46.544, lon: -87.395 },
+            { names: ['DULUTH'],                          lat: 46.787, lon: -92.101 },
+            { names: ['SUPERIOR','SUP WI'],               lat: 46.733, lon: -92.104 },
+            { names: ['TWO HARBORS','2 HARBORS'],         lat: 47.026, lon: -91.669 },
+            { names: ['SILVER BAY'],                      lat: 47.294, lon: -91.256 },
+            { names: ['ASHLAND'],                         lat: 46.593, lon: -90.880 },
+            { names: ['THUNDER BAY'],                     lat: 48.381, lon: -89.248 },
+            { names: ['TACONITE'],                        lat: 47.325, lon: -91.166 },
+        ];
+
+        function findPort(destination) {
+            if (!destination) return null;
+            const d = destination.toUpperCase().trim();
+            for (const port of PORTS) {
+                if (port.names.some(n => d.includes(n.trim()))) return port;
+            }
+            return null;
+        }
+
+        // Does a straight line between two points cross within ~60km of the bridge?
+        function routeCrossesStrait(fromLat, fromLon, toLat, toLon) {
+            // Ships on Lake Michigan (lon < -84.5) going to Lake Huron/Erie (lon > -84.5) or vice versa
+            // must pass through the Mackinac Straits — no other water route exists
+            const fromWest = fromLon < -84.5;
+            const toWest   = toLon   < -84.5;
+            if (fromWest !== toWest) return true;
+            // Also catch ships coming from Lake Superior heading south
+            const fromNorth = fromLat > 46.2;
+            const toSouth   = toLat   < 46.2 && toLon > -87.0;
+            if (fromNorth && toSouth) return true;
+            const toNorth = toLat > 46.2;
+            const fromSouth = fromLat < 46.2 && fromLon > -87.0;
+            if (toNorth && fromSouth) return true;
+            return false;
+        }
+
+        // Route lines keyed by MMSI
+        let routeLines = {};
+        let portMarkers = {};
+
+        function updateRouteLine(ship) {
+            if (!map) return;
+            const static_ = shipStaticData[ship.mmsi] || {};
+            const port = findPort(static_.destination);
+
+            // Remove existing line for this ship
+            if (routeLines[ship.mmsi]) {
+                map.removeLayer(routeLines[ship.mmsi]);
+                delete routeLines[ship.mmsi];
+            }
+            if (portMarkers[ship.mmsi]) {
+                map.removeLayer(portMarkers[ship.mmsi]);
+                delete portMarkers[ship.mmsi];
+            }
+
+            if (!port) return; // no known destination — no line
+
+            const crosses = routeCrossesStrait(ship.lat, ship.lon, port.lat, port.lon);
+            const color   = crosses ? '#00e676' : '#90caf9';
+            const opacity = crosses ? 0.75 : 0.35;
+
+            routeLines[ship.mmsi] = L.polyline(
+                [[ship.lat, ship.lon], [port.lat, port.lon]],
+                { color, weight: crosses ? 2 : 1.5, opacity, dashArray: crosses ? null : '6 6' }
+            ).addTo(map);
+
+            // Small destination marker
+            portMarkers[ship.mmsi] = L.circleMarker([port.lat, port.lon], {
+                radius: 5, fillColor: color, color: '#fff',
+                weight: 1.5, fillOpacity: 0.9
+            }).addTo(map).bindPopup(`<b>Destination</b><br>${static_.destination}`);
+        }
+
+        function removeRouteLine(mmsi) {
+            if (routeLines[mmsi]) { map.removeLayer(routeLines[mmsi]); delete routeLines[mmsi]; }
+            if (portMarkers[mmsi]) { map.removeLayer(portMarkers[mmsi]); delete portMarkers[mmsi]; }
+        }
+
         // Ports that require passing through Mackinac Straits
         // Lake Michigan ports → must pass bridge to reach Lake Huron/Erie/Superior
         const LAKE_MICHIGAN_PORTS = ['CHICAGO','MILWAUKEE','GREEN BAY','GARY','INDIANA','CALUMET',
@@ -1071,7 +1191,8 @@
                 console.log('📋 Static data for', mmsi, '- Destination:', shipStaticData[mmsi].destination,
                            'Size:', lengthM, 'x', widthM, 'meters =', lengthFt, 'x', widthFt, 'ft');
                 
-                // Refresh list panel with new destination info
+                // Refresh route line now that we have destination
+                if (allShipsData[mmsi]) updateRouteLine(allShipsData[mmsi]);
                 updateDisplay();
                 updateShipsList();
                 return;
@@ -1098,6 +1219,7 @@
 
                 incrementAISCounter();
                 updateMapMarker(ship);
+                updateRouteLine(ship);
 
                 // Track ALL ships in the full bounding box for the list panel
                 allShipsData[ship.mmsi] = ship;
@@ -1348,8 +1470,8 @@
             // Keep only last 10 recent ships in memory
             recentShips = recentShips.slice(0, 10);
 
-            // Remove ships from active tracking and map
-            shipsToMove.forEach(s => removeMapMarker(s.mmsi));
+            // Remove ships from active tracking, map, and route lines
+            shipsToMove.forEach(s => { removeMapMarker(s.mmsi); removeRouteLine(s.mmsi); });
             shipData = shipData.filter(s => !checkIfPassedBridge(s) && now - s.lastUpdate < 600000);
 
             // Remove stale ships from full list (no update in 15 minutes)
@@ -1357,6 +1479,7 @@
                 if (now - allShipsData[mmsi].lastUpdate > 900000) {
                     delete allShipsData[mmsi];
                     removeMapMarker(parseInt(mmsi));
+                    removeRouteLine(parseInt(mmsi));
                 }
             });
             updateShipsList();
