@@ -56,6 +56,62 @@
         }
         .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 
+        /* Ships list panel */
+        #shipsPanel {
+            position: fixed;
+            bottom: 0; left: 0;
+            width: 540px;
+            max-height: 42vh;
+            background: rgba(0,0,0,0.88);
+            border-top: 1px solid rgba(255,255,255,0.2);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            border-radius: 0 12px 0 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(8px);
+            transition: max-height 0.3s ease;
+        }
+        #shipsPanel.collapsed { max-height: 38px; }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .panel-title { font-size: 11px; font-weight: bold; letter-spacing: 1px; color: rgba(255,255,255,0.8); text-transform: uppercase; }
+        .panel-count { font-size: 11px; color: #4fc3f7; }
+        .panel-toggle { font-size: 10px; color: rgba(255,255,255,0.4); }
+        .panel-body { overflow-y: auto; flex: 1; }
+        .panel-body::-webkit-scrollbar { width: 4px; }
+        .panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+        .ships-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .ships-table th {
+            padding: 5px 10px;
+            text-align: left;
+            color: rgba(255,255,255,0.4);
+            font-weight: normal;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            position: sticky; top: 0;
+            background: rgba(0,0,0,0.9);
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+        .ships-table td { padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); color: #fff; vertical-align: middle; }
+        .ships-table tr:hover td { background: rgba(255,255,255,0.05); }
+        .ships-table tr.through-bridge td:first-child { border-left: 2px solid #00e676; }
+        .dest-text { color: #4fc3f7; font-size: 10px; }
+        .badge-approaching { background: rgba(0,230,118,0.2); color: #00e676; padding: 1px 6px; border-radius: 8px; font-size: 10px; }
+        .badge-departing   { background: rgba(255,152,0,0.2);  color: #ff9800; padding: 1px 6px; border-radius: 8px; font-size: 10px; }
+        .badge-near        { background: rgba(239,83,80,0.2);  color: #ef5350; padding: 1px 6px; border-radius: 8px; font-size: 10px; }
+        .flag-bridge       { font-size: 10px; color: #00e676; margin-left: 4px; }
+
         .ship-tracker {
             position: fixed;
             top: 20px;
@@ -374,6 +430,30 @@
         <div><span class="legend-dot" style="background:#ef5350"></span>Near bridge (&lt;5km)</div>
     </div>
 
+    <div id="shipsPanel">
+        <div class="panel-header" onclick="togglePanel()">
+            <span class="panel-title">🚢 All Tracked Vessels</span>
+            <span class="panel-count" id="panelCount">0 ships</span>
+            <span class="panel-toggle" id="panelToggle">▲ collapse</span>
+        </div>
+        <div class="panel-body">
+            <table class="ships-table">
+                <thead>
+                    <tr>
+                        <th>Vessel</th>
+                        <th>Destination</th>
+                        <th>Speed</th>
+                        <th>Dist. to Bridge</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="shipsTableBody">
+                    <tr><td colspan="5" style="color:rgba(255,255,255,0.3);text-align:center;padding:16px;">Waiting for AIS data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="ship-tracker">
         <div class="tracker-header">
             <span class="ship-icon">🚢</span>
@@ -434,6 +514,77 @@
         let alertTimeout = null;
         let lastUpdateTime = Date.now();
         let knownShipMMSIs = new Set();
+
+        // All ships received from AISStream (entire bounding box)
+        let allShipsData = {};
+        let panelCollapsed = false;
+
+        // Ports that require passing through Mackinac Straits
+        // Lake Michigan ports → must pass bridge to reach Lake Huron/Erie/Superior
+        const LAKE_MICHIGAN_PORTS = ['CHICAGO','MILWAUKEE','GREEN BAY','GARY','INDIANA','CALUMET',
+            'WAUKEGAN','MUSKEGON','TRAVERSE','ESCANABA','MENOMINEE','MANITOWOC','SHEBOYGAN',
+            'KENOSHA','RACINE','STURGEON BAY','HOLLAND','GRAND HAVEN','BENTON HARBOR','ST JOSEPH'];
+        const LAKE_HURON_ERIE_PORTS = ['DETROIT','TOLEDO','CLEVELAND','BUFFALO','ERIE','HAMILTON',
+            'SARNIA','PORT HURON','ALPENA','ROGERS CITY','CALCITE','PRESQUE ISLE','WINDSOR',
+            'NANTICOKE','GODERICH','SAULT','DULUTH','SUPERIOR','TWO HARBORS','SILVER BAY',
+            'MARQUETTE','ASHLAND','THUNDER BAY','BURNS HARBOR'];
+
+        function goesThruBridge(destination) {
+            if (!destination) return false;
+            const d = destination.toUpperCase();
+            const inMI = LAKE_MICHIGAN_PORTS.some(p => d.includes(p));
+            const inHuron = LAKE_HURON_ERIE_PORTS.some(p => d.includes(p));
+            // If destination is on either side it may transit the straits
+            return inMI || inHuron;
+        }
+
+        function togglePanel() {
+            panelCollapsed = !panelCollapsed;
+            document.getElementById('shipsPanel').classList.toggle('collapsed', panelCollapsed);
+            document.getElementById('panelToggle').textContent = panelCollapsed ? '▼ expand' : '▲ collapse';
+        }
+
+        function updateShipsList() {
+            const ships = Object.values(allShipsData)
+                .sort((a, b) => a.distance - b.distance);
+
+            document.getElementById('panelCount').textContent = ships.length + ' ship' + (ships.length !== 1 ? 's' : '');
+
+            if (ships.length === 0) {
+                document.getElementById('shipsTableBody').innerHTML =
+                    '<tr><td colspan="5" style="color:rgba(255,255,255,0.3);text-align:center;padding:16px;">Waiting for AIS data...</td></tr>';
+                return;
+            }
+
+            const rows = ships.map(ship => {
+                const static_ = shipStaticData[ship.mmsi] || {};
+                const dest = static_.destination || '—';
+                const thru = goesThruBridge(static_.destination);
+                const distKm = ship.distance.toFixed(0);
+                const distMi = kmToMiles(ship.distance).toFixed(0);
+                const speed = ship.speed ? ship.speed.toFixed(1) + ' kts' : '—';
+
+                let badge = '';
+                if (ship.distance < 5)
+                    badge = '<span class="badge-near">Near bridge</span>';
+                else if (ship.direction === 'Approaching')
+                    badge = '<span class="badge-approaching">Approaching</span>';
+                else if (ship.direction === 'Departing')
+                    badge = '<span class="badge-departing">Departing</span>';
+
+                const flag = thru ? '<span class="flag-bridge" title="Route passes through Mackinac Straits">⚓ thru straits</span>' : '';
+
+                return `<tr class="${thru ? 'through-bridge' : ''}">
+                    <td><b>${ship.name}</b>${flag}<br><span style="color:rgba(255,255,255,0.35);font-size:10px;">${ship.type}</span></td>
+                    <td><span class="dest-text">${dest}</span></td>
+                    <td>${speed}</td>
+                    <td>${distKm} km / ${distMi} mi</td>
+                    <td>${badge}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('shipsTableBody').innerHTML = rows;
+        }
 
         // Map state
         let map = null;
@@ -902,8 +1053,9 @@
                 console.log('📋 Static data for', mmsi, '- Destination:', shipStaticData[mmsi].destination,
                            'Size:', lengthM, 'x', widthM, 'meters =', lengthFt, 'x', widthFt, 'ft');
                 
-                // Update display in case this ship is already being tracked
+                // Refresh list panel with new destination info
                 updateDisplay();
+                updateShipsList();
                 return;
             }
             
@@ -927,7 +1079,11 @@
                 ship.direction = getDirection(ship.lat, ship.lon, ship.course);
 
                 incrementAISCounter();
-                updateMapMarker(ship); // plot ALL ships regardless of distance
+                updateMapMarker(ship);
+
+                // Track ALL ships in the full bounding box for the list panel
+                allShipsData[ship.mmsi] = ship;
+                updateShipsList();
 
                 if (ship.distance > SEARCH_RADIUS_KM) return;
                 
@@ -1177,6 +1333,15 @@
             // Remove ships from active tracking and map
             shipsToMove.forEach(s => removeMapMarker(s.mmsi));
             shipData = shipData.filter(s => !checkIfPassedBridge(s) && now - s.lastUpdate < 600000);
+
+            // Remove stale ships from full list (no update in 15 minutes)
+            Object.keys(allShipsData).forEach(mmsi => {
+                if (now - allShipsData[mmsi].lastUpdate > 900000) {
+                    delete allShipsData[mmsi];
+                    removeMapMarker(parseInt(mmsi));
+                }
+            });
+            updateShipsList();
             
             if (shipsToMove.length > 0) {
                 updateDisplay();
