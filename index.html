@@ -43,6 +43,18 @@
         .map-counter .counter-value { font-size: 20px; font-weight: bold; color: #4fc3f7; }
         .map-counter .counter-label { font-size: 11px; color: rgba(255,255,255,0.5); }
 
+        .version-badge {
+            position: fixed;
+            bottom: 8px;
+            right: 12px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.25);
+            z-index: 1001;
+            font-family: monospace;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+        }
+
         .map-legend {
             position: fixed;
             bottom: 20px; left: 580px;
@@ -419,6 +431,7 @@
 </head>
 <body>
     <div id="map"></div>
+    <div class="version-badge">v25</div>
 
     <div class="map-counter">
         <div class="counter-title">AIS Messages</div>
