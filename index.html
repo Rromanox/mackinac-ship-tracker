@@ -17,16 +17,18 @@
 
         #map {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0; left: 400px;
+            width: calc(100% - 400px); height: 100%;
             z-index: 0;
+            transition: left 0.25s ease, width 0.25s ease;
         }
+        #map.full { left: 0; width: 100%; }
 
         .bridge-icon { font-size: 22px; line-height: 1; }
 
         .map-counter {
             position: fixed;
-            bottom: 20px; left: 20px;
+            bottom: 20px; left: 420px;
             background: rgba(0,0,0,0.82);
             border: 1px solid rgba(255,255,255,0.25);
             border-radius: 10px;
@@ -43,7 +45,7 @@
 
         .map-legend {
             position: fixed;
-            bottom: 20px; left: 180px;
+            bottom: 20px; left: 580px;
             background: rgba(0,0,0,0.82);
             border: 1px solid rgba(255,255,255,0.25);
             border-radius: 10px;
@@ -56,36 +58,38 @@
         }
         .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 
-        /* Ships list panel */
+        /* Ships list sidebar */
         #shipsPanel {
             position: fixed;
-            bottom: 0; left: 0;
-            width: 540px;
-            max-height: 42vh;
+            top: 0; left: 0;
+            width: 400px;
+            height: 100vh;
             background: rgba(0,0,0,0.88);
-            border-top: 1px solid rgba(255,255,255,0.2);
             border-right: 1px solid rgba(255,255,255,0.2);
-            border-radius: 0 12px 0 0;
             z-index: 1000;
             display: flex;
             flex-direction: column;
             backdrop-filter: blur(8px);
-            transition: max-height 0.3s ease;
+            transition: width 0.25s ease;
         }
-        #shipsPanel.collapsed { max-height: 38px; }
+        #shipsPanel.collapsed { width: 32px; }
+        #shipsPanel.collapsed .panel-body,
+        #shipsPanel.collapsed .panel-title,
+        #shipsPanel.collapsed .panel-count { display: none; }
         .panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 14px;
+            padding: 10px 12px;
             border-bottom: 1px solid rgba(255,255,255,0.15);
             cursor: pointer;
             user-select: none;
             flex-shrink: 0;
+            min-height: 38px;
         }
-        .panel-title { font-size: 11px; font-weight: bold; letter-spacing: 1px; color: rgba(255,255,255,0.8); text-transform: uppercase; }
-        .panel-count { font-size: 11px; color: #4fc3f7; }
-        .panel-toggle { font-size: 10px; color: rgba(255,255,255,0.4); }
+        .panel-title { font-size: 11px; font-weight: bold; letter-spacing: 1px; color: rgba(255,255,255,0.8); text-transform: uppercase; white-space: nowrap; }
+        .panel-count { font-size: 11px; color: #4fc3f7; white-space: nowrap; }
+        .panel-toggle { font-size: 14px; color: rgba(255,255,255,0.5); flex-shrink: 0; }
         .panel-body { overflow-y: auto; flex: 1; }
         .panel-body::-webkit-scrollbar { width: 4px; }
         .panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
@@ -540,8 +544,22 @@
 
         function togglePanel() {
             panelCollapsed = !panelCollapsed;
-            document.getElementById('shipsPanel').classList.toggle('collapsed', panelCollapsed);
-            document.getElementById('panelToggle').textContent = panelCollapsed ? '▼ expand' : '▲ collapse';
+            const panel = document.getElementById('shipsPanel');
+            const mapEl = document.getElementById('map');
+            const counter = document.querySelector('.map-counter');
+            const legend = document.querySelector('.map-legend');
+            panel.classList.toggle('collapsed', panelCollapsed);
+            mapEl.classList.toggle('full', panelCollapsed);
+            if (panelCollapsed) {
+                counter.style.left = '52px';
+                legend.style.left = '212px';
+            } else {
+                counter.style.left = '420px';
+                legend.style.left = '580px';
+            }
+            document.getElementById('panelToggle').textContent = panelCollapsed ? '›' : '‹';
+            // Let Leaflet know the map container resized
+            setTimeout(() => map && map.invalidateSize(), 260);
         }
 
         function updateShipsList() {
