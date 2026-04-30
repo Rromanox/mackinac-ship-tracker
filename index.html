@@ -626,31 +626,29 @@
             const static_ = shipStaticData[ship.mmsi] || {};
             const port = findPort(static_.destination);
 
-            // Remove existing line for this ship
-            if (routeLines[ship.mmsi]) {
-                map.removeLayer(routeLines[ship.mmsi]);
-                delete routeLines[ship.mmsi];
-            }
-            if (portMarkers[ship.mmsi]) {
-                map.removeLayer(portMarkers[ship.mmsi]);
-                delete portMarkers[ship.mmsi];
-            }
+            if (routeLines[ship.mmsi]) { map.removeLayer(routeLines[ship.mmsi]); delete routeLines[ship.mmsi]; }
+            if (portMarkers[ship.mmsi]) { map.removeLayer(portMarkers[ship.mmsi]); delete portMarkers[ship.mmsi]; }
 
-            if (!port) return; // no known destination — no line
+            if (!port) return;
 
             const crosses = routeCrossesStrait(ship.lat, ship.lon, port.lat, port.lon);
             const color   = crosses ? '#00e676' : '#90caf9';
-            const opacity = crosses ? 0.75 : 0.35;
+            const opacity = crosses ? 0.85 : 0.4;
 
-            routeLines[ship.mmsi] = L.polyline(
-                [[ship.lat, ship.lon], [port.lat, port.lon]],
-                { color, weight: crosses ? 2 : 1.5, opacity, dashArray: crosses ? null : '6 6' }
-            ).addTo(map);
+            // For routes crossing the straits, draw via the bridge as waypoint
+            // so the path visually goes THROUGH Mackinac — not straight through land
+            const waypoints = crosses
+                ? [[ship.lat, ship.lon], [BRIDGE_LAT, BRIDGE_LON], [port.lat, port.lon]]
+                : [[ship.lat, ship.lon], [port.lat, port.lon]];
 
-            // Small destination marker
+            routeLines[ship.mmsi] = L.polyline(waypoints, {
+                color, weight: crosses ? 3 : 1.5, opacity,
+                dashArray: crosses ? null : '6 6'
+            }).addTo(map)
+              .bindPopup(`<b>${ship.name}</b><br>→ ${static_.destination}${crosses ? '<br><span style="color:#00e676">✓ crosses Mackinac Straits</span>' : ''}`);
+
             portMarkers[ship.mmsi] = L.circleMarker([port.lat, port.lon], {
-                radius: 5, fillColor: color, color: '#fff',
-                weight: 1.5, fillOpacity: 0.9
+                radius: 5, fillColor: color, color: '#fff', weight: 1.5, fillOpacity: 0.9
             }).addTo(map).bindPopup(`<b>Destination</b><br>${static_.destination}`);
         }
 
@@ -669,13 +667,14 @@
             'NANTICOKE','GODERICH','SAULT','DULUTH','SUPERIOR','TWO HARBORS','SILVER BAY',
             'MARQUETTE','ASHLAND','THUNDER BAY','BURNS HARBOR'];
 
-        function goesThruBridge(destination) {
-            if (!destination) return false;
-            const d = destination.toUpperCase();
-            const inMI = LAKE_MICHIGAN_PORTS.some(p => d.includes(p));
-            const inHuron = LAKE_HURON_ERIE_PORTS.some(p => d.includes(p));
-            // If destination is on either side it may transit the straits
-            return inMI || inHuron;
+        function goesThruBridge(ship) {
+            // Only flag if we know BOTH the ship's position AND its destination port,
+            // and the route actually crosses the Mackinac Straits
+            if (!ship || !ship.lat || !ship.lon) return false;
+            const static_ = shipStaticData[ship.mmsi] || {};
+            const port = findPort(static_.destination);
+            if (!port) return false;
+            return routeCrossesStrait(ship.lat, ship.lon, port.lat, port.lon);
         }
 
         function togglePanel() {
@@ -713,7 +712,7 @@
             const rows = ships.map(ship => {
                 const static_ = shipStaticData[ship.mmsi] || {};
                 const dest = static_.destination || '—';
-                const thru = goesThruBridge(static_.destination);
+                const thru = goesThruBridge(ship);
                 const distKm = ship.distance.toFixed(0);
                 const distMi = kmToMiles(ship.distance).toFixed(0);
                 const speed = ship.speed ? ship.speed.toFixed(1) + ' kts' : '—';
