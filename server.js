@@ -95,14 +95,17 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-// Mackinac Bridge bounding box
+// Mackinac Bridge center point
 const BRIDGE_LAT = 45.8174;
 const BRIDGE_LON = -84.7278;
+
+// Large bounding box covering Lake Michigan + Lake Huron
+// ~400km north/south, ~600km east/west — maximizes AISStream coverage for diagnostics
 const BBOX = {
-  minLat: BRIDGE_LAT - 0.23,
-  maxLat: BRIDGE_LAT + 0.23,
-  minLon: BRIDGE_LON - 0.35,
-  maxLon: BRIDGE_LON + 0.35
+  minLat: 41.5,   // southern Lake Michigan (Chicago area)
+  maxLat: 47.5,   // northern Lake Superior approach
+  minLon: -88.5,  // western Lake Michigan (Milwaukee)
+  maxLon: -79.5   // eastern Lake Huron (Ontario border)
 };
 
 let aisConnection = null;
