@@ -2,6 +2,7 @@
 const express = require('express');
 const WebSocket = require('ws');
 const http = require('http');
+const path = require('path');
 const { MongoClient } = require('mongodb');
 
 const app = express();
@@ -36,16 +37,33 @@ async function connectToMongoDB() {
 }
 
 // CORS middleware
+const ALLOWED_ORIGINS = [
+  'https://mackinac-ship-tracker.onrender.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  // Allow file:// opened locally (origin is null/undefined) and known domains
+  if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  }
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   next();
 });
 
-// Health check endpoint
-app.get('/', async (req, res) => {
+app.use(express.json());
+
+// Serve the frontend
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Health / status check (used by UptimeRobot and monitoring)
+app.get('/api/status', async (req, res) => {
   const stats = await getShipStats();
-  res.json({ 
+  res.json({
     status: 'Ship Tracker Proxy Server Running',
     connections: wss.clients.size,
     database: db ? 'Connected' : 'Disconnected',
@@ -54,8 +72,28 @@ app.get('/', async (req, res) => {
   });
 });
 
+// Recent ships that passed the bridge
+app.get('/api/ships/recent', async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+  const ships = await getRecentShips(limit);
+  res.json({ ships });
+});
+
+// Mark a ship as having passed the bridge (called by frontend)
+app.post('/api/ships/:mmsi/passed', async (req, res) => {
+  const mmsi = parseInt(req.params.mmsi);
+  const { name } = req.body;
+  if (!mmsi) return res.status(400).json({ error: 'Invalid MMSI' });
+  await markShipAsPassed(mmsi, name || 'Unknown');
+  res.json({ success: true });
+});
+
 // AISStream configuration
-const API_KEY = "fe7a0e7dd439780159d6c3694023e6791ad63e2f";
+const API_KEY = process.env.AISSTREAM_API_KEY;
+if (!API_KEY) {
+  console.error('❌ AISSTREAM_API_KEY environment variable is not set');
+  process.exit(1);
+}
 
 // Mackinac Bridge bounding box
 const BRIDGE_LAT = 45.8174;
@@ -70,6 +108,7 @@ const BBOX = {
 let aisConnection = null;
 let reconnectTimeout = null;
 let isConnecting = false;
+let reconnectAttempts = 0;
 
 // Database helper functions
 async function saveShipToDatabase(shipData) {
@@ -193,13 +232,14 @@ function connectToAISStream() {
   aisConnection.on('open', () => {
     console.log('✓ Connected to AISStream');
     isConnecting = false;
+    reconnectAttempts = 0;
     
     // Subscribe to Mackinac Bridge area
     const subscription = {
       APIKey: API_KEY,
       BoundingBoxes: [[
-        [BBOX.minLon, BBOX.minLat],
-        [BBOX.maxLon, BBOX.maxLat]
+        [BBOX.minLat, BBOX.minLon],
+        [BBOX.maxLat, BBOX.maxLon]
       ]]
       // No FilterMessageTypes - get all message types including ShipStaticData
     };
@@ -271,11 +311,13 @@ function connectToAISStream() {
       connected: false
     });
     
-    // Always reconnect after 5 seconds (24/7 monitoring)
+    // Exponential backoff: 5s, 10s, 20s, 40s, capped at 60s
+    reconnectAttempts++;
+    const delay = Math.min(5000 * Math.pow(2, reconnectAttempts - 1), 60000);
+    console.log(`Reconnecting to AISStream in ${delay / 1000}s (attempt ${reconnectAttempts})...`);
     reconnectTimeout = setTimeout(() => {
-      console.log('Reconnecting to AISStream...');
       connectToAISStream();
-    }, 5000);
+    }, delay);
   });
 }
 

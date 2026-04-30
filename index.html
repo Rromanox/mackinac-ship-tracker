@@ -341,8 +341,23 @@
         // Set this to true to see simulated ships, false for real data
         const TEST_MODE = false;
         
-        // Backend proxy server running on Render.com
-        const PROXY_SERVER_URL = "wss://mackinac-ship-tracker.onrender.com";
+        // Determine backend URL:
+        // - Opened as file:// from disk → connect to production Render server
+        // - Served from localhost → connect to local server
+        // - Served from Render → connect to same host
+        const RENDER_URL = 'mackinac-ship-tracker.onrender.com';
+        const isFileProtocol = window.location.protocol === 'file:';
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const PROXY_SERVER_URL = isFileProtocol
+            ? `wss://${RENDER_URL}`
+            : isLocalhost
+                ? `ws://localhost:${window.location.port || 3000}`
+                : `wss://${window.location.host}`;
+        const HTTP_SERVER_URL = isFileProtocol
+            ? `https://${RENDER_URL}`
+            : isLocalhost
+                ? `http://localhost:${window.location.port || 3000}`
+                : `https://${window.location.host}`;
 
         // Mackinac Bridge coordinates
         const BRIDGE_LAT = 45.8174;
@@ -745,21 +760,23 @@
                 const staticData = data.Message.ShipStaticData;
                 const mmsi = data.MetaData.MMSI;
                 
-                // Calculate total length and width from AIS dimension data
+                // Calculate total length and width from AIS dimension data (AIS spec is in meters)
                 const dimension = staticData.Dimension || {};
-                const length = (dimension.A || 0) + (dimension.B || 0);
-                const width = (dimension.C || 0) + (dimension.D || 0);
-                
+                const lengthM = (dimension.A || 0) + (dimension.B || 0);
+                const widthM = (dimension.C || 0) + (dimension.D || 0);
+                const lengthFt = lengthM > 0 ? Math.round(lengthM * 3.28084) : null;
+                const widthFt = widthM > 0 ? Math.round(widthM * 3.28084) : null;
+
                 shipStaticData[mmsi] = {
                     destination: staticData.Destination?.trim() || null,
                     name: staticData.Name?.trim() || null,
                     callSign: staticData.CallSign?.trim() || null,
-                    length: length > 0 ? length : null,
-                    width: width > 0 ? width : null
+                    length: lengthFt,
+                    width: widthFt
                 };
-                
-                console.log('📋 Static data for', mmsi, '- Destination:', shipStaticData[mmsi].destination, 
-                           'Size:', length, 'x', width, 'meters');
+
+                console.log('📋 Static data for', mmsi, '- Destination:', shipStaticData[mmsi].destination,
+                           'Size:', lengthM, 'x', widthM, 'meters =', lengthFt, 'x', widthFt, 'ft');
                 
                 // Update display in case this ship is already being tracked
                 updateDisplay();
@@ -1013,9 +1030,18 @@
                         direction: ship.direction,
                         leftTime: now
                     });
-                    
-                    console.log('📤 Ship moved to recent:', ship.name, 
-                               checkIfPassedBridge(ship) ? '(passed bridge)' : '(left area)');
+
+                    const passed = checkIfPassedBridge(ship);
+                    console.log('📤 Ship moved to recent:', ship.name, passed ? '(passed bridge)' : '(left area)');
+
+                    // Notify server to mark ship as passed in database
+                    if (passed && !TEST_MODE) {
+                        fetch(`${HTTP_SERVER_URL}/api/ships/${ship.mmsi}/passed`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: ship.name })
+                        }).catch(err => console.error('Error marking ship as passed:', err));
+                    }
                 }
             });
             
