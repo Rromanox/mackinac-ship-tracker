@@ -154,44 +154,67 @@ function formatETA(distKm,spd){
     return min<60?min+'m':Math.floor(min/60)+'h'+(min%60?''+min%60+'m':'');
 }
 
-let scrollStyleEl = null;
-let lastDisplayKey = '';
+// ── Paging state ─────────────────────────────────────────────
+const PAGE_HOLD_MS = 5000; // ms to hold each page before sliding
+let pageOffsets  = [];     // translateX values for start of each page
+let currentPage  = 0;
+let pageTimer    = null;
+let lastShipKey  = '';
 
-function applyScroll() {
-    const row   = document.getElementById('shipsRow');
-    const inner = document.getElementById('shipsInner');
-    if (!inner || !row) return;
+// Measure chip positions and calculate page-break offsets
+function buildPageOffsets() {
+    const inner     = document.getElementById('shipsInner');
+    const row       = document.getElementById('shipsRow');
+    if (!inner || !row) return [0];
+    const avail     = row.offsetWidth;
+    const chips     = [...inner.querySelectorAll('.ship-chip')];
+    if (!chips.length) return [0];
 
-    inner.style.animation = 'none';
-    if (scrollStyleEl) { scrollStyleEl.remove(); scrollStyleEl = null; }
+    const offsets   = [0];
+    let pageStartX  = 0;
+    let pageWidth   = 0;
 
-    requestAnimationFrame(() => {
-        const overflow = inner.scrollWidth - row.offsetWidth;
-        if (overflow <= 10) return; // fits — no scroll needed
-
-        const scrollSec = Math.max(3, overflow / 50);
-        const totalSec  = scrollSec + 2;
-        const pausePct  = (1.5 / totalSec * 100).toFixed(1);
-        const endPct    = (100 - parseFloat(pausePct)).toFixed(1);
-
-        scrollStyleEl = document.createElement('style');
-        scrollStyleEl.textContent = `
-            @keyframes barScroll {
-                0%, ${pausePct}%  { transform: translateX(0); }
-                ${endPct}%, 100%  { transform: translateX(-${overflow + 12}px); }
-            }`;
-        document.head.appendChild(scrollStyleEl);
-        inner.style.animation = `barScroll ${totalSec}s ease-in-out infinite alternate`;
+    chips.forEach(chip => {
+        const w = chip.offsetWidth + 10; // 10 = gap
+        if (pageWidth > 0 && pageWidth + w > avail) {
+            pageStartX += pageWidth;
+            offsets.push(pageStartX);
+            pageWidth = w;
+        } else {
+            pageWidth += w;
+        }
     });
+    return offsets;
 }
 
+function showPage(idx) {
+    const inner = document.getElementById('shipsInner');
+    if (!inner || !pageOffsets.length) return;
+    const offset = pageOffsets[idx % pageOffsets.length];
+    inner.style.transition = 'transform 0.7s ease-in-out';
+    inner.style.transform  = `translateX(-${offset}px)`;
+}
+
+function startPaging() {
+    if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
+    currentPage = 0;
+    showPage(0);
+    if (pageOffsets.length <= 1) return; // everything fits — no paging needed
+
+    pageTimer = setInterval(() => {
+        currentPage = (currentPage + 1) % pageOffsets.length;
+        showPage(currentPage);
+    }, PAGE_HOLD_MS);
+}
+
+// ── Chip builders ────────────────────────────────────────────
 function buildChipHTML(ship) {
-    const mi    = toMiles(ship.distance).toFixed(1);
-    const spd   = ship.speed ? ship.speed.toFixed(1) + ' kts' : '';
-    const eta   = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
+    const mi     = toMiles(ship.distance).toFixed(1);
+    const spd    = ship.speed ? ship.speed.toFixed(1) + ' kts' : '';
+    const eta    = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
     const isNear = ship.distance < 8;
-    const cls   = isNear ? 'near-bridge' : ship.direction === 'Approaching' ? 'approaching' : 'departing';
-    const arrow = isNear ? '⚡' : ship.direction === 'Approaching' ? '▲' : '▼';
+    const cls    = isNear ? 'near-bridge' : ship.direction === 'Approaching' ? 'approaching' : 'departing';
+    const arrow  = isNear ? '⚡' : ship.direction === 'Approaching' ? '▲' : '▼';
     return `<div class="ship-chip ${cls}" data-mmsi="${ship.mmsi}">
         <span class="chip-arrow">${arrow}</span>
         <span class="chip-name">${ship.name}</span>
@@ -205,9 +228,9 @@ function updateChipValues(ships) {
     ships.forEach(ship => {
         const chip = document.querySelector(`.ship-chip[data-mmsi="${ship.mmsi}"]`);
         if (!chip) return;
-        const mi    = toMiles(ship.distance).toFixed(1);
+        const mi     = toMiles(ship.distance).toFixed(1);
         const isNear = ship.distance < 8;
-        const eta   = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
+        const eta    = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
         chip.className = 'ship-chip ' + (isNear ? 'near-bridge' : ship.direction === 'Approaching' ? 'approaching' : 'departing');
         chip.querySelector('.chip-arrow').textContent = isNear ? '⚡' : ship.direction === 'Approaching' ? '▲' : '▼';
         chip.querySelector('.chip-dist').textContent  = mi + ' mi';
@@ -218,34 +241,50 @@ function updateChipValues(ships) {
     });
 }
 
+// ── Main render ──────────────────────────────────────────────
 function render() {
-    const ships = Object.values(shipData)
-        .filter(s => s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI)
-        .sort((a, b) => a.distance - b.distance);
+    const all = Object.values(shipData)
+        .filter(s => s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI);
+
+    // Approaching ships only; fall back to closest ship if none approaching
+    const approaching = all.filter(s => s.direction === 'Approaching')
+                           .sort((a, b) => a.distance - b.distance);
+    const display = approaching.length > 0
+        ? approaching
+        : all.sort((a, b) => a.distance - b.distance).slice(0, 3);
 
     const bar = document.getElementById('bar');
-    bar.className = 'bar' + (ships.some(s => s.distance < 8) ? ' near' : '');
+    bar.className = 'bar' + (display.some(s => s.distance < 8) ? ' near' : '');
 
-    const inner    = document.getElementById('shipsInner');
-    const display  = [...ships.filter(s => s.direction === 'Approaching'), ...ships.filter(s => s.direction !== 'Approaching')];
-    const newKey   = display.map(s => s.mmsi).join(',');
+    const inner  = document.getElementById('shipsInner');
+    const newKey = display.map(s => s.mmsi).join(',');
 
     if (!display.length) {
-        if (lastDisplayKey !== 'empty') {
-            inner.style.animation = 'none';
-            inner.innerHTML = '<span class="no-ships-bar">No active vessels nearby</span>';
-            lastDisplayKey = 'empty';
+        if (lastShipKey !== 'empty') {
+            if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
+            inner.style.transition = 'none';
+            inner.style.transform  = 'translateX(0)';
+            inner.innerHTML = '<span class="no-ships-bar">No approaching vessels nearby</span>';
+            lastShipKey = 'empty';
         }
         return;
     }
 
-    if (newKey !== lastDisplayKey) {
-        // Ship list changed — rebuild DOM and restart scroll
-        lastDisplayKey = newKey;
+    if (newKey !== lastShipKey) {
+        // Ships changed — rebuild DOM, recalculate pages, restart pager
+        lastShipKey = newKey;
+        if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
+        inner.style.transition = 'none';
+        inner.style.transform  = 'translateX(0)';
         inner.innerHTML = display.map(buildChipHTML).join('');
-        setTimeout(applyScroll, 50);
+
+        // Wait for paint, then measure and start paging
+        setTimeout(() => {
+            pageOffsets = buildPageOffsets();
+            startPaging();
+        }, 80);
     } else {
-        // Same ships — update values in-place, scroll animation keeps running
+        // Same ships — update values in-place, pager keeps running uninterrupted
         updateChipValues(display);
     }
 }
