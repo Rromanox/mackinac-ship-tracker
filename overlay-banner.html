@@ -37,22 +37,22 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 8
     padding-right: 15px; margin-right: 15px;
 }
 .ship-branding-title {
-    font-size: 1rem; font-weight: bold; letter-spacing: 1px;
+    font-size: 1.3rem; font-weight: bold; letter-spacing: 1px;
     white-space: nowrap; color: inherit;
 }
-.ship-branding-sub { font-size: 0.7rem; opacity: 0.6; white-space: nowrap; }
+.ship-branding-sub { font-size: 0.9rem; opacity: 0.6; white-space: nowrap; }
 
 /* chips */
 .ships-row { flex: 1; overflow: hidden; position: relative; }
-.ships-inner { display: flex; align-items: center; gap: 10px; width: max-content; }
+.ships-inner { display: flex; align-items: center; gap: 12px; width: max-content; }
 
 .ship-chip {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 10px;
     background: rgba(0,0,0,0.1);
     border: 1.5px solid rgba(0,0,0,0.2);
     border-radius: 20px;
-    padding: 4px 14px; flex-shrink: 0;
-    font-size: 0.85rem; font-weight: bold; color: inherit;
+    padding: 6px 18px; flex-shrink: 0;
+    font-size: 1.1rem; font-weight: bold; color: inherit;
     transition: border-color 0.3s, background 0.3s;
 }
 .ship-chip.approaching { border-color: rgba(0,130,0,0.5);  background: rgba(0,140,0,0.12); }
@@ -60,12 +60,12 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 8
 .ship-chip.near-bridge { border-color: rgba(200,0,0,0.6);   background: rgba(200,0,0,0.12); animation: chipPulse 1s infinite; }
 @keyframes chipPulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
 
-.chip-arrow { font-size: 0.85rem; }
+.chip-arrow { font-size: 1.1rem; }
 .chip-name  { font-weight: bold; }
-.chip-dist  { opacity: 0.6; font-size: 0.8rem; }
-.chip-speed { opacity: 0.5; font-size: 0.75rem; }
-.chip-eta   { font-size: 0.75rem; font-weight: bold; color: #0055bb; }
-.no-ships-bar { opacity: 0.45; font-size: 0.85rem; font-weight: bold; }
+.chip-dist  { opacity: 0.6; font-size: 1rem; }
+.chip-speed { opacity: 0.5; font-size: 0.9rem; }
+.chip-eta   { font-size: 0.9rem; font-weight: bold; color: #0055bb; }
+.no-ships-bar { opacity: 0.45; font-size: 1.1rem; font-weight: bold; }
 
 /* live dot */
 .live-area {
@@ -126,17 +126,13 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 8
     300s (5 min) cycle breakdown:
     -----------------------------------------------
     0s-6s      Banner 1 slides up
-    9s-24s     Text 1 scrolls in from right
-    24s-78s    Text 1 sits still (54s)
-    78s-87s    Text 1 scrolls off left
-    84s-90s    Banner 1 slides down
-    90s-99s    Gap (both hidden — ships visible)
-    99s-105s   Banner 2 slides up
-    108s-123s  Text 2 scrolls in from right
-    123s-177s  Text 2 sits still (54s)
-    177s-186s  Text 2 scrolls off left
-    183s-189s  Banner 2 slides down
-    189s-300s  Both hidden (ships visible — 111s)
+    6s-51s     Ticker 1 visible (45s)
+    51s-57s    Banner 1 slides down
+    57s-63s    Gap (ships visible)
+    63s-69s    Banner 2 slides up
+    69s-114s   Ticker 2 visible (45s)
+    114s-120s  Banner 2 slides down
+    120s-300s  Both hidden (ships visible — 180s)
     -----------------------------------------------
 */
 
@@ -144,39 +140,39 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 8
 @keyframes bannerCycle1 {
     0%   { transform: translateY(100%); }   /* hidden below */
     2%   { transform: translateY(0); }      /* up by 6s */
-    28%  { transform: translateY(0); }      /* visible until 84s */
-    30%  { transform: translateY(100%); }   /* down by 90s */
+    17%  { transform: translateY(0); }      /* visible until 51s */
+    19%  { transform: translateY(100%); }   /* down by 57s */
     100% { transform: translateY(100%); }   /* stay hidden */
 }
 
 /* --- Text scroll for banner 1 --- */
 @keyframes textScroll1 {
-    0%   { transform: translateX(100%); }   /* offscreen right */
-    3%   { transform: translateX(100%); }   /* wait for banner (9s) */
-    8%   { transform: translateX(0); }      /* scrolled in by 24s */
-    26%  { transform: translateX(0); }      /* sit still until 78s (54s) */
-    29%  { transform: translateX(-100%); }  /* scrolled off by 87s */
-    100% { transform: translateX(-100%); }  /* stay offscreen */
+    0%    { transform: translateX(100%); }  /* offscreen right */
+    2.7%  { transform: translateX(100%); }  /* wait for banner (8s) */
+    5.3%  { transform: translateX(0); }     /* scrolled in by 16s */
+    14.3% { transform: translateX(0); }     /* sit still until 43s */
+    17%   { transform: translateX(-100%); } /* scrolled off by 51s */
+    100%  { transform: translateX(-100%); } /* stay offscreen */
 }
 
 /* --- Banner 2 slide up/down --- */
 @keyframes bannerCycle2 {
     0%   { transform: translateY(100%); }   /* hidden */
-    33%  { transform: translateY(100%); }   /* stay hidden until 99s */
-    35%  { transform: translateY(0); }      /* up by 105s */
-    61%  { transform: translateY(0); }      /* visible until 183s */
-    63%  { transform: translateY(100%); }   /* down by 189s */
+    21%  { transform: translateY(100%); }   /* stay hidden until 63s */
+    23%  { transform: translateY(0); }      /* up by 69s */
+    38%  { transform: translateY(0); }      /* visible until 114s */
+    40%  { transform: translateY(100%); }   /* down by 120s */
     100% { transform: translateY(100%); }   /* stay hidden */
 }
 
 /* --- Text scroll for banner 2 --- */
 @keyframes textScroll2 {
-    0%   { transform: translateX(100%); }   /* offscreen right */
-    36%  { transform: translateX(100%); }   /* wait for banner (108s) */
-    41%  { transform: translateX(0); }      /* scrolled in by 123s */
-    59%  { transform: translateX(0); }      /* sit still until 177s (54s) */
-    62%  { transform: translateX(-100%); }  /* scrolled off by 186s */
-    100% { transform: translateX(-100%); }  /* stay offscreen */
+    0%    { transform: translateX(100%); }  /* offscreen right */
+    23.7% { transform: translateX(100%); }  /* wait for banner (71s) */
+    26.3% { transform: translateX(0); }     /* scrolled in by 79s */
+    35.3% { transform: translateX(0); }     /* sit still until 106s */
+    38%   { transform: translateX(-100%); } /* scrolled off by 114s */
+    100%  { transform: translateX(-100%); } /* stay offscreen */
 }
 </style>
 </head>
