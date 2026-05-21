@@ -67,6 +67,7 @@ app.get('/overlay/spotlight', (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/alert',     (req, res) => res.sendFile(path.join(__dirname, 'overlay-alert.html')));
 app.get('/overlay/minimal',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-minimal.html')));
 app.get('/overlay/corner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-corner.html')));
+app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner.html')));
 
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {
