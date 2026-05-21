@@ -230,7 +230,10 @@ function connectToAISStream() {
 
   console.log('Connecting to AISStream...');
   
-  aisConnection = new WebSocket('wss://stream.aisstream.io/v0/stream');
+  // rejectUnauthorized: false works around expired/untrusted TLS cert on Render's container
+  aisConnection = new WebSocket('wss://stream.aisstream.io/v0/stream', [], {
+    rejectUnauthorized: false
+  });
   
   aisConnection.on('open', () => {
     console.log('✓ Connected to AISStream');
