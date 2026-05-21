@@ -457,7 +457,7 @@
         </div>
         <div style="padding:4px 12px 6px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:10px;color:rgba(255,255,255,0.3);">AIS data is real-time · positions refresh every 2–10 sec</span>
-            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v32</span>
+            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v33</span>
         </div>
         <div class="panel-body">
             <table class="ships-table">
@@ -1163,6 +1163,20 @@
             statusEl.className = 'connection-status ' + (connected ? 'connected' : 'disconnected');
         }
 
+        // Manual retry resets backoff so the next failure only waits 2s
+        function manualRetry() {
+            reconnectAttempts = 0;
+            connectToProxy();
+        }
+
+        // Reconnect immediately when the user comes back to the tab
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) {
+                console.log('Tab visible — reconnecting...');
+                manualRetry();
+            }
+        });
+
         function connectToProxy() {
             // Cancel any pending retry timer
             if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
@@ -1207,7 +1221,7 @@
                 // Exponential backoff: 2s → 4s → 8s → … capped at 30s — retries forever
                 const delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000);
                 const delaySec = Math.round(delay / 1000);
-                updateConnectionStatus(`Reconnecting in ${delaySec}s… <button onclick="connectToProxy()" style="margin-left:8px;padding:2px 8px;background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#4fc3f7;border-radius:4px;cursor:pointer;font-size:10px;">Retry Now</button>`, false);
+                updateConnectionStatus(`Reconnecting in ${delaySec}s… <button onclick="manualRetry()" style="margin-left:8px;padding:2px 8px;background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#4fc3f7;border-radius:4px;cursor:pointer;font-size:10px;">Retry Now</button>`, false);
                 console.log('Reconnecting in ' + delaySec + ' seconds...');
                 reconnectTimer = setTimeout(connectToProxy, delay);
             };
