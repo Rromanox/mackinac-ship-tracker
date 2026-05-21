@@ -457,7 +457,7 @@
         </div>
         <div style="padding:4px 12px 6px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:10px;color:rgba(255,255,255,0.3);">AIS data is real-time · positions refresh every 2–10 sec</span>
-            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v31</span>
+            <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v32</span>
         </div>
         <div class="panel-body">
             <table class="ships-table">
@@ -532,7 +532,7 @@
         let recentShips = [];
         let ws = null;
         let reconnectAttempts = 0;
-        const MAX_RECONNECT_ATTEMPTS = 10;
+        let reconnectTimer = null;
         const MAX_RECENT_SHIPS = 1;
         let alertTimeout = null;
         let lastUpdateTime = Date.now();
@@ -1159,41 +1159,35 @@
 
         function updateConnectionStatus(status, connected) {
             const statusEl = document.getElementById('connectionStatus');
-            statusEl.textContent = status;
+            statusEl.innerHTML = status;
             statusEl.className = 'connection-status ' + (connected ? 'connected' : 'disconnected');
         }
 
         function connectToProxy() {
-            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-                console.error('Max reconnection attempts reached');
-                document.getElementById('shipList').innerHTML = 
-                    '<div class="no-ships">Unable to connect.<br>Please refresh the page.</div>';
-                updateConnectionStatus('Connection Failed', false);
-                return;
-            }
+            // Cancel any pending retry timer
+            if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+            // Don't open a second socket if one is already connecting/open
+            if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
 
             console.log('Connecting to proxy server... (Attempt ' + (reconnectAttempts + 1) + ')');
             updateConnectionStatus('Connecting...', false);
 
             ws = new WebSocket(PROXY_SERVER_URL);
-            
+
             ws.onopen = function() {
                 console.log('✓ Connected to proxy server');
                 reconnectAttempts = 0;
                 updateConnectionStatus('Connected • Waiting for data', true);
-                document.getElementById('shipList').innerHTML = 
+                document.getElementById('shipList').innerHTML =
                     '<div class="loading">Scanning for vessels...</div>';
             };
-            
+
             ws.onmessage = function(event) {
                 try {
                     const message = JSON.parse(event.data);
-                    
                     if (message.type === 'status') {
                         console.log('Status:', message.message);
-                        if (message.connected) {
-                            updateConnectionStatus('Connected • Live Updates', true);
-                        }
+                        if (message.connected) updateConnectionStatus('Connected • Live Updates', true);
                     } else if (message.type === 'ship_data') {
                         processShipData(message.data);
                     }
@@ -1201,21 +1195,21 @@
                     console.error('Error processing message:', error);
                 }
             };
-            
+
             ws.onerror = function(error) {
                 console.error('WebSocket error:', error);
                 updateConnectionStatus('Connection Error', false);
             };
-            
+
             ws.onclose = function() {
                 console.log('WebSocket closed');
-                updateConnectionStatus('Disconnected • Reconnecting...', false);
                 reconnectAttempts++;
-                
+                // Exponential backoff: 2s → 4s → 8s → … capped at 30s — retries forever
                 const delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000);
-                console.log('Reconnecting in ' + (delay / 1000) + ' seconds...');
-                
-                setTimeout(connectToProxy, delay);
+                const delaySec = Math.round(delay / 1000);
+                updateConnectionStatus(`Reconnecting in ${delaySec}s… <button onclick="connectToProxy()" style="margin-left:8px;padding:2px 8px;background:rgba(79,195,247,0.2);border:1px solid #4fc3f7;color:#4fc3f7;border-radius:4px;cursor:pointer;font-size:10px;">Retry Now</button>`, false);
+                console.log('Reconnecting in ' + delaySec + ' seconds...');
+                reconnectTimer = setTimeout(connectToProxy, delay);
             };
         }
 
