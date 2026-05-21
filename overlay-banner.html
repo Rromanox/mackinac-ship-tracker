@@ -2,592 +2,420 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <title>Mackinac — Unified Banner</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    background: transparent;
-    font-family: 'Arial', sans-serif;
-    width: 1280px;
-    height: 68px;
-    overflow: hidden;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', Tahoma, sans-serif; }
+body { background-color: transparent; overflow: hidden; width: 1280px; height: 80px; }
 
-/* ══════════════════════════════════════════
-   WRAPPER — contains both layers
-══════════════════════════════════════════ */
-.banner-wrapper {
-    position: relative;
-    width: 1280px;
-    height: 68px;
-    overflow: hidden;
-}
-
-/* ══════════════════════════════════════════
-   SHIP LAYER — always present underneath
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   SHIP LAYER — always visible at the bottom.
+   The two tickers (z-index 1000) slide up over it.
+══════════════════════════════════════════════════ */
 .ship-layer {
-    position: absolute;
-    inset: 0;
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%; height: 80px;
+    z-index: 999;                   /* sits just under both tickers */
     display: flex;
     align-items: center;
-    background: rgba(0,0,0,0.78);
-    border-top: 2px solid rgba(255,255,255,0.1);
-    height: 68px;
-    padding: 0 18px;
-    backdrop-filter: blur(10px);
-    transition: border-color 0.5s;
-}
-.ship-layer.near {
-    border-top-color: #ef5350;
-    box-shadow: 0 -2px 20px rgba(239,83,80,0.3);
+    padding: 0 15px;
+    gap: 0;
+    /* matches the ticker background so colours always sync */
+    background: var(--dynamic-background, linear-gradient(to bottom, skyblue, lightgrey));
+    color: var(--dynamic-text-color, black);
 }
 
-.branding {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 170px;
-    border-right: 1px solid rgba(255,255,255,0.12);
-    padding-right: 16px;
-    margin-right: 16px;
+/* left branding block */
+.ship-branding {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-width: 200px; flex-shrink: 0;
+    border-right: 2px solid rgba(0,0,0,0.15);
+    padding-right: 15px; margin-right: 15px;
 }
-.branding-title {
-    font-size: 11px; font-weight: bold; letter-spacing: 1.5px;
-    color: #fff; text-transform: uppercase; white-space: nowrap;
+.ship-branding-title {
+    font-size: 1rem; font-weight: bold; letter-spacing: 1px;
+    white-space: nowrap; color: inherit;
 }
-.branding-sub {
-    font-size: 9px; color: rgba(255,255,255,0.4);
-    letter-spacing: 0.5px; white-space: nowrap;
-}
+.ship-branding-sub { font-size: 0.7rem; opacity: 0.6; white-space: nowrap; }
 
-.ships-row {
-    flex: 1; overflow: hidden; position: relative;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
-    mask-image:         linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
-}
-.ships-inner {
-    display: flex; align-items: center; gap: 10px; width: max-content;
-}
+/* chips */
+.ships-row { flex: 1; overflow: hidden; position: relative; }
+.ships-inner { display: flex; align-items: center; gap: 10px; width: max-content; }
 
 .ship-chip {
-    display: flex; align-items: center; gap: 10px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px; padding: 6px 12px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,0,0,0.1);
+    border: 1.5px solid rgba(0,0,0,0.2);
+    border-radius: 20px;
+    padding: 4px 14px; flex-shrink: 0;
+    font-size: 0.85rem; font-weight: bold; color: inherit;
     transition: border-color 0.3s, background 0.3s;
 }
-.ship-chip.approaching { border-color: rgba(0,230,118,0.35); background: rgba(0,230,118,0.07); }
-.ship-chip.departing   { border-color: rgba(255,152,0,0.3);  background: rgba(255,152,0,0.06); }
-.ship-chip.near-bridge { border-color: rgba(239,83,80,0.6);  background: rgba(239,83,80,0.12); animation: chipPulse 1s infinite; }
+.ship-chip.approaching { border-color: rgba(0,130,0,0.5);  background: rgba(0,140,0,0.12); }
+.ship-chip.departing   { border-color: rgba(160,80,0,0.45); background: rgba(170,90,0,0.1); }
+.ship-chip.near-bridge { border-color: rgba(200,0,0,0.6);   background: rgba(200,0,0,0.12); animation: chipPulse 1s infinite; }
 @keyframes chipPulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
 
-.chip-arrow { font-size: 14px; }
-.chip-name  { font-size: 13px; font-weight: bold; color: #fff; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chip-dist  { font-size: 12px; color: rgba(255,255,255,0.5); }
-.chip-speed { font-size: 11px; color: rgba(255,255,255,0.38); }
-.chip-eta   { font-size: 11px; color: #4fc3f7; font-weight: bold; }
-.no-ships-bar { color: rgba(255,255,255,0.25); font-size: 11px; }
+.chip-arrow { font-size: 0.85rem; }
+.chip-name  { font-weight: bold; }
+.chip-dist  { opacity: 0.6; font-size: 0.8rem; }
+.chip-speed { opacity: 0.5; font-size: 0.75rem; }
+.chip-eta   { font-size: 0.75rem; font-weight: bold; color: #0055bb; }
+.no-ships-bar { opacity: 0.45; font-size: 0.85rem; font-weight: bold; }
 
+/* live dot */
 .live-area {
-    display: flex; flex-direction: column; align-items: center;
-    gap: 3px; min-width: 48px; margin-left: auto;
-    padding-left: 14px; border-left: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 6px;
+    margin-left: auto; padding-left: 14px;
+    border-left: 2px solid rgba(0,0,0,0.12);
+    flex-shrink: 0;
 }
-.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef5350; }
-.live-dot.on { background: #00e676; animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.live-label { font-size: 8px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(180,0,0,0.5); }
+.live-dot.on { background: #007700; animation: livePulse 2s infinite; }
+@keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.live-label { font-size: 0.6rem; font-weight: bold; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
 
-/* ══════════════════════════════════════════
-   SLIDE LAYER — slides up over ship layer
-══════════════════════════════════════════ */
-.slide-layer {
-    position: absolute;
-    inset: 0;
-    transform: translateY(100%);          /* hidden below by default */
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+/* ══════════════════════════════════════════════════
+   TICKERS — your original styles, unchanged
+══════════════════════════════════════════════════ */
+.ticker-wrap {
+    width: 100%;
+    height: 80px;
     overflow: hidden;
-}
-.slide-layer.up { transform: translateY(0); } /* slides into view */
-
-/* ══════════════════════════════════════════
-   GENERIC SLIDE SHELL
-   All slides are 1280×68px flex rows.
-══════════════════════════════════════════ */
-.ticker-slide {
-    width: 1280px;
-    height: 68px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
     display: flex;
     align-items: center;
-    overflow: hidden;
-    padding: 0 20px;
-    position: relative;
+    padding: 0 15px;
+    background: var(--dynamic-background, linear-gradient(to bottom, skyblue, lightgrey));
+    color: var(--dynamic-text-color, black);
 }
-
-/* ── Left-side branding column inside a slide ── */
-.slide-brand {
-    flex-shrink: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding-right: 18px;
-    margin-right: 2px;
-}
-.slide-brand-title { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
-.slide-brand-sub   { font-size: 9px;  letter-spacing: 0.5px; margin-top: 1px; }
-
-/* Vertical separator shared by slides */
-.slide-sep {
-    width: 1px; height: 36px; flex-shrink: 0;
-    background: rgba(255,255,255,0.12);
-    margin: 0 18px;
-}
-
-/* ── Scrolling ticker track ── */
-.ticker-scroll-wrap {
-    flex: 1; overflow: hidden; position: relative;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
-    mask-image:         linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
-}
-.ticker-scroll-inner {
+.ticker {
     display: flex;
-    width: max-content;
-    /* duration set dynamically by JS */
-    animation: tickerScroll linear infinite;
+    align-items: center;
+    min-width: 100%;
 }
-@keyframes tickerScroll {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); } /* -50% because we duplicate items */
-}
-.ticker-item {
-    padding: 0 48px;
-    font-size: 13px;
-    color: rgba(255,255,255,0.85);
+.ticker-item, .weather-box {
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
     white-space: nowrap;
-    display: flex; align-items: center; gap: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: inherit;
 }
-.ti-icon   { font-size: 15px; }
-.ti-accent { font-weight: bold; }
+.ticker-item i, .weather-box i { margin-right: 10px; color: red; }
+.weather-box img { height: 1.6rem; margin-right: 8px; }
 
-/* ══════════════════════════════════════════
-   SLIDE: RIVIERA MOTEL
-══════════════════════════════════════════ */
-.slide-riviera {
-    background: linear-gradient(90deg, #160800 0%, #3d1a00 40%, #3d1a00 60%, #160800 100%);
-    border-top: 2px solid rgba(255,152,0,0.45);
-    box-shadow: 0 -2px 18px rgba(255,120,0,0.15);
-}
-.slide-riviera .slide-brand-title { color: #ff9800; }
-.slide-riviera .slide-brand-sub   { color: rgba(255,152,0,0.45); }
-.slide-riviera .ti-accent         { color: #ff9800; }
-.slide-riviera .slide-sep         { background: rgba(255,152,0,0.2); }
+/* === TICKER 1: Weather + Stream Info === */
+.ticker-wrap-1 { animation: bannerCycle1 300s ease-in-out infinite; }
+.ticker-1      { animation: textScroll1  300s linear      infinite; }
 
-/* ══════════════════════════════════════════
-   SLIDE: WEATHER  (example of a 2nd slide)
-══════════════════════════════════════════ */
-.slide-weather {
-    /* background set inline by JS based on day/night */
-    border-top: 2px solid rgba(79,195,247,0.4);
+/* === TICKER 2: Riviera Motel === */
+.ticker-wrap-2 { animation: bannerCycle2 300s ease-in-out infinite; }
+.ticker-2      { animation: textScroll2  300s linear      infinite; }
+
+/*
+    300s (5 min) cycle breakdown:
+    -----------------------------------------------
+    0s-6s      Banner 1 slides up
+    9s-24s     Text 1 scrolls in from right
+    24s-78s    Text 1 sits still (54s)
+    78s-87s    Text 1 scrolls off left
+    84s-90s    Banner 1 slides down
+    90s-99s    Gap (both hidden — ships visible)
+    99s-105s   Banner 2 slides up
+    108s-123s  Text 2 scrolls in from right
+    123s-177s  Text 2 sits still (54s)
+    177s-186s  Text 2 scrolls off left
+    183s-189s  Banner 2 slides down
+    189s-300s  Both hidden (ships visible — 111s)
+    -----------------------------------------------
+*/
+
+/* --- Banner 1 slide up/down --- */
+@keyframes bannerCycle1 {
+    0%   { transform: translateY(100%); }   /* hidden below */
+    2%   { transform: translateY(0); }      /* up by 6s */
+    28%  { transform: translateY(0); }      /* visible until 84s */
+    30%  { transform: translateY(100%); }   /* down by 90s */
+    100% { transform: translateY(100%); }   /* stay hidden */
 }
-.wx-temp-big  { font-size: 28px; font-weight: bold; color: #fff; line-height: 1; flex-shrink: 0; }
-.wx-details   { display: flex; align-items: center; gap: 28px; flex: 1; padding-left: 6px; }
-.wx-stat      { display: flex; flex-direction: column; align-items: center; }
-.wx-stat-lbl  { font-size: 9px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1px; }
-.wx-stat-val  { font-size: 14px; font-weight: bold; color: #4fc3f7; }
-.wx-stat-val.white { color: #e0e0e0; }
-.wx-icon-big  { font-size: 34px; flex-shrink: 0; }
+
+/* --- Text scroll for banner 1 --- */
+@keyframes textScroll1 {
+    0%   { transform: translateX(100%); }   /* offscreen right */
+    3%   { transform: translateX(100%); }   /* wait for banner (9s) */
+    8%   { transform: translateX(0); }      /* scrolled in by 24s */
+    26%  { transform: translateX(0); }      /* sit still until 78s (54s) */
+    29%  { transform: translateX(-100%); }  /* scrolled off by 87s */
+    100% { transform: translateX(-100%); }  /* stay offscreen */
+}
+
+/* --- Banner 2 slide up/down --- */
+@keyframes bannerCycle2 {
+    0%   { transform: translateY(100%); }   /* hidden */
+    33%  { transform: translateY(100%); }   /* stay hidden until 99s */
+    35%  { transform: translateY(0); }      /* up by 105s */
+    61%  { transform: translateY(0); }      /* visible until 183s */
+    63%  { transform: translateY(100%); }   /* down by 189s */
+    100% { transform: translateY(100%); }   /* stay hidden */
+}
+
+/* --- Text scroll for banner 2 --- */
+@keyframes textScroll2 {
+    0%   { transform: translateX(100%); }   /* offscreen right */
+    36%  { transform: translateX(100%); }   /* wait for banner (108s) */
+    41%  { transform: translateX(0); }      /* scrolled in by 123s */
+    59%  { transform: translateX(0); }      /* sit still until 177s (54s) */
+    62%  { transform: translateX(-100%); }  /* scrolled off by 186s */
+    100% { transform: translateX(-100%); }  /* stay offscreen */
+}
 </style>
 </head>
 <body>
-<div class="banner-wrapper">
 
-    <!-- ─────────────────────────────────────────────────────
-         LAYER 1: SHIP BAR  (always visible underneath)
-    ───────────────────────────────────────────────────────── -->
-    <div class="ship-layer" id="shipLayer">
-        <div class="branding">
-            <span class="branding-title">🌉 Mackinac Straits</span>
-            <span class="branding-sub" id="brandingSub">Live Ship Tracker</span>
-        </div>
-        <div class="ships-row" id="shipsRow">
-            <div class="ships-inner" id="shipsInner">
-                <span class="no-ships-bar">Connecting…</span>
-            </div>
-        </div>
-        <div class="live-area">
-            <div class="live-dot" id="liveDot"></div>
-            <span class="live-label">Live</span>
+<!-- ══════════════════════════════════════════════════
+     SHIP LAYER — default visible state
+══════════════════════════════════════════════════ -->
+<div class="ship-layer" id="shipLayer">
+    <div class="ship-branding">
+        <span class="ship-branding-title">🌉 Mackinac Straits</span>
+        <span class="ship-branding-sub" id="brandingSub">Live Ship Tracker</span>
+    </div>
+    <div class="ships-row" id="shipsRow">
+        <div class="ships-inner" id="shipsInner">
+            <span class="no-ships-bar">Connecting…</span>
         </div>
     </div>
+    <div class="live-area">
+        <div class="live-dot" id="liveDot"></div>
+        <span class="live-label">Live</span>
+    </div>
+</div>
 
-    <!-- ─────────────────────────────────────────────────────
-         LAYER 2: SLIDE OVERLAY  (slides up on cycle)
-    ───────────────────────────────────────────────────────── -->
-    <div class="slide-layer" id="slideLayer"></div>
+<!-- ══════════════════════════════════════════════════
+     TICKER 1: Weather + Stream Info  (original)
+══════════════════════════════════════════════════ -->
+<div class="ticker-wrap ticker-wrap-1">
+    <div class="ticker ticker-1">
+        <div class="ticker-item">
+            <i class="fas fa-video"></i> Live Stream of the Mackinac Bridge from the Riviera Motel!
+        </div>
+        <div class="ticker-item">
+            <i class="fas fa-info-circle"></i> Subscribe to the channel for more updates!
+        </div>
+        <div class="ticker-item weather-box" id="id-weather">
+            <i class="fa-solid fa-cloud-sun"></i>
+        </div>
+    </div>
+</div>
 
+<!-- ══════════════════════════════════════════════════
+     TICKER 2: Riviera Motel  (original)
+══════════════════════════════════════════════════ -->
+<div class="ticker-wrap ticker-wrap-2">
+    <div class="ticker ticker-2">
+        <div class="ticker-item">
+            <i class="fas fa-bed"></i> The Riviera Motel is NOW OPEN for reservations | Visit ShadowoftheBridge.com and book your room NOW!
+        </div>
+    </div>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
-//  CORE CONFIG
+//  WEATHER — original logic, jQuery replaced with fetch()
 // ═══════════════════════════════════════════════════════════
-const RENDER_URL  = 'mackinac-ship-tracker.onrender.com';
-const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const WS_URL      = isLocalhost ? `ws://localhost:${location.port||3000}` : `wss://${RENDER_URL}`;
-const BRIDGE_LAT  = 45.8174, BRIDGE_LON = -84.7278;
-const MAX_DIST_MI = 62;
+var yourApiKey     = "8d6e0169a641adc002688e82b9ab8ec3";
+var yourCity       = "Mackinaw City, US";
+var yourUnits      = "imperial";
+var iconHeight     = "50px";
+var clockSeperator = "-";
+var time24hour     = false;
 
-// Weather config
-const WX_API_KEY      = '8d6e0169a641adc002688e82b9ab8ec3';
-const WX_CITY         = 'Mackinaw City,US';
-const WX_REFRESH_MS   = 10 * 60 * 1000;   // every 10 minutes
-
-// Slide cycle timing
-const SHIP_HOLD_MS    = 20000;   // how long ships show before first/next slide
-const SLIDE_HOLD_MS   = 12000;   // default how long each slide is shown
-const SLIDE_TRANS_MS  = 600;     // must match .slide-layer transition duration
-
-// Ticker scroll speed — pixels per second
-const TICKER_PX_PER_S = 65;
-
-// ═══════════════════════════════════════════════════════════
-//  SLIDES ARRAY
-//  ─────────────────────────────────────────────────────────
-//  Each slide is an object with:
-//    id      {string}  unique identifier
-//    holdMs  {number}  optional — ms to display this slide (default: SLIDE_HOLD_MS)
-//    render  {function(weatherData)} → HTML string
-//
-//  TO ADD A NEW SLIDE:
-//    Just push a new object into this array below.
-//    The slide controller automatically includes it in the rotation.
-// ═══════════════════════════════════════════════════════════
-const SLIDES = [
-
-    // ── SLIDE 1: Riviera Motel ────────────────────────────
-    {
-        id:     'riviera',
-        holdMs: 12000,
-        render(wx) {
-            const items = [
-                { icon: '🏨', text: '<span class="ti-accent">Riviera Motel</span> — Waterfront rooms on the shores of Lake Michigan' },
-                { icon: '📞', text: 'Reservations: <span class="ti-accent">(231) 436-5577</span> · <span class="ti-accent">rivieramotel.com</span>' },
-                { icon: '🌊', text: 'Watch the freighters pass right from your room — <span class="ti-accent">Book your stay today!</span>' },
-                { icon: '🌉', text: 'Located steps from the Mackinac Bridge · <span class="ti-accent">Riviera Motel, Mackinaw City MI</span>' },
-                { icon: '⭐', text: 'Comfortable rooms · Friendly service · <span class="ti-accent">Unforgettable views</span>' },
-            ];
-            // Duplicate items so the CSS translateX(-50%) loop is seamless
-            const doubled = [...items, ...items];
-            const rows = doubled.map(it =>
-                `<div class="ticker-item"><span class="ti-icon">${it.icon}</span><span>${it.text}</span></div>`
-            ).join('');
-            return `
-                <div class="ticker-slide slide-riviera">
-                    <div class="slide-brand">
-                        <span class="slide-brand-title">🏨 Riviera Motel</span>
-                        <span class="slide-brand-sub">Mackinaw City, MI</span>
-                    </div>
-                    <div class="slide-sep"></div>
-                    <div class="ticker-scroll-wrap">
-                        <div class="ticker-scroll-inner" id="ticker_riviera">${rows}</div>
-                    </div>
-                </div>`;
-        }
-    },
-
-    // ── Add more slides below this line ───────────────────
-    //
-    // Example — uncomment and customise to add a new slide:
-    //
-    // {
-    //     id:     'my-new-slide',
-    //     holdMs: 10000,
-    //     render(wx) {
-    //         return `
-    //             <div class="ticker-slide" style="background:rgba(0,0,0,0.88);border-top:2px solid rgba(0,230,118,0.4)">
-    //                 <div class="slide-brand">
-    //                     <span class="slide-brand-title" style="color:#00e676">🎉 New Slide</span>
-    //                     <span class="slide-brand-sub" style="color:rgba(0,230,118,0.4)">Subtitle here</span>
-    //                 </div>
-    //                 <div class="slide-sep"></div>
-    //                 <div style="color:#fff;font-size:14px;padding-left:20px">Your custom content goes here</div>
-    //             </div>`;
-    //     }
-    // },
-
-];
-
-// ═══════════════════════════════════════════════════════════
-//  WEATHER
-// ═══════════════════════════════════════════════════════════
-let weatherData = null;
-
-const WX_ICON_MAP = {
-    '01d':'☀️','01n':'🌙','02d':'⛅','02n':'⛅','03d':'☁️','03n':'☁️',
-    '04d':'☁️','04n':'☁️','09d':'🌧️','09n':'🌧️','10d':'🌦️','10n':'🌧️',
-    '11d':'⛈️','11n':'⛈️','13d':'❄️','13n':'❄️','50d':'🌫️','50n':'🌫️'
-};
-
-async function fetchWeather() {
-    try {
-        const r = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(WX_CITY)}&appid=${WX_API_KEY}&units=imperial`
-        );
-        if (!r.ok) return;
-        const d = await r.json();
-        weatherData = {
-            temp:     Math.round(d.main.temp),
-            feelsLike: Math.round(d.main.feels_like),
-            humidity: d.main.humidity,
-            wind:     Math.round(d.wind.speed),
-            desc:     d.weather[0].description,
-            icon:     WX_ICON_MAP[d.weather[0].icon] || '🌡️',
-            isDay:    d.weather[0].icon.endsWith('d'),
-        };
-        // Update the subtle weather line in the ship bar branding
-        document.getElementById('brandingSub').textContent =
-            `${weatherData.icon} ${weatherData.temp}°F · ${weatherData.desc}`;
-    } catch(e) { /* silently ignore — ship tracker still works */ }
+function refreshData() {
+    weatherCheck();
+    setTimeout(refreshData, 60000);
 }
-
-fetchWeather();
-setInterval(fetchWeather, WX_REFRESH_MS);
-
-// ═══════════════════════════════════════════════════════════
-//  SLIDE CONTROLLER
-//
-//  Cycle:
-//    Ships visible for SHIP_HOLD_MS
-//    → Slide 0 slides UP, holds SLIDE_HOLD_MS, slides DOWN
-//    → (if more slides) brief gap, then Slide 1 slides UP…
-//    → After last slide: ships visible again for SHIP_HOLD_MS
-//    → Repeat
-// ═══════════════════════════════════════════════════════════
-let slideIndex = 0;
-let slideTimer = null;
-
-function showSlide(idx) {
-    const slide = SLIDES[idx];
-    const layer = document.getElementById('slideLayer');
-
-    layer.innerHTML = slide.render(weatherData);
-
-    // Measure ticker and set a proportional scroll speed
-    const tickerInner = layer.querySelector('[id^="ticker_"]');
-    if (tickerInner) {
-        requestAnimationFrame(() => {
-            // scrollWidth is the full doubled width; half = one full pass
-            const oneCycleWidth = tickerInner.scrollWidth / 2;
-            const duration      = Math.max(8, oneCycleWidth / TICKER_PX_PER_S);
-            tickerInner.style.animationDuration = duration.toFixed(1) + 's';
-        });
-    }
-
-    // Trigger slide-up animation
-    requestAnimationFrame(() => layer.classList.add('up'));
-}
-
-function hideSlide() {
-    const layer = document.getElementById('slideLayer');
-    layer.classList.remove('up');
-    // Clear innerHTML after transition so it's invisible and empty
-    setTimeout(() => {
-        if (!layer.classList.contains('up')) layer.innerHTML = '';
-    }, SLIDE_TRANS_MS + 100);
-}
-
-function runSlideCycle() {
-    if (SLIDES.length === 0) return;
-
-    function cycle() {
-        showSlide(slideIndex);
-        const holdMs = SLIDES[slideIndex].holdMs || SLIDE_HOLD_MS;
-
-        slideTimer = setTimeout(() => {
-            hideSlide();
-            slideIndex = (slideIndex + 1) % SLIDES.length;
-
-            if (slideIndex === 0) {
-                // Finished all slides — let ships breathe before looping
-                slideTimer = setTimeout(cycle, SHIP_HOLD_MS);
-            } else {
-                // More slides — brief pause for hide animation, then next
-                slideTimer = setTimeout(cycle, SLIDE_TRANS_MS + 400);
+function weatherCheck() {
+    var time = time24hour ? time24(new Date()) : currentTime(new Date());
+    fetch('https://api.openweathermap.org/data/2.5/weather?units=' + yourUnits +
+          '&q=' + encodeURIComponent(yourCity) + '&appid=' + yourApiKey)
+        .then(function(r) { return r.json(); })
+        .then(function(apiResponse) {
+            var weatherDescription = toProperCase(apiResponse.weather[0].description);
+            var curtemp   = Math.round(apiResponse.main.temp);
+            var iconCode  = apiResponse.weather[0].icon;
+            var iconUrl   = 'https://openweathermap.org/img/wn/' + iconCode + '@2x.png';
+            var isDaytime = iconCode.slice(-1) === 'd';
+            var backgroundGradient = isDaytime
+                ? 'linear-gradient(to bottom, skyblue, lightgrey)'
+                : 'linear-gradient(to bottom, black, dimgrey)';
+            var textColor = isDaytime ? 'black' : 'white';
+            document.documentElement.style.setProperty('--dynamic-background', backgroundGradient);
+            document.documentElement.style.setProperty('--dynamic-text-color', textColor);
+            if (document.getElementById('id-weather')) {
+                document.getElementById('id-weather').innerHTML =
+                    yourCity + ': ' + curtemp + '&deg; ' +
+                    '<img style="height:' + iconHeight + ';" src="' + iconUrl + '"> ' +
+                    weatherDescription + ' ' + clockSeperator + ' ' + time;
             }
-        }, holdMs);
-    }
-
-    // Initial pause — show ships first
-    slideTimer = setTimeout(cycle, SHIP_HOLD_MS);
+            // Also update the subtle sub-line in the ship bar branding
+            document.getElementById('brandingSub').textContent =
+                curtemp + '°F · ' + weatherDescription;
+        })
+        .catch(function(err) { console.error('Weather fetch failed:', err); });
+}
+function currentTime(date) {
+    var h=date.getHours(), m=date.getMinutes(), ap=h>=12?'PM':'AM';
+    h=h%12; h=h?h:12; m=m<10?'0'+m:m;
+    return h+':'+m+' '+ap;
+}
+function time24(date) {
+    var h=date.getHours(), m=date.getMinutes();
+    return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+}
+function toProperCase(str) {
+    return str.replace(/\w\S*/g, function(t) {
+        return t.charAt(0).toUpperCase() + t.substr(1).toLowerCase();
+    });
 }
 
-runSlideCycle();
+// ═══════════════════════════════════════════════════════════
+//  SHIP TRACKER
+// ═══════════════════════════════════════════════════════════
+var RENDER_URL    = 'mackinac-ship-tracker.onrender.com';
+var isLocalhost   = location.hostname==='localhost'||location.hostname==='127.0.0.1';
+var WS_URL        = isLocalhost ? 'ws://localhost:'+(location.port||3000) : 'wss://'+RENDER_URL;
+var BRIDGE_LAT    = 45.8174, BRIDGE_LON = -84.7278;
+var MAX_DIST_MI   = 62;
 
-// ═══════════════════════════════════════════════════════════
-//  SHIP TRACKER  (ported from overlay-bar.html)
-// ═══════════════════════════════════════════════════════════
-let shipData = {}, staticData = {};
-let ws, reconnectTimer, reconnectAttempts = 0;
+var shipData={}, ws, reconnectTimer, reconnectAttempts=0;
 
 function haversine(lat1,lon1,lat2,lon2){
-    const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
-    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    var R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+    var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
-function toMiles(km) { return km * 0.621371; }
+function toMiles(km){return km*0.621371;}
 function getDirection(lat,lon,course){
-    const dLat=lat-BRIDGE_LAT, dLon=lon-BRIDGE_LON;
-    const toBridge=(Math.atan2(-dLon,-dLat)*180/Math.PI+360)%360;
-    return Math.abs(((course-toBridge)+180+360)%360-180)<90 ? 'Approaching' : 'Departing';
+    var dLat=lat-BRIDGE_LAT,dLon=lon-BRIDGE_LON;
+    var tb=(Math.atan2(-dLon,-dLat)*180/Math.PI+360)%360;
+    return Math.abs(((course-tb)+180+360)%360-180)<90?'Approaching':'Departing';
 }
 function formatETA(distKm,spd){
-    if(!spd||spd<0.5) return null;
-    const min=Math.round(distKm/(spd*1.852)*60);
-    if(min>600) return null;
-    return min<60 ? min+'m' : Math.floor(min/60)+'h'+(min%60 ? ''+min%60+'m' : '');
+    if(!spd||spd<0.5)return null;
+    var min=Math.round(distKm/(spd*1.852)*60);
+    if(min>600)return null;
+    return min<60?min+'m':Math.floor(min/60)+'h'+(min%60?min%60+'m':'');
 }
 
-// ── Page-based scrolling ─────────────────────────────────
-const PAGE_HOLD_MS = 5000;
-let pageOffsets = [], currentPage = 0, pageTimer = null, lastShipKey = '';
+var PAGE_HOLD_MS=5000,pageOffsets=[],currentPage=0,pageTimer=null,lastShipKey='';
 
 function buildPageOffsets(){
-    const inner = document.getElementById('shipsInner');
-    const row   = document.getElementById('shipsRow');
-    if(!inner||!row) return [0];
-    const avail = row.offsetWidth;
-    const chips = [...inner.querySelectorAll('.ship-chip')];
-    if(!chips.length) return [0];
-    const offsets = [0];
-    let pageStartX=0, pageWidth=0;
-    chips.forEach(chip => {
-        const w = chip.offsetWidth + 10;
-        if(pageWidth>0 && pageWidth+w>avail){ pageStartX+=pageWidth; offsets.push(pageStartX); pageWidth=w; }
-        else pageWidth += w;
-    });
+    var inner=document.getElementById('shipsInner'),row=document.getElementById('shipsRow');
+    if(!inner||!row)return[0];
+    var avail=row.offsetWidth,chips=[].slice.call(inner.querySelectorAll('.ship-chip'));
+    if(!chips.length)return[0];
+    var offsets=[0],px=0,pw=0;
+    chips.forEach(function(c){var w=c.offsetWidth+10;if(pw>0&&pw+w>avail){px+=pw;offsets.push(px);pw=w;}else pw+=w;});
     return offsets;
 }
 function showPage(idx){
-    const inner = document.getElementById('shipsInner');
-    if(!inner||!pageOffsets.length) return;
-    inner.style.transition = 'transform 0.7s ease-in-out';
-    inner.style.transform  = `translateX(-${pageOffsets[idx % pageOffsets.length]}px)`;
+    var inner=document.getElementById('shipsInner');
+    if(!inner||!pageOffsets.length)return;
+    inner.style.transition='transform 0.7s ease-in-out';
+    inner.style.transform='translateX(-'+pageOffsets[idx%pageOffsets.length]+'px)';
 }
 function startPaging(){
-    if(pageTimer){ clearInterval(pageTimer); pageTimer=null; }
-    currentPage=0; showPage(0);
-    if(pageOffsets.length<=1) return;
-    pageTimer = setInterval(() => { currentPage=(currentPage+1)%pageOffsets.length; showPage(currentPage); }, PAGE_HOLD_MS);
+    if(pageTimer){clearInterval(pageTimer);pageTimer=null;}
+    currentPage=0;showPage(0);
+    if(pageOffsets.length<=1)return;
+    pageTimer=setInterval(function(){currentPage=(currentPage+1)%pageOffsets.length;showPage(currentPage);},PAGE_HOLD_MS);
 }
-
-// ── Chip builders ────────────────────────────────────────
 function buildChipHTML(ship){
-    const mi    = toMiles(ship.distance).toFixed(1);
-    const spd   = ship.speed ? ship.speed.toFixed(1)+' kts' : '';
-    const eta   = ship.direction==='Approaching' ? formatETA(ship.distance,ship.speed) : null;
-    const isNear= ship.distance < 8;
-    const cls   = isNear ? 'near-bridge' : ship.direction==='Approaching' ? 'approaching' : 'departing';
-    const arrow = isNear ? '⚡' : ship.direction==='Approaching' ? '▲' : '▼';
-    return `<div class="ship-chip ${cls}" data-mmsi="${ship.mmsi}">
-        <span class="chip-arrow">${arrow}</span>
-        <span class="chip-name">${ship.name}</span>
-        <span class="chip-dist">${mi} mi</span>
-        ${spd ? `<span class="chip-speed">${spd}</span>` : ''}
-        ${eta ? `<span class="chip-eta">ETA ${eta}</span>` : ''}
-    </div>`;
+    var mi=toMiles(ship.distance).toFixed(1);
+    var spd=ship.speed?ship.speed.toFixed(1)+' kts':'';
+    var eta=ship.direction==='Approaching'?formatETA(ship.distance,ship.speed):null;
+    var isNear=ship.distance<8;
+    var cls=isNear?'near-bridge':ship.direction==='Approaching'?'approaching':'departing';
+    var arrow=isNear?'&#9889;':ship.direction==='Approaching'?'&#9650;':'&#9660;';
+    return '<div class="ship-chip '+cls+'" data-mmsi="'+ship.mmsi+'">'+
+        '<span class="chip-arrow">'+arrow+'</span>'+
+        '<span class="chip-name">'+ship.name+'</span>'+
+        '<span class="chip-dist">'+mi+' mi</span>'+
+        (spd?'<span class="chip-speed">'+spd+'</span>':'')+
+        (eta?'<span class="chip-eta">ETA '+eta+'</span>':'')+
+        '</div>';
 }
 function updateChipValues(ships){
-    ships.forEach(ship => {
-        const chip = document.querySelector(`.ship-chip[data-mmsi="${ship.mmsi}"]`);
-        if(!chip) return;
-        const mi    = toMiles(ship.distance).toFixed(1);
-        const isNear= ship.distance < 8;
-        const eta   = ship.direction==='Approaching' ? formatETA(ship.distance,ship.speed) : null;
-        chip.className = 'ship-chip '+(isNear?'near-bridge':ship.direction==='Approaching'?'approaching':'departing');
-        chip.querySelector('.chip-arrow').textContent = isNear?'⚡':ship.direction==='Approaching'?'▲':'▼';
-        chip.querySelector('.chip-dist').textContent  = mi+' mi';
-        const spdEl = chip.querySelector('.chip-speed');
-        if(spdEl) spdEl.textContent = ship.speed ? ship.speed.toFixed(1)+' kts' : '';
-        const etaEl = chip.querySelector('.chip-eta');
-        if(etaEl) etaEl.textContent = eta ? 'ETA '+eta : '';
+    ships.forEach(function(ship){
+        var chip=document.querySelector('.ship-chip[data-mmsi="'+ship.mmsi+'"]');
+        if(!chip)return;
+        var mi=toMiles(ship.distance).toFixed(1);
+        var isNear=ship.distance<8;
+        var eta=ship.direction==='Approaching'?formatETA(ship.distance,ship.speed):null;
+        chip.className='ship-chip '+(isNear?'near-bridge':ship.direction==='Approaching'?'approaching':'departing');
+        chip.querySelector('.chip-arrow').innerHTML=isNear?'&#9889;':ship.direction==='Approaching'?'&#9650;':'&#9660;';
+        chip.querySelector('.chip-dist').textContent=mi+' mi';
+        var spdEl=chip.querySelector('.chip-speed');if(spdEl)spdEl.textContent=ship.speed?ship.speed.toFixed(1)+' kts':'';
+        var etaEl=chip.querySelector('.chip-eta');if(etaEl)etaEl.textContent=eta?'ETA '+eta:'';
     });
 }
-
-// ── Main render ──────────────────────────────────────────
 function render(){
-    const all = Object.values(shipData).filter(s => s.speed>0.5 && toMiles(s.distance)<=MAX_DIST_MI);
-    const approaching = all.filter(s => s.direction==='Approaching').sort((a,b)=>a.distance-b.distance);
-    const display = approaching.length>0 ? approaching : all.sort((a,b)=>a.distance-b.distance).slice(0,3);
-
-    document.getElementById('shipLayer').className = 'ship-layer'+(display.some(s=>s.distance<8)?' near':'');
-
-    const inner  = document.getElementById('shipsInner');
-    const newKey = display.map(s=>s.mmsi).join(',');
-
+    var all=Object.keys(shipData).map(function(k){return shipData[k];}).filter(function(s){return s.speed>0.5&&toMiles(s.distance)<=MAX_DIST_MI;});
+    var approaching=all.filter(function(s){return s.direction==='Approaching';}).sort(function(a,b){return a.distance-b.distance;});
+    var display=approaching.length>0?approaching:all.sort(function(a,b){return a.distance-b.distance;}).slice(0,3);
+    var inner=document.getElementById('shipsInner');
+    var newKey=display.map(function(s){return s.mmsi;}).join(',');
     if(!display.length){
-        if(lastShipKey !== 'empty'){
-            if(pageTimer){ clearInterval(pageTimer); pageTimer=null; }
-            inner.style.transition = 'none';
-            inner.style.transform  = 'translateX(0)';
-            inner.innerHTML = '<span class="no-ships-bar">No approaching vessels nearby</span>';
-            lastShipKey = 'empty';
-        }
-        return;
+        if(lastShipKey!=='empty'){
+            if(pageTimer){clearInterval(pageTimer);pageTimer=null;}
+            inner.style.transition='none';inner.style.transform='translateX(0)';
+            inner.innerHTML='<span class="no-ships-bar">No approaching vessels nearby</span>';
+            lastShipKey='empty';
+        }return;
     }
-    if(newKey !== lastShipKey){
-        lastShipKey = newKey;
-        if(pageTimer){ clearInterval(pageTimer); pageTimer=null; }
-        inner.style.transition = 'none';
-        inner.style.transform  = 'translateX(0)';
-        inner.innerHTML = display.map(buildChipHTML).join('');
-        setTimeout(() => { pageOffsets=buildPageOffsets(); startPaging(); }, 80);
-    } else {
-        updateChipValues(display);
-    }
+    if(newKey!==lastShipKey){
+        lastShipKey=newKey;
+        if(pageTimer){clearInterval(pageTimer);pageTimer=null;}
+        inner.style.transition='none';inner.style.transform='translateX(0)';
+        inner.innerHTML=display.map(buildChipHTML).join('');
+        setTimeout(function(){pageOffsets=buildPageOffsets();startPaging();},80);
+    }else{updateChipValues(display);}
 }
-
 function processMessage(data){
-    if(data.MessageType==='ShipStaticData' && data.Message?.ShipStaticData){
-        staticData[data.MetaData.MMSI] = { destination: data.Message.ShipStaticData.Destination?.trim()||null };
-        render(); return;
-    }
-    if(data.MessageType==='PositionReport' && data.Message?.PositionReport){
-        const pos=data.Message.PositionReport, meta=data.MetaData;
-        const dist=haversine(BRIDGE_LAT,BRIDGE_LON,pos.Latitude,pos.Longitude);
-        shipData[meta.MMSI] = {
-            mmsi:meta.MMSI, name:meta.ShipName?.trim()||'Unknown',
-            lat:pos.Latitude, lon:pos.Longitude, speed:pos.Sog||0, course:pos.Cog||0,
-            distance:dist, direction:getDirection(pos.Latitude,pos.Longitude,pos.Cog||0),
-            lastUpdate:Date.now()
-        };
-        const cut = Date.now()-600000;
-        Object.keys(shipData).forEach(k=>{ if(shipData[k].lastUpdate<cut) delete shipData[k]; });
+    if(data.MessageType==='PositionReport'&&data.Message&&data.Message.PositionReport){
+        var pos=data.Message.PositionReport,meta=data.MetaData;
+        var dist=haversine(BRIDGE_LAT,BRIDGE_LON,pos.Latitude,pos.Longitude);
+        shipData[meta.MMSI]={mmsi:meta.MMSI,name:(meta.ShipName||'Unknown').trim(),
+            lat:pos.Latitude,lon:pos.Longitude,speed:pos.Sog||0,course:pos.Cog||0,
+            distance:dist,direction:getDirection(pos.Latitude,pos.Longitude,pos.Cog||0),lastUpdate:Date.now()};
+        var cut=Date.now()-600000;
+        Object.keys(shipData).forEach(function(k){if(shipData[k].lastUpdate<cut)delete shipData[k];});
         render();
     }
 }
-
-function setLive(on){ document.getElementById('liveDot').className='live-dot'+(on?' on':''); }
-function manualRetry(){ reconnectAttempts=0; connect(); }
-document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden && (!ws||ws.readyState===WebSocket.CLOSED)) manualRetry();
-});
-
+function setLive(on){document.getElementById('liveDot').className='live-dot'+(on?' on':'');}
+function manualRetry(){reconnectAttempts=0;connect();}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&(!ws||ws.readyState===WebSocket.CLOSED))manualRetry();});
 function connect(){
-    if(reconnectTimer){ clearTimeout(reconnectTimer); reconnectTimer=null; }
-    if(ws && (ws.readyState===WebSocket.CONNECTING||ws.readyState===WebSocket.OPEN)) return;
-    setLive(false);
-    ws = new WebSocket(WS_URL);
-    ws.onopen    = () => { reconnectAttempts=0; setLive(true); };
-    ws.onmessage = e  => { try{ const m=JSON.parse(e.data); if(m.type==='ship_data') processMessage(m.data); }catch{} };
-    ws.onerror   = () => setLive(false);
-    ws.onclose   = () => {
-        setLive(false);
-        reconnectAttempts++;
-        const d = Math.min(2000 * Math.pow(2, reconnectAttempts-1), 30000);
-        reconnectTimer = setTimeout(connect, d);
-    };
+    if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+    if(ws&&(ws.readyState===WebSocket.CONNECTING||ws.readyState===WebSocket.OPEN))return;
+    setLive(false);ws=new WebSocket(WS_URL);
+    ws.onopen=function(){reconnectAttempts=0;setLive(true);};
+    ws.onmessage=function(e){try{var m=JSON.parse(e.data);if(m.type==='ship_data')processMessage(m.data);}catch(ex){}};
+    ws.onerror=function(){setLive(false);};
+    ws.onclose=function(){setLive(false);reconnectAttempts++;var d=Math.min(2000*Math.pow(2,reconnectAttempts-1),30000);reconnectTimer=setTimeout(connect,d);};
 }
-connect();
+
+window.onload = function() { refreshData(); connect(); };
 </script>
 </body>
 </html>
