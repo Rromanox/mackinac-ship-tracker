@@ -266,11 +266,11 @@
     /* ── display ─────────────────────────────────── */
     function render() {
         // Only show vessels actively moving (speed > 0.5 kts) — filters out anchored/docked ships
-        const ships = Object.values(shipData).filter(s => s.speed > 0.5).sort((a,b) => a.distance - b.distance);
+        const ships = Object.values(shipData).filter(s => s.speed > 0.5 && s.distance <= 100).sort((a,b) => a.distance - b.distance);
         const cards = document.getElementById('shipCards');
 
         if (ships.length === 0) {
-            cards.innerHTML = '<div class="no-ships">No vessels near bridge<small>Scanning 310-mile radius</small></div>';
+            cards.innerHTML = '<div class="no-ships">No vessels near bridge<small>Scanning 62-mile radius</small></div>';
             return;
         }
 
@@ -309,7 +309,7 @@
                 <div class="ship-row">
                     <div class="ship-stat">
                         <span class="stat-label">Distance</span>
-                        <span class="stat-value ${distColor}">${ship.distance.toFixed(1)} km</span>
+                        <span class="stat-value ${distColor}">${(ship.distance * 0.621371).toFixed(1)} mi</span>
                     </div>
                     <div class="ship-stat">
                         <span class="stat-label">Speed</span>
