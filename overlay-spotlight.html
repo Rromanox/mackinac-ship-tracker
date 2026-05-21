@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mackinac — Spotlight Overlay</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: transparent; font-family: 'Arial', sans-serif; width: 360px; }
+
+.card {
+    background: rgba(0,0,0,0.82);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 16px 18px;
+    backdrop-filter: blur(12px);
+    transition: border-color 0.5s, box-shadow 0.5s;
+    position: relative;
+    overflow: hidden;
+}
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    transition: background 0.5s;
+}
+.card.approaching::before { background: #00e676; }
+.card.departing::before   { background: #ff9800; }
+.card.near-bridge::before { background: #ef5350; }
+.card.near-bridge { box-shadow: 0 0 30px rgba(239,83,80,0.25); border-color: rgba(239,83,80,0.4); animation: nearPulse 1.5s infinite; }
+@keyframes nearPulse { 0%,100%{box-shadow:0 0 30px rgba(239,83,80,0.25)} 50%{box-shadow:0 0 50px rgba(239,83,80,0.5)} }
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.card-label { font-size: 9px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1.5px; }
+.card-badge {
+    font-size: 10px; font-weight: bold;
+    padding: 3px 9px; border-radius: 12px;
+    text-transform: uppercase; letter-spacing: 0.8px;
+}
+.badge-approaching { background: rgba(0,230,118,0.18); color: #00e676; border: 1px solid rgba(0,230,118,0.35); }
+.badge-departing   { background: rgba(255,152,0,0.18);  color: #ff9800; border: 1px solid rgba(255,152,0,0.35); }
+.badge-near        { background: rgba(239,83,80,0.2);   color: #ef5350; border: 1px solid rgba(239,83,80,0.5); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.ship-name {
+    font-size: 24px; font-weight: bold;
+    color: #fff; letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.stats {
+    display: flex; gap: 18px; margin-bottom: 10px;
+}
+.stat { display: flex; flex-direction: column; }
+.stat-label { font-size: 9px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+.stat-val   { font-size: 18px; font-weight: bold; color: #e0e0e0; }
+.stat-val.green { color: #00e676; }
+.stat-val.orange{ color: #ff9800; }
+.stat-val.red   { color: #ef5350; }
+.stat-val.cyan  { color: #4fc3f7; }
+
+.dest { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 6px; }
+.dest span { color: rgba(255,255,255,0.6); }
+
+.footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+}
+.footer-brand { font-size: 9px; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 1px; }
+.dot-row { display: flex; gap: 5px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.3s; }
+.dot.active { background: #4fc3f7; }
+
+.no-card {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    color: rgba(255,255,255,0.3);
+    font-size: 12px;
+    backdrop-filter: blur(8px);
+}
+
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; }
+.live-dot.on { background: #00e676; animation: pulse 2s infinite; }
+</style>
+</head>
+<body>
+<div id="root"><div class="no-card">🌉 Connecting to live tracker…</div></div>
+
+<script>
+const RENDER_URL  = 'mackinac-ship-tracker.onrender.com';
+const isLocalhost = location.hostname==='localhost'||location.hostname==='127.0.0.1';
+const WS_URL      = isLocalhost?`ws://localhost:${location.port||3000}`:`wss://${RENDER_URL}`;
+const BRIDGE_LAT  = 45.8174, BRIDGE_LON = -84.7278;
+const MAX_DIST_MI = 62;
+const ROTATE_MS   = 15000; // rotate ship every 15s
+
+let shipData={}, staticData={}, ws, reconnectTimer, reconnectAttempts=0;
+let currentIndex=0, rotateTimer=null, ships=[];
+
+function haversine(lat1,lon1,lat2,lon2){
+    const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function toMiles(km){return km*0.621371;}
+function getDirection(lat,lon,course){
+    const dLat=lat-BRIDGE_LAT,dLon=lon-BRIDGE_LON;
+    const tb=(Math.atan2(-dLon,-dLat)*180/Math.PI+360)%360;
+    return Math.abs(((course-tb)+180+360)%360-180)<90?'Approaching':'Departing';
+}
+function formatETA(distKm,spd){
+    if(!spd||spd<0.5)return null;
+    const min=Math.round(distKm/(spd*1.852)*60);
+    if(min>600)return null;
+    return min<60?min+' min':Math.floor(min/60)+'h '+(min%60?min%60+'m':'');
+}
+
+function buildShips(){
+    const all=Object.values(shipData).filter(s=>s.speed>0.5&&toMiles(s.distance)<=MAX_DIST_MI);
+    const near=all.filter(s=>s.distance<8);
+    if(near.length) return near.sort((a,b)=>a.distance-b.distance);
+    return all.sort((a,b)=>a.distance-b.distance);
+}
+
+function renderShip(ship){
+    const sd=staticData[ship.mmsi]||{};
+    const mi=toMiles(ship.distance).toFixed(1);
+    const isNear=ship.distance<8;
+    const eta=ship.direction==='Approaching'?formatETA(ship.distance,ship.speed):null;
+    const dest=sd.destination||null;
+
+    let cardCls='card', badgeHtml='', distCol='';
+    if(isNear){
+        cardCls+=' near-bridge'; badgeHtml='<span class="card-badge badge-near">⚡ AT BRIDGE</span>'; distCol='red';
+    } else if(ship.direction==='Approaching'){
+        cardCls+=' approaching'; badgeHtml='<span class="card-badge badge-approaching">▲ Approaching</span>'; distCol='green';
+    } else {
+        cardCls+=' departing'; badgeHtml='<span class="card-badge badge-departing">▼ Departing</span>'; distCol='orange';
+    }
+
+    const dots=ships.map((_,i)=>`<div class="dot${i===currentIndex?' active':''}"></div>`).join('');
+
+    document.getElementById('root').innerHTML=`
+    <div class="${cardCls}">
+        <div class="card-header">
+            <span class="card-label"><span class="live-dot on"></span>Mackinac Straits</span>
+            ${badgeHtml}
+        </div>
+        <div class="ship-name">${ship.name}</div>
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-label">Distance</span>
+                <span class="stat-val ${distCol}">${mi} mi</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Speed</span>
+                <span class="stat-val">${ship.speed?ship.speed.toFixed(1)+' kts':'—'}</span>
+            </div>
+            ${eta?`<div class="stat"><span class="stat-label">ETA</span><span class="stat-val cyan">${eta}</span></div>`:''}
+        </div>
+        ${dest?`<div class="dest">Heading to <span>${dest}</span></div>`:''}
+        <div class="footer">
+            <span class="footer-brand">🌉 Mackinac Bridge Tracker</span>
+            <div class="dot-row">${dots}</div>
+        </div>
+    </div>`;
+}
+
+function rotate(){
+    ships=buildShips();
+    if(!ships.length){
+        document.getElementById('root').innerHTML='<div class="no-card">No active vessels within 62 miles</div>';
+        return;
+    }
+    // Always pin near-bridge ship if present
+    const nearIdx=ships.findIndex(s=>s.distance<8);
+    if(nearIdx>=0) currentIndex=nearIdx;
+    else { currentIndex=(currentIndex>=ships.length?0:currentIndex); }
+    renderShip(ships[currentIndex]);
+}
+
+function scheduleRotate(){
+    if(rotateTimer)clearInterval(rotateTimer);
+    rotateTimer=setInterval(()=>{
+        ships=buildShips();
+        if(!ships.length)return;
+        const near=ships.findIndex(s=>s.distance<8);
+        if(near>=0){currentIndex=near;}
+        else{currentIndex=(currentIndex+1)%ships.length;}
+        renderShip(ships[currentIndex]);
+    },ROTATE_MS);
+}
+
+function render(){ rotate(); }
+
+function processMessage(data){
+    if(data.MessageType==='ShipStaticData'&&data.Message?.ShipStaticData){
+        staticData[data.MetaData.MMSI]={destination:data.Message.ShipStaticData.Destination?.trim()||null};
+        render();return;
+    }
+    if(data.MessageType==='PositionReport'&&data.Message?.PositionReport){
+        const pos=data.Message.PositionReport,meta=data.MetaData;
+        const dist=haversine(BRIDGE_LAT,BRIDGE_LON,pos.Latitude,pos.Longitude);
+        shipData[meta.MMSI]={mmsi:meta.MMSI,name:meta.ShipName?.trim()||'Unknown',
+            lat:pos.Latitude,lon:pos.Longitude,speed:pos.Sog||0,course:pos.Cog||0,
+            distance:dist,direction:getDirection(pos.Latitude,pos.Longitude,pos.Cog||0),lastUpdate:Date.now()};
+        const cut=Date.now()-600000;
+        Object.keys(shipData).forEach(k=>{if(shipData[k].lastUpdate<cut)delete shipData[k];});
+        render();
+    }
+}
+function manualRetry(){reconnectAttempts=0;connect();}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!ws||ws.readyState===WebSocket.CLOSED))manualRetry();});
+function connect(){
+    if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+    if(ws&&(ws.readyState===WebSocket.CONNECTING||ws.readyState===WebSocket.OPEN))return;
+    ws=new WebSocket(WS_URL);
+    ws.onopen=()=>{reconnectAttempts=0;scheduleRotate();};
+    ws.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.type==='ship_data')processMessage(m.data);}catch{}};
+    ws.onerror=()=>{};
+    ws.onclose=()=>{reconnectAttempts++;const d=Math.min(2000*Math.pow(2,reconnectAttempts-1),30000);reconnectTimer=setTimeout(connect,d);};
+}
+connect();
+</script>
+</body>
+</html>

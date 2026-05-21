@@ -60,10 +60,13 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Serve the stream overlay (no map, no sidebar — transparent background for OBS)
-app.get('/overlay', (req, res) => {
-  res.sendFile(path.join(__dirname, 'overlay.html'));
-});
+// Overlays (transparent, OBS browser source friendly)
+app.get('/overlay',           (req, res) => res.sendFile(path.join(__dirname, 'overlay.html')));
+app.get('/overlay/bar',       (req, res) => res.sendFile(path.join(__dirname, 'overlay-bar.html')));
+app.get('/overlay/spotlight', (req, res) => res.sendFile(path.join(__dirname, 'overlay-spotlight.html')));
+app.get('/overlay/alert',     (req, res) => res.sendFile(path.join(__dirname, 'overlay-alert.html')));
+app.get('/overlay/minimal',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-minimal.html')));
+app.get('/overlay/corner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-corner.html')));
 
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {

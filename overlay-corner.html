@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mackinac — Corner Overlay</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: transparent; font-family: 'Arial', sans-serif; width: 210px; padding: 6px; }
+
+.corner-widget { display: flex; flex-direction: column; gap: 4px; }
+
+.corner-header {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.8);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 5px 9px;
+    backdrop-filter: blur(10px);
+}
+.corner-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; }
+.corner-dot.on { background: #00e676; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.corner-title { font-size: 9px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+.corner-count { font-size: 11px; font-weight: bold; color: #4fc3f7; margin-left: auto; }
+
+.corner-ship {
+    background: rgba(0,0,0,0.75);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-left: 2px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 6px 9px;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.3s;
+}
+.corner-ship.approaching { border-left-color: #00e676; }
+.corner-ship.departing   { border-left-color: #ff9800; }
+.corner-ship.near-bridge { border-left-color: #ef5350; box-shadow: 0 0 10px rgba(239,83,80,0.2); animation: pulse 1s infinite; }
+
+.cs-name { font-size: 11px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.cs-row  { display: flex; justify-content: space-between; align-items: baseline; }
+.cs-dist { font-size: 11px; font-weight: bold; }
+.cs-dist.green  { color: #00e676; }
+.cs-dist.orange { color: #ff9800; }
+.cs-dist.red    { color: #ef5350; }
+.cs-spd  { font-size: 10px; color: rgba(255,255,255,0.38); }
+.cs-eta  { font-size: 10px; color: #4fc3f7; }
+</style>
+</head>
+<body>
+<div class="corner-widget">
+    <div class="corner-header">
+        <div class="corner-dot" id="dot"></div>
+        <span class="corner-title">🌉 Mackinac</span>
+        <span class="corner-count" id="cnt">—</span>
+    </div>
+    <div id="ships"></div>
+</div>
+
+<script>
+const RENDER_URL  = 'mackinac-ship-tracker.onrender.com';
+const isLocalhost = location.hostname==='localhost'||location.hostname==='127.0.0.1';
+const WS_URL      = isLocalhost?`ws://localhost:${location.port||3000}`:`wss://${RENDER_URL}`;
+const BRIDGE_LAT=45.8174,BRIDGE_LON=-84.7278,MAX_DIST_MI=62;
+
+let shipData={},ws,reconnectTimer,reconnectAttempts=0;
+
+function haversine(lat1,lon1,lat2,lon2){
+    const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function toMiles(km){return km*0.621371;}
+function getDirection(lat,lon,course){
+    const dLat=lat-BRIDGE_LAT,dLon=lon-BRIDGE_LON;
+    const tb=(Math.atan2(-dLon,-dLat)*180/Math.PI+360)%360;
+    return Math.abs(((course-tb)+180+360)%360-180)<90?'Approaching':'Departing';
+}
+function formatETA(distKm,spd){
+    if(!spd||spd<0.5)return null;
+    const min=Math.round(distKm/(spd*1.852)*60);
+    if(min>600)return null;
+    return min<60?min+'m':Math.floor(min/60)+'h'+(min%60?min%60+'m':'');
+}
+
+function render(){
+    const ships=Object.values(shipData)
+        .filter(s=>s.speed>0.5&&toMiles(s.distance)<=MAX_DIST_MI)
+        .sort((a,b)=>a.distance-b.distance);
+
+    document.getElementById('cnt').textContent=ships.length?(ships.length+' ship'+(ships.length>1?'s':'')):'none';
+
+    const display=[...ships.filter(s=>s.direction==='Approaching'),...ships.filter(s=>s.direction!=='Approaching')].slice(0,3);
+    const cont=document.getElementById('ships');
+
+    if(!display.length){ cont.innerHTML=''; return; }
+
+    cont.innerHTML=display.map(ship=>{
+        const mi=toMiles(ship.distance).toFixed(1);
+        const isNear=ship.distance<8;
+        const eta=ship.direction==='Approaching'?formatETA(ship.distance,ship.speed):null;
+        const cls='corner-ship '+(isNear?'near-bridge':ship.direction==='Approaching'?'approaching':'departing');
+        const distCls=isNear?'red':ship.direction==='Approaching'?'green':'orange';
+        const icon=isNear?'⚡':ship.direction==='Approaching'?'▲':'▼';
+        return `<div class="${cls}">
+            <div class="cs-name">${icon} ${ship.name}</div>
+            <div class="cs-row">
+                <span class="cs-dist ${distCls}">${mi} mi</span>
+                ${eta?`<span class="cs-eta">${eta}</span>`:`<span class="cs-spd">${ship.speed?ship.speed.toFixed(1)+' kts':''}</span>`}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function processMessage(data){
+    if(data.MessageType==='PositionReport'&&data.Message?.PositionReport){
+        const pos=data.Message.PositionReport,meta=data.MetaData;
+        const dist=haversine(BRIDGE_LAT,BRIDGE_LON,pos.Latitude,pos.Longitude);
+        shipData[meta.MMSI]={mmsi:meta.MMSI,name:meta.ShipName?.trim()||'Unknown',
+            lat:pos.Latitude,lon:pos.Longitude,speed:pos.Sog||0,course:pos.Cog||0,
+            distance:dist,direction:getDirection(pos.Latitude,pos.Longitude,pos.Cog||0),lastUpdate:Date.now()};
+        const cut=Date.now()-600000;
+        Object.keys(shipData).forEach(k=>{if(shipData[k].lastUpdate<cut)delete shipData[k];});
+        render();
+    }
+}
+function setLive(on){ document.getElementById('dot').className='corner-dot'+(on?' on':''); }
+function manualRetry(){reconnectAttempts=0;connect();}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!ws||ws.readyState===WebSocket.CLOSED))manualRetry();});
+function connect(){
+    if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+    if(ws&&(ws.readyState===WebSocket.CONNECTING||ws.readyState===WebSocket.OPEN))return;
+    setLive(false); ws=new WebSocket(WS_URL);
+    ws.onopen=()=>{reconnectAttempts=0;setLive(true);};
+    ws.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.type==='ship_data')processMessage(m.data);}catch{}};
+    ws.onerror=()=>setLive(false);
+    ws.onclose=()=>{setLive(false);reconnectAttempts++;const d=Math.min(2000*Math.pow(2,reconnectAttempts-1),30000);reconnectTimer=setTimeout(connect,d);};
+}
+connect();
+</script>
+</body>
+</html>
