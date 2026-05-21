@@ -265,7 +265,8 @@
 
     /* ── display ─────────────────────────────────── */
     function render() {
-        const ships = Object.values(shipData).sort((a,b) => a.distance - b.distance);
+        // Only show vessels actively moving (speed > 0.5 kts) — filters out anchored/docked ships
+        const ships = Object.values(shipData).filter(s => s.speed > 0.5).sort((a,b) => a.distance - b.distance);
         const cards = document.getElementById('shipCards');
 
         if (ships.length === 0) {
