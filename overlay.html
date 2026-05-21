@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mackinac Bridge — Stream Overlay</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: transparent;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            width: 400px;
+            padding: 10px;
+        }
+
+        .widget {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* ── Header ─────────────────────────────── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.78);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 8px 14px;
+            backdrop-filter: blur(8px);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header-title {
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #fff;
+        }
+        .live-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #ef5350;
+            flex-shrink: 0;
+        }
+        .live-dot.connected { background: #00e676; animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+        }
+        .header-status {
+            font-size: 10px;
+            color: rgba(255,255,255,0.45);
+        }
+
+        /* ── Ship cards ──────────────────────────── */
+        .ship-card {
+            background: rgba(0,0,0,0.72);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-left: 3px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 10px 14px;
+            backdrop-filter: blur(8px);
+            transition: border-color 0.3s;
+        }
+        .ship-card.approaching { border-left-color: #00e676; }
+        .ship-card.departing   { border-left-color: #ff9800; }
+        .ship-card.near-bridge { border-left-color: #ef5350; box-shadow: 0 0 12px rgba(239,83,80,0.25); }
+
+        .ship-top {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .ship-name {
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+        }
+        .ship-badge {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 7px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            white-space: nowrap;
+        }
+        .badge-approaching { background: rgba(0,230,118,0.2); color: #00e676; border: 1px solid rgba(0,230,118,0.4); }
+        .badge-departing   { background: rgba(255,152,0,0.2);  color: #ff9800; border: 1px solid rgba(255,152,0,0.4); }
+        .badge-near        { background: rgba(239,83,80,0.25); color: #ef5350; border: 1px solid rgba(239,83,80,0.5); animation: pulse 1s infinite; }
+
+        .ship-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .ship-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        .stat-label {
+            font-size: 9px;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .stat-value {
+            font-size: 13px;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+        .stat-value.green  { color: #00e676; }
+        .stat-value.orange { color: #ff9800; }
+        .stat-value.red    { color: #ef5350; }
+        .stat-value.cyan   { color: #4fc3f7; }
+
+        .ship-dest {
+            margin-top: 4px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.38);
+        }
+        .ship-dest span { color: rgba(255,255,255,0.65); }
+
+        /* ── "No ships" placeholder ──────────────── */
+        .no-ships {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+            backdrop-filter: blur(8px);
+        }
+        .no-ships small { display: block; margin-top: 4px; font-size: 10px; color: rgba(255,255,255,0.25); }
+
+        /* ── Last ship passed ────────────────────── */
+        .last-ship {
+            background: rgba(0,0,0,0.62);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 8px 14px;
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .last-ship-icon { font-size: 16px; flex-shrink: 0; }
+        .last-ship-label { font-size: 9px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.8px; }
+        .last-ship-name  { font-size: 12px; font-weight: bold; color: rgba(255,255,255,0.8); }
+        .last-ship-time  { font-size: 10px; color: rgba(255,255,255,0.35); }
+
+        /* ── Reconnect status ───────────────────── */
+        .reconnect-bar {
+            font-size: 10px;
+            color: rgba(255,255,255,0.35);
+            text-align: center;
+            padding: 2px 0;
+        }
+        .reconnect-bar button {
+            background: rgba(79,195,247,0.15);
+            border: 1px solid rgba(79,195,247,0.4);
+            color: #4fc3f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="widget">
+    <div class="header">
+        <div class="header-left">
+            <div class="live-dot" id="liveDot"></div>
+            <span class="header-title">🌉 Mackinac Bridge</span>
+        </div>
+        <span class="header-status" id="headerStatus">Connecting…</span>
+    </div>
+
+    <div id="shipCards"><div class="no-ships">Connecting to server…<small>Live AIS data</small></div></div>
+
+    <div id="lastShipBar" style="display:none;" class="last-ship">
+        <span class="last-ship-icon">⚓</span>
+        <div>
+            <div class="last-ship-label">Last ship passed</div>
+            <div class="last-ship-name" id="lastShipName">—</div>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+            <div class="last-ship-time" id="lastShipTime"></div>
+        </div>
+    </div>
+
+    <div class="reconnect-bar" id="reconnectBar" style="display:none;"></div>
+</div>
+
+<script>
+    const RENDER_URL     = 'mackinac-ship-tracker.onrender.com';
+    const isLocalhost    = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const WS_URL         = isLocalhost ? `ws://localhost:${location.port || 3000}` : `wss://${RENDER_URL}`;
+
+    const BRIDGE_LAT     = 45.8174;
+    const BRIDGE_LON     = -84.7278;
+    const SEARCH_RADIUS  = 500; // km — same as main app
+
+    /* ── ship state ──────────────────────────────── */
+    let shipData       = {};   // mmsi → ship (within radius)
+    let staticData     = {};   // mmsi → {destination, length, width}
+    let recentShips    = [];   // last passed ships
+    let ws, reconnectTimer;
+    let reconnectAttempts = 0;
+
+    /* ── helpers ─────────────────────────────────── */
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function getDirection(lat, lon, course) {
+        const dLat = lat - BRIDGE_LAT, dLon = lon - BRIDGE_LON;
+        const toBridge = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
+        const diff = Math.abs(((course - toBridge) + 180 + 360) % 360 - 180);
+        return diff < 90 ? 'Approaching' : 'Departing';
+    }
+
+    function formatETA(distKm, speedKts) {
+        if (!speedKts || speedKts < 0.5) return null;
+        const hrs = distKm / (speedKts * 1.852);
+        if (hrs > 24) return null;
+        const min = Math.round(hrs * 60);
+        return min < 60 ? min + ' min' : Math.floor(min/60) + 'h ' + (min%60) + 'm';
+    }
+
+    function timeAgo(ts) {
+        const s = Math.floor((Date.now() - ts) / 1000);
+        if (s < 60)  return s + 's ago';
+        if (s < 3600) return Math.floor(s/60) + 'm ago';
+        return Math.floor(s/3600) + 'h ago';
+    }
+
+    function shipTypeLabel(t) {
+        if (!t || t === 0) return '';
+        if (t >= 70 && t <= 79) return 'Cargo';
+        if (t >= 80 && t <= 89) return 'Tanker';
+        if (t === 60||t===69) return 'Passenger';
+        if (t >= 30 && t <= 39) return 'Fishing';
+        if (t === 52) return 'Tug';
+        return '';
+    }
+
+    /* ── display ─────────────────────────────────── */
+    function render() {
+        const ships = Object.values(shipData).sort((a,b) => a.distance - b.distance);
+        const cards = document.getElementById('shipCards');
+
+        if (ships.length === 0) {
+            cards.innerHTML = '<div class="no-ships">No vessels near bridge<small>Scanning 310-mile radius</small></div>';
+            return;
+        }
+
+        // Show up to 5 ships: approaching first, then by distance
+        const approaching = ships.filter(s => s.direction === 'Approaching');
+        const departing   = ships.filter(s => s.direction !== 'Approaching');
+        const display = [...approaching, ...departing].slice(0, 5);
+
+        cards.innerHTML = display.map(ship => {
+            const sd       = staticData[ship.mmsi] || {};
+            const isNear   = ship.distance < 5;
+            const eta      = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
+            const dest     = sd.destination ? sd.destination.trim() : null;
+            const dims     = (sd.length && sd.width) ? `${sd.length} × ${sd.width} ft` : '';
+
+            let cardClass = 'ship-card';
+            let badgeHtml = '';
+            if (isNear) {
+                cardClass += ' near-bridge';
+                badgeHtml = '<span class="ship-badge badge-near">⚡ At Bridge</span>';
+            } else if (ship.direction === 'Approaching') {
+                cardClass += ' approaching';
+                badgeHtml = '<span class="ship-badge badge-approaching">▲ Approaching</span>';
+            } else {
+                cardClass += ' departing';
+                badgeHtml = '<span class="ship-badge badge-departing">▼ Departing</span>';
+            }
+
+            const distColor = isNear ? 'red' : ship.direction === 'Approaching' ? 'green' : 'orange';
+
+            return `<div class="${cardClass}">
+                <div class="ship-top">
+                    <span class="ship-name">${ship.name}</span>
+                    ${badgeHtml}
+                </div>
+                <div class="ship-row">
+                    <div class="ship-stat">
+                        <span class="stat-label">Distance</span>
+                        <span class="stat-value ${distColor}">${ship.distance.toFixed(1)} km</span>
+                    </div>
+                    <div class="ship-stat">
+                        <span class="stat-label">Speed</span>
+                        <span class="stat-value">${ship.speed ? ship.speed.toFixed(1) + ' kts' : '—'}</span>
+                    </div>
+                    ${eta ? `<div class="ship-stat">
+                        <span class="stat-label">ETA</span>
+                        <span class="stat-value cyan">${eta}</span>
+                    </div>` : ''}
+                    ${dims ? `<div class="ship-stat">
+                        <span class="stat-label">Size</span>
+                        <span class="stat-value" style="font-size:11px;">${dims}</span>
+                    </div>` : ''}
+                </div>
+                ${dest ? `<div class="ship-dest">→ <span>${dest}</span></div>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    function renderLastShip() {
+        if (!recentShips.length) return;
+        const s = recentShips[0];
+        document.getElementById('lastShipBar').style.display = 'flex';
+        document.getElementById('lastShipName').textContent = s.name;
+        document.getElementById('lastShipTime').textContent = timeAgo(s.time);
+    }
+
+    /* ── AIS processing ──────────────────────────── */
+    function processMessage(data) {
+        if (data.MessageType === 'ShipStaticData' && data.Message?.ShipStaticData) {
+            const sd  = data.Message.ShipStaticData;
+            const mmsi = data.MetaData.MMSI;
+            const dim  = sd.Dimension || {};
+            const lm   = (dim.A||0)+(dim.B||0), wm = (dim.C||0)+(dim.D||0);
+            staticData[mmsi] = {
+                destination: sd.Destination?.trim() || null,
+                length: lm > 0 ? Math.round(lm * 3.28084) : null,
+                width:  wm > 0 ? Math.round(wm * 3.28084) : null,
+            };
+            render();
+            return;
+        }
+
+        if (data.MessageType === 'PositionReport' && data.Message?.PositionReport) {
+            const pos  = data.Message.PositionReport;
+            const meta = data.MetaData;
+            const dist = haversine(BRIDGE_LAT, BRIDGE_LON, pos.Latitude, pos.Longitude);
+            if (dist > SEARCH_RADIUS) return;
+
+            const ship = {
+                mmsi:       meta.MMSI,
+                name:       meta.ShipName?.trim() || 'Unknown',
+                lat:        pos.Latitude,
+                lon:        pos.Longitude,
+                speed:      pos.Sog || 0,
+                course:     pos.Cog || 0,
+                distance:   dist,
+                direction:  getDirection(pos.Latitude, pos.Longitude, pos.Cog || 0),
+                lastUpdate: Date.now(),
+            };
+
+            // Check if just passed bridge
+            if (dist < 0.8) {
+                const already = recentShips.find(r => r.mmsi === ship.mmsi);
+                if (!already) {
+                    recentShips.unshift({ mmsi: ship.mmsi, name: ship.name, time: Date.now() });
+                    recentShips = recentShips.slice(0, 5);
+                    renderLastShip();
+                }
+            }
+
+            shipData[ship.mmsi] = ship;
+
+            // Expire ships not updated in 10 min
+            const cutoff = Date.now() - 600000;
+            Object.keys(shipData).forEach(k => { if (shipData[k].lastUpdate < cutoff) delete shipData[k]; });
+
+            render();
+        }
+    }
+
+    /* ── WebSocket ───────────────────────────────── */
+    function setStatus(text, connected) {
+        document.getElementById('liveDot').className = 'live-dot' + (connected ? ' connected' : '');
+        document.getElementById('headerStatus').textContent = text;
+    }
+
+    function manualRetry() { reconnectAttempts = 0; connect(); }
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) manualRetry();
+    });
+
+    function connect() {
+        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+        if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+
+        setStatus('Connecting…', false);
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => {
+            reconnectAttempts = 0;
+            setStatus('Live', true);
+            document.getElementById('reconnectBar').style.display = 'none';
+        };
+
+        ws.onmessage = e => {
+            try {
+                const msg = JSON.parse(e.data);
+                if (msg.type === 'ship_data') processMessage(msg.data);
+                else if (msg.type === 'status' && msg.connected) setStatus('Live', true);
+            } catch {}
+        };
+
+        ws.onerror = () => setStatus('Error', false);
+
+        ws.onclose = () => {
+            reconnectAttempts++;
+            const delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000);
+            const sec   = Math.round(delay / 1000);
+            setStatus('Reconnecting…', false);
+            const bar = document.getElementById('reconnectBar');
+            bar.style.display = 'block';
+            bar.innerHTML = `Reconnecting in ${sec}s <button onclick="manualRetry()">Retry Now</button>`;
+            reconnectTimer = setTimeout(connect, delay);
+        };
+    }
+
+    // Refresh "time ago" on last ship every 30s
+    setInterval(renderLastShip, 30000);
+
+    connect();
+</script>
+</body>
+</html>

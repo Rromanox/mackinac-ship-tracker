@@ -60,6 +60,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Serve the stream overlay (no map, no sidebar — transparent background for OBS)
+app.get('/overlay', (req, res) => {
+  res.sendFile(path.join(__dirname, 'overlay.html'));
+});
+
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {
   const stats = await getShipStats();
