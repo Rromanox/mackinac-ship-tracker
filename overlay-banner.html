@@ -8,7 +8,7 @@
 <title>Mackinac — Unified Banner</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', Tahoma, sans-serif; }
-body { background-color: transparent; overflow: hidden; width: 2560px; height: 80px; }
+body { background-color: transparent; overflow: hidden; width: 2560px; height: 120px; }
 
 /* ══════════════════════════════════════════════════
    SHIP LAYER — always visible at the bottom.
@@ -17,7 +17,7 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 8
 .ship-layer {
     position: fixed;
     bottom: 0; left: 0;
-    width: 100%; height: 80px;
+    width: 100%; height: 120px;
     z-index: 999;                   /* sits just under both tickers */
     display: flex;
     align-items: center;
@@ -37,22 +37,22 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 8
     padding-right: 15px; margin-right: 15px;
 }
 .ship-branding-title {
-    font-size: 1.3rem; font-weight: bold; letter-spacing: 1px;
+    font-size: 1.7rem; font-weight: bold; letter-spacing: 1px;
     white-space: nowrap; color: inherit;
 }
-.ship-branding-sub { font-size: 0.9rem; opacity: 0.6; white-space: nowrap; }
+.ship-branding-sub { font-size: 1.1rem; opacity: 0.6; white-space: nowrap; }
 
 /* chips */
 .ships-row { flex: 1; overflow: hidden; position: relative; }
-.ships-inner { display: flex; align-items: center; gap: 12px; width: max-content; }
+.ships-inner { display: flex; align-items: center; gap: 14px; width: max-content; }
 
 .ship-chip {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 12px;
     background: rgba(0,0,0,0.1);
-    border: 1.5px solid rgba(0,0,0,0.2);
-    border-radius: 20px;
-    padding: 6px 18px; flex-shrink: 0;
-    font-size: 1.1rem; font-weight: bold; color: inherit;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-radius: 28px;
+    padding: 12px 24px; flex-shrink: 0;
+    font-size: 1.6rem; font-weight: bold; color: inherit;
     transition: border-color 0.3s, background 0.3s;
 }
 .ship-chip.approaching { border-color: rgba(0,130,0,0.5);  background: rgba(0,140,0,0.12); }
@@ -60,31 +60,31 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 8
 .ship-chip.near-bridge { border-color: rgba(200,0,0,0.6);   background: rgba(200,0,0,0.12); animation: chipPulse 1s infinite; }
 @keyframes chipPulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
 
-.chip-arrow { font-size: 1.1rem; }
+.chip-arrow { font-size: 1.6rem; }
 .chip-name  { font-weight: bold; }
-.chip-dist  { opacity: 0.6; font-size: 1rem; }
-.chip-speed { opacity: 0.5; font-size: 0.9rem; }
-.chip-eta   { font-size: 0.9rem; font-weight: bold; color: #0055bb; }
-.no-ships-bar { opacity: 0.45; font-size: 1.1rem; font-weight: bold; }
+.chip-dist  { opacity: 0.6; font-size: 1.4rem; }
+.chip-speed { opacity: 0.5; font-size: 1.2rem; }
+.chip-eta   { font-size: 1.2rem; font-weight: bold; color: #0055bb; }
+.no-ships-bar { opacity: 0.45; font-size: 1.6rem; font-weight: bold; }
 
 /* live dot */
 .live-area {
-    display: flex; align-items: center; gap: 6px;
-    margin-left: auto; padding-left: 14px;
+    display: flex; align-items: center; gap: 8px;
+    margin-left: auto; padding-left: 18px;
     border-left: 2px solid rgba(0,0,0,0.12);
     flex-shrink: 0;
 }
-.live-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(180,0,0,0.5); }
+.live-dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(180,0,0,0.5); }
 .live-dot.on { background: #007700; animation: livePulse 2s infinite; }
 @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.live-label { font-size: 0.6rem; font-weight: bold; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
+.live-label { font-size: 0.85rem; font-weight: bold; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
 
 /* ══════════════════════════════════════════════════
    TICKERS — your original styles, unchanged
 ══════════════════════════════════════════════════ */
 .ticker-wrap {
     width: 100%;
-    height: 80px;
+    height: 120px;
     overflow: hidden;
     position: fixed;
     bottom: 0;
