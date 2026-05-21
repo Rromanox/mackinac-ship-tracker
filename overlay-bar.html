@@ -50,11 +50,19 @@ body {
 }
 
 .ships-row {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    /* fade edges so chips don't hard-clip */
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+}
+.ships-inner {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex: 1;
-    overflow: hidden;
+    width: max-content;
+    /* animation injected by JS when overflow detected */
 }
 
 .ship-chip {
@@ -108,7 +116,9 @@ body {
         <span class="branding-sub">Live Ship Tracker</span>
     </div>
     <div class="ships-row" id="shipsRow">
-        <span class="no-ships-bar">Connecting…</span>
+        <div class="ships-inner" id="shipsInner">
+            <span class="no-ships-bar">Connecting…</span>
+        </div>
     </div>
     <div class="live-area">
         <div class="live-dot" id="liveDot"></div>
@@ -144,40 +154,79 @@ function formatETA(distKm,spd){
     return min<60?min+'m':Math.floor(min/60)+'h'+(min%60?''+min%60+'m':'');
 }
 
+let scrollStyleEl = null;
+
+function applyScroll() {
+    const row   = document.getElementById('shipsRow');
+    const inner = document.getElementById('shipsInner');
+    if (!inner || !row) return;
+
+    // Remove any existing animation first
+    inner.style.animation = 'none';
+    if (scrollStyleEl) { scrollStyleEl.remove(); scrollStyleEl = null; }
+
+    requestAnimationFrame(() => {
+        const overflow = inner.scrollWidth - row.offsetWidth;
+        if (overflow <= 10) return; // fits fine — no scroll needed
+
+        // Speed: ~50px/s scroll, 2s pause at each end
+        const scrollSec  = Math.max(3, overflow / 50);
+        const totalSec   = scrollSec + 2; // +2s pause baked into easing
+        const pausePct   = (1.5 / totalSec * 100).toFixed(1);
+        const endPct     = (100 - parseFloat(pausePct)).toFixed(1);
+
+        scrollStyleEl = document.createElement('style');
+        scrollStyleEl.textContent = `
+            @keyframes barScroll {
+                0%, ${pausePct}%  { transform: translateX(0); }
+                ${endPct}%, 100%  { transform: translateX(-${overflow + 12}px); }
+            }`;
+        document.head.appendChild(scrollStyleEl);
+
+        // alternate: scrolls right, pauses, scrolls back, pauses, loops
+        inner.style.animation = `barScroll ${totalSec}s ease-in-out infinite alternate`;
+    });
+}
+
 function render(){
     const ships = Object.values(shipData)
-        .filter(s=>s.speed>0.5 && toMiles(s.distance)<=MAX_DIST_MI)
-        .sort((a,b)=>a.distance-b.distance)
-        .slice(0,5);
+        .filter(s => s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI)
+        .sort((a, b) => a.distance - b.distance);
 
     const bar = document.getElementById('bar');
-    const hasNear = ships.some(s=>s.distance<8);
-    bar.className = 'bar' + (hasNear?' near':'');
+    const hasNear = ships.some(s => s.distance < 8);
+    bar.className = 'bar' + (hasNear ? ' near' : '');
 
-    if(!ships.length){
-        document.getElementById('shipsRow').innerHTML='<span class="no-ships-bar">No active vessels nearby</span>';
+    const inner = document.getElementById('shipsInner');
+
+    if (!ships.length) {
+        inner.style.animation = 'none';
+        inner.innerHTML = '<span class="no-ships-bar">No active vessels nearby</span>';
         return;
     }
 
-    const approaching=ships.filter(s=>s.direction==='Approaching');
-    const others=ships.filter(s=>s.direction!=='Approaching');
-    const display=[...approaching,...others].slice(0,5);
+    const approaching = ships.filter(s => s.direction === 'Approaching');
+    const others      = ships.filter(s => s.direction !== 'Approaching');
+    const display     = [...approaching, ...others];
 
-    document.getElementById('shipsRow').innerHTML = display.map(ship=>{
-        const mi=toMiles(ship.distance).toFixed(1);
-        const spd=ship.speed?ship.speed.toFixed(1)+' kts':'';
-        const eta=ship.direction==='Approaching'?formatETA(ship.distance,ship.speed):null;
-        const isNear=ship.distance<8;
-        const cls=isNear?'near-bridge':ship.direction==='Approaching'?'approaching':'departing';
-        const arrow=isNear?'⚡':ship.direction==='Approaching'?'▲':'▼';
+    inner.innerHTML = display.map(ship => {
+        const mi  = toMiles(ship.distance).toFixed(1);
+        const spd = ship.speed ? ship.speed.toFixed(1) + ' kts' : '';
+        const eta = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
+        const isNear = ship.distance < 8;
+        const cls  = isNear ? 'near-bridge' : ship.direction === 'Approaching' ? 'approaching' : 'departing';
+        const arrow = isNear ? '⚡' : ship.direction === 'Approaching' ? '▲' : '▼';
         return `<div class="ship-chip ${cls}">
             <span class="chip-arrow">${arrow}</span>
             <span class="chip-name">${ship.name}</span>
             <span class="chip-dist">${mi} mi</span>
-            ${spd?`<span class="chip-speed">${spd}</span>`:''}
-            ${eta?`<span class="chip-eta">ETA ${eta}</span>`:''}
+            ${spd ? `<span class="chip-speed">${spd}</span>` : ''}
+            ${eta ? `<span class="chip-eta">ETA ${eta}</span>` : ''}
         </div>`;
     }).join('');
+
+    // Kick off scroll check after DOM paints
+    setTimeout(applyScroll, 50);
 }
 
 function processMessage(data){
