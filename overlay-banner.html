@@ -319,7 +319,14 @@ var WS_URL        = isLocalhost ? 'ws://localhost:'+(location.port||3000) : 'wss
 var BRIDGE_LAT    = 45.8174, BRIDGE_LON = -84.7278;
 var MAX_DIST_MI   = 62;
 
-var shipData={}, ws, reconnectTimer, reconnectAttempts=0;
+var shipData={}, staticData={}, ws, reconnectTimer, reconnectAttempts=0;
+
+// AIS type 60-69 = Passenger vessels (ferries, excursion boats, etc.)
+// We hide these since they don't pass under the Mackinac Bridge
+function isPassengerVessel(mmsi){
+    var t = staticData[mmsi] && staticData[mmsi].type;
+    return t && t >= 60 && t <= 69;
+}
 
 function haversine(lat1,lon1,lat2,lon2){
     var R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
@@ -392,7 +399,7 @@ function updateChipValues(ships){
     });
 }
 function render(){
-    var all=Object.keys(shipData).map(function(k){return shipData[k];}).filter(function(s){return s.speed>0.5&&toMiles(s.distance)<=MAX_DIST_MI;});
+    var all=Object.keys(shipData).map(function(k){return shipData[k];}).filter(function(s){return s.speed>0.5&&toMiles(s.distance)<=MAX_DIST_MI&&!isPassengerVessel(s.mmsi);});
     var approaching=all.filter(function(s){return s.direction==='Approaching';}).sort(function(a,b){return a.distance-b.distance;});
     var display=approaching.length>0?approaching:all.sort(function(a,b){return a.distance-b.distance;}).slice(0,3);
     var inner=document.getElementById('shipsInner');
@@ -414,6 +421,14 @@ function render(){
     }else{updateChipValues(display);}
 }
 function processMessage(data){
+    if(data.MessageType==='ShipStaticData'&&data.Message&&data.Message.ShipStaticData){
+        var mmsi=data.MetaData.MMSI;
+        staticData[mmsi]={
+            type: data.Message.ShipStaticData.Type||null,
+            destination: (data.Message.ShipStaticData.Destination||'').trim()||null
+        };
+        render(); return;
+    }
     if(data.MessageType==='PositionReport'&&data.Message&&data.Message.PositionReport){
         var pos=data.Message.PositionReport,meta=data.MetaData;
         var dist=haversine(BRIDGE_LAT,BRIDGE_LON,pos.Latitude,pos.Longitude);
