@@ -79,6 +79,30 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
 @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .live-label { font-size: 0.85rem; font-weight: bold; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
 
+/* QR code — fixed to right side of Riviera ticker */
+.qr-area {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+.qr-area img {
+    width: 88px; height: 88px;
+    border-radius: 6px;
+    border: 2px solid rgba(255,255,255,0.4);
+    display: block;
+}
+.qr-label {
+    font-size: 11px; font-weight: bold;
+    color: inherit; opacity: 0.7;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 /* ══════════════════════════════════════════════════
    TICKERS — your original styles, unchanged
 ══════════════════════════════════════════════════ */
@@ -220,6 +244,10 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
         <div class="ticker-item">
             <i class="fas fa-bed"></i> The Riviera Motel is NOW OPEN for reservations | Visit ShadowoftheBridge.com and book your room NOW!
         </div>
+    </div>
+    <div class="qr-area">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&data=https://shadowofthebridge.com&bgcolor=ffffff&color=000000&margin=4" alt="Scan to book">
+        <span class="qr-label">Book Now</span>
     </div>
 </div>
 
