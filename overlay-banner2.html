@@ -19,7 +19,7 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
     bottom: 0; left: 0;
     width: 2560px; height: 120px;
     transform: translateY(100%);           /* hidden below screen on load */
-    transition: transform 0.6s ease-in-out;
+    transition: transform 2.5s ease-in-out;
     background: var(--dynamic-background, linear-gradient(to bottom, skyblue, lightgrey));
     color: var(--dynamic-text-color, black);
     overflow: hidden;                      /* clips panels as they slide */
@@ -449,7 +449,7 @@ var TICKER2_MS    = 30000;    // 30 s
 var VESSEL_MS     = 180000;   // 3 min base vessel view
 var VESSEL_EXT_MS = 30000;    // 30 s extension while vessel nearby
 var HIDE_MS       = 240000;   // 4 min hidden
-var SLIDE_MS      = 600;      // panel-to-panel slide duration (ms)
+var SLIDE_MS      = 2500;     // panel-to-panel slide duration (ms)
 var ETA_NEAR_MIN  = 60;       // vessel within N minutes = "nearby"
 
 var PANEL_IDS   = ['panel-ticker1', 'panel-ticker2', 'panel-vessel'];
