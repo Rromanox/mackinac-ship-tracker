@@ -122,6 +122,26 @@ let reconnectTimeout = null;
 let isConnecting = false;
 let reconnectAttempts = 0;
 
+// Watchdog — if no message arrives within this window, assume zombie connection and reconnect
+const WATCHDOG_MS = 5 * 60 * 1000; // 5 minutes
+let watchdogTimer = null;
+
+function resetWatchdog() {
+  if (watchdogTimer) clearTimeout(watchdogTimer);
+  watchdogTimer = setTimeout(() => {
+    console.warn('⚠️  Watchdog: no AISStream data for 5 minutes — forcing reconnect');
+    if (aisConnection) {
+      aisConnection.terminate(); // hard-kill so onclose fires immediately
+    } else {
+      connectToAISStream();
+    }
+  }, WATCHDOG_MS);
+}
+
+function stopWatchdog() {
+  if (watchdogTimer) { clearTimeout(watchdogTimer); watchdogTimer = null; }
+}
+
 // Database helper functions
 async function saveShipToDatabase(shipData) {
   if (!shipsCollection) return;
@@ -248,6 +268,7 @@ function connectToAISStream() {
     console.log('✓ Connected to AISStream');
     isConnecting = false;
     reconnectAttempts = 0;
+    resetWatchdog(); // start watchdog now that we're connected
     
     // Subscribe to Mackinac Bridge area
     const subscription = {
@@ -271,6 +292,7 @@ function connectToAISStream() {
   });
   
   aisConnection.on('message', (data) => {
+    resetWatchdog(); // any incoming message proves the connection is alive
     try {
       const message = JSON.parse(data);
       
@@ -319,6 +341,7 @@ function connectToAISStream() {
     console.log('AISStream connection closed');
     isConnecting = false;
     aisConnection = null;
+    stopWatchdog();
     
     broadcastToClients({
       type: 'status',
