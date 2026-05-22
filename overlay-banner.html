@@ -115,37 +115,35 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
 .weather-box img { height: 1.6rem; margin-right: 8px; }
 
 /* === TICKER 1: Weather + Stream Info === */
-.ticker-wrap-1 { animation: bannerCycle1 300s ease-in-out infinite; }
+.ticker-wrap-1 { animation: bannerCycle1 300s ease-in-out infinite; z-index: 1000; }
 .ticker-1      { animation: textScroll1  300s linear      infinite; }
 
-/* === TICKER 2: Riviera Motel === */
-.ticker-wrap-2 { animation: bannerCycle2 300s ease-in-out infinite; }
+/* === TICKER 2: Riviera Motel — slides OVER ticker 1, same down === */
+.ticker-wrap-2 { animation: bannerCycle2 300s ease-in-out infinite; z-index: 1001; }
 .ticker-2      { animation: textScroll2  300s linear      infinite; }
 
 /*
     300s (5 min) cycle breakdown:
     -----------------------------------------------
-    0s-6s      Banner 1 slides up
-    6s-51s     Ticker 1 visible (45s)
-    51s-57s    Banner 1 slides down
-    57s-63s    Gap (ships visible)
-    63s-69s    Banner 2 slides up
-    69s-114s   Ticker 2 visible (45s)
-    114s-120s  Banner 2 slides down
-    120s-300s  Both hidden (ships visible — 180s)
+    0s-6s      Banner 1 slides UP
+    6s-51s     Ticker 1 text visible (45s)
+    51s-57s    Ticker 2 slides UP over Ticker 1 (no gap)
+    57s-102s   Ticker 2 text visible (45s)
+    102s-108s  BOTH slide DOWN together (one single exit)
+    108s-300s  Ships visible (192s — over 3 min)
     -----------------------------------------------
 */
 
-/* --- Banner 1 slide up/down --- */
+/* --- Banner 1: slides up at start, stays up through both tickers, slides down at end --- */
 @keyframes bannerCycle1 {
-    0%   { transform: translateY(100%); }   /* hidden below */
+    0%   { transform: translateY(100%); }   /* hidden */
     2%   { transform: translateY(0); }      /* up by 6s */
-    17%  { transform: translateY(0); }      /* visible until 51s */
-    19%  { transform: translateY(100%); }   /* down by 57s */
+    34%  { transform: translateY(0); }      /* stays up until 102s */
+    36%  { transform: translateY(100%); }   /* down by 108s */
     100% { transform: translateY(100%); }   /* stay hidden */
 }
 
-/* --- Text scroll for banner 1 --- */
+/* --- Text scroll for banner 1 (active window: 6s–51s) --- */
 @keyframes textScroll1 {
     0%    { transform: translateX(100%); }  /* offscreen right */
     2.7%  { transform: translateX(100%); }  /* wait for banner (8s) */
@@ -155,23 +153,23 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
     100%  { transform: translateX(-100%); } /* stay offscreen */
 }
 
-/* --- Banner 2 slide up/down --- */
+/* --- Banner 2: slides UP over banner 1 at 51s, slides down together at 102s --- */
 @keyframes bannerCycle2 {
     0%   { transform: translateY(100%); }   /* hidden */
-    21%  { transform: translateY(100%); }   /* stay hidden until 63s */
-    23%  { transform: translateY(0); }      /* up by 69s */
-    38%  { transform: translateY(0); }      /* visible until 114s */
-    40%  { transform: translateY(100%); }   /* down by 120s */
+    17%  { transform: translateY(100%); }   /* stay hidden until 51s */
+    19%  { transform: translateY(0); }      /* up by 57s (slides over ticker 1) */
+    34%  { transform: translateY(0); }      /* stays up until 102s */
+    36%  { transform: translateY(100%); }   /* down by 108s (same as ticker 1) */
     100% { transform: translateY(100%); }   /* stay hidden */
 }
 
-/* --- Text scroll for banner 2 --- */
+/* --- Text scroll for banner 2 (active window: 57s–102s) --- */
 @keyframes textScroll2 {
     0%    { transform: translateX(100%); }  /* offscreen right */
-    23.7% { transform: translateX(100%); }  /* wait for banner (71s) */
-    26.3% { transform: translateX(0); }     /* scrolled in by 79s */
-    35.3% { transform: translateX(0); }     /* sit still until 106s */
-    38%   { transform: translateX(-100%); } /* scrolled off by 114s */
+    19.7% { transform: translateX(100%); }  /* wait for banner (59s) */
+    22.3% { transform: translateX(0); }     /* scrolled in by 67s */
+    31.3% { transform: translateX(0); }     /* sit still until 94s */
+    34%   { transform: translateX(-100%); } /* scrolled off by 102s */
     100%  { transform: translateX(-100%); } /* stay offscreen */
 }
 </style>
