@@ -112,6 +112,7 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
 .ship-chip.approaching { border-color: rgba(0,130,0,0.5);  background: rgba(0,140,0,0.12); }
 .ship-chip.departing   { border-color: rgba(160,80,0,0.45); background: rgba(170,90,0,0.1); }
 .ship-chip.near-bridge { border-color: rgba(200,0,0,0.6);   background: rgba(200,0,0,0.12); animation: chipPulse 1s infinite; }
+.ship-chip.passed      { border-color: rgba(0,0,0,0.2);     background: rgba(0,0,0,0.06); opacity: 0.72; }
 @keyframes chipPulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
 
 .chip-arrow { font-size: 1.6rem; }
@@ -119,6 +120,12 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
 .chip-dist  { opacity: 0.6; font-size: 1.4rem; }
 .chip-speed { opacity: 0.5; font-size: 1.2rem; }
 .chip-eta   { font-size: 1.2rem; font-weight: bold; color: #0055bb; }
+.chip-passed-tag {
+    font-size: 1.05rem; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.5px; white-space: nowrap;
+    background: rgba(0,0,0,0.1); padding: 3px 12px; border-radius: 12px;
+}
+.chip-ago   { opacity: 0.5; font-size: 1.1rem; white-space: nowrap; }
 .no-ships-bar { opacity: 0.45; font-size: 1.6rem; font-weight: bold; }
 
 .live-area {
@@ -248,6 +255,14 @@ var MAX_DIST_MI = 100;
 
 var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
 
+// ── Passed vessel tracking ────────────────────────────────────
+// When an approaching vessel within 20 mi disappears or flips to
+// departing within 10 mi, we record it as having passed the bridge.
+var nearApproaching = {};  // mmsi → { name, lastSeen }
+var passedShips     = [];  // [{ mmsi, name, passedTime }]  most-recent first
+var MAX_PASSED_SHOW = 3;   // keep up to 3 in memory
+var TRACK_DIST_MI   = 20;  // start tracking when within this distance
+
 // ── Ferry / passenger vessel blocklist ────────────────────────
 var BLOCKED_MMSI = {
     368165150: 'WILLIAM RICHARD',         // Inland ferry, "Other" type
@@ -330,6 +345,51 @@ function buildChipHTML(ship) {
         (eta ? '<span class="chip-eta">ETA ' + eta + '</span>' : '') +
         '</div>';
 }
+function buildPassedChipHTML(ship) {
+    var ago    = Math.round((Date.now() - ship.passedTime) / 60000);
+    var agoStr = ago < 1 ? 'just now' : ago + ' min ago';
+    return '<div class="ship-chip passed" data-mmsi="' + ship.mmsi + '">' +
+        '<span class="chip-arrow">&#10003;</span>' +
+        '<span class="chip-name">' + ship.name + '</span>' +
+        '<span class="chip-passed-tag">Passed the Bridge</span>' +
+        '<span class="chip-ago">' + agoStr + '</span>' +
+        '</div>';
+}
+
+// Track vessels approaching within TRACK_DIST_MI; record them as passed
+// when they vanish from AIS or flip to departing close to the bridge.
+function updatePassedTracking() {
+    var now = Date.now();
+
+    // Update tracking list with currently approaching vessels
+    Object.keys(shipData).forEach(function(k) {
+        var s  = shipData[k];
+        var mi = toMiles(s.distance);
+        if (!shouldHide(s.mmsi) && s.direction === 'Approaching' && mi <= TRACK_DIST_MI && s.speed > 0.5) {
+            nearApproaching[s.mmsi] = { name: s.name, lastSeen: now };
+        }
+    });
+
+    // Check if any tracked vessel has passed
+    Object.keys(nearApproaching).forEach(function(mmsi) {
+        var tracked = nearApproaching[mmsi];
+        var current = shipData[mmsi];
+        var stale   = !current || (now - current.lastUpdate) > 600000; // gone > 10 min
+        var flipped = current && current.direction === 'Departing' && toMiles(current.distance) < 10;
+
+        if (stale || flipped) {
+            // Avoid duplicates
+            var alreadyLogged = passedShips.some(function(p) { return p.mmsi === parseInt(mmsi); });
+            if (!alreadyLogged) {
+                passedShips.unshift({ mmsi: parseInt(mmsi), name: tracked.name, passedTime: now });
+                if (passedShips.length > MAX_PASSED_SHOW) passedShips.pop();
+                console.log('Recorded as passed:', tracked.name);
+            }
+            delete nearApproaching[mmsi];
+        }
+    });
+}
+
 function updateChipValues(ships) {
     ships.forEach(function(ship) {
         var chip = document.querySelector('.ship-chip[data-mmsi="' + ship.mmsi + '"]');
@@ -350,16 +410,28 @@ function getVisibleShips() {
 }
 
 function render() {
-    var all        = getVisibleShips();
+    updatePassedTracking();
+
+    var all         = getVisibleShips();
     var approaching = all.filter(function(s) { return s.direction === 'Approaching'; })
                          .sort(function(a,b) { return a.distance - b.distance; });
-    var display    = approaching.length > 0
+    var active      = approaching.length > 0
         ? approaching
         : all.sort(function(a,b) { return a.distance - b.distance; }).slice(0, 3);
-    var inner   = document.getElementById('shipsInner');
-    var newKey  = display.map(function(s) { return s.mmsi; }).join(',');
 
-    if (!display.length) {
+    // Pad with recently passed vessels if fewer than 3 active
+    var needed      = Math.max(0, 3 - active.length);
+    // Filter out any passed ships that are also still in the active list
+    var activeMmsis = active.map(function(s) { return s.mmsi; });
+    var padWith     = passedShips
+        .filter(function(p) { return activeMmsis.indexOf(p.mmsi) === -1; })
+        .slice(0, needed);
+
+    var inner  = document.getElementById('shipsInner');
+    var newKey = active.map(function(s) { return s.mmsi; }).join(',') +
+                 '|' + padWith.map(function(p) { return p.mmsi; }).join(',');
+
+    if (!active.length && !padWith.length) {
         if (lastShipKey !== 'empty') {
             if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
             inner.style.transition = 'none'; inner.style.transform = 'translateX(0)';
@@ -370,10 +442,19 @@ function render() {
         lastShipKey = newKey;
         if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
         inner.style.transition = 'none'; inner.style.transform = 'translateX(0)';
-        inner.innerHTML = display.map(buildChipHTML).join('');
+        inner.innerHTML = active.map(buildChipHTML).join('') +
+                          padWith.map(buildPassedChipHTML).join('');
         setTimeout(function() { pageOffsets = buildPageOffsets(); startPaging(); }, 80);
     } else {
-        updateChipValues(display);
+        updateChipValues(active);
+        // Refresh "X min ago" on passed chips every render cycle
+        padWith.forEach(function(ship) {
+            var chip = document.querySelector('.ship-chip.passed[data-mmsi="' + ship.mmsi + '"]');
+            if (!chip) return;
+            var ago    = Math.round((Date.now() - ship.passedTime) / 60000);
+            var agoEl  = chip.querySelector('.chip-ago');
+            if (agoEl) agoEl.textContent = ago < 1 ? 'just now' : ago + ' min ago';
+        });
     }
 
     // If a vessel appears while we're hiding, cut the hide short
