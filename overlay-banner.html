@@ -317,7 +317,7 @@ var RENDER_URL    = 'mackinac-ship-tracker.onrender.com';
 var isLocalhost   = location.hostname==='localhost'||location.hostname==='127.0.0.1';
 var WS_URL        = isLocalhost ? 'ws://localhost:'+(location.port||3000) : 'wss://'+RENDER_URL;
 var BRIDGE_LAT    = 45.8174, BRIDGE_LON = -84.7278;
-var MAX_DIST_MI   = 62;
+var MAX_DIST_MI   = 100;
 
 var shipData={}, staticData={}, ws, reconnectTimer, reconnectAttempts=0;
 
