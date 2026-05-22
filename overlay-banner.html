@@ -321,11 +321,22 @@ var MAX_DIST_MI   = 62;
 
 var shipData={}, staticData={}, ws, reconnectTimer, reconnectAttempts=0;
 
+// ── FERRY BLOCKLIST ───────────────────────────────────────────
+// Vessels that should never appear on the banner.
+// To add a new one: look up the MMSI on MarineTraffic and add it below.
+var BLOCKED_MMSI = {
+    368165150: 'WILLIAM RICHARD',   // Inland ferry, classified as "Other" — slips type filter
+    367031360: 'MARQUETTE II',      // Mackinac Island passenger ferry
+    367139210: 'EMERALD ISLE',      // Beaver Island Ro-Ro/Passenger ferry
+};
+// ─────────────────────────────────────────────────────────────
+
 // AIS type 60-69 = Passenger vessels (ferries, excursion boats, etc.)
 // We hide these since they don't pass under the Mackinac Bridge
-function isPassengerVessel(mmsi){
+function shouldHide(mmsi){
+    if (BLOCKED_MMSI[mmsi]) return true;                    // explicit blocklist
     var t = staticData[mmsi] && staticData[mmsi].type;
-    return t && t >= 60 && t <= 69;
+    return t && t >= 60 && t <= 69;                         // passenger type filter
 }
 
 function haversine(lat1,lon1,lat2,lon2){
@@ -399,7 +410,7 @@ function updateChipValues(ships){
     });
 }
 function render(){
-    var all=Object.keys(shipData).map(function(k){return shipData[k];}).filter(function(s){return s.speed>0.5&&toMiles(s.distance)<=MAX_DIST_MI&&!isPassengerVessel(s.mmsi);});
+    var all=Object.keys(shipData).map(function(k){return shipData[k];}).filter(function(s){return s.speed>0.5&&toMiles(s.distance)<=MAX_DIST_MI&&!shouldHide(s.mmsi);});
     var approaching=all.filter(function(s){return s.direction==='Approaching';}).sort(function(a,b){return a.distance-b.distance;});
     var display=approaching.length>0?approaching:all.sort(function(a,b){return a.distance-b.distance;}).slice(0,3);
     var inner=document.getElementById('shipsInner');
