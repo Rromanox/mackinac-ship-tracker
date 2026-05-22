@@ -339,7 +339,7 @@ function formatETA(distKm,spd){
     return min<60?min+'m':Math.floor(min/60)+'h'+(min%60?min%60+'m':'');
 }
 
-var PAGE_HOLD_MS=5000,pageOffsets=[],currentPage=0,pageTimer=null,lastShipKey='';
+var PAGE_HOLD_MS=15000,pageOffsets=[],currentPage=0,pageTimer=null,lastShipKey='';
 
 function buildPageOffsets(){
     var inner=document.getElementById('shipsInner'),row=document.getElementById('shipsRow');
@@ -353,7 +353,7 @@ function buildPageOffsets(){
 function showPage(idx){
     var inner=document.getElementById('shipsInner');
     if(!inner||!pageOffsets.length)return;
-    inner.style.transition='transform 0.7s ease-in-out';
+    inner.style.transition='transform 2s ease-in-out';
     inner.style.transform='translateX(-'+pageOffsets[idx%pageOffsets.length]+'px)';
 }
 function startPaging(){
