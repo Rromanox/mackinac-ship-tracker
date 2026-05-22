@@ -431,6 +431,7 @@ function render(){
         inner.innerHTML=display.map(buildChipHTML).join('');
         setTimeout(function(){pageOffsets=buildPageOffsets();startPaging();},80);
     }else{updateChipValues(display);}
+    checkBannerMode();
 }
 function processMessage(data){
     if(data.MessageType==='ShipStaticData'&&data.Message&&data.Message.ShipStaticData){
@@ -463,6 +464,93 @@ function connect(){
     ws.onmessage=function(e){try{var m=JSON.parse(e.data);if(m.type==='ship_data')processMessage(m.data);}catch(ex){}};
     ws.onerror=function(){setLive(false);};
     ws.onclose=function(){setLive(false);reconnectAttempts++;var d=Math.min(2000*Math.pow(2,reconnectAttempts-1),30000);reconnectTimer=setTimeout(connect,d);};
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BANNER VISIBILITY — hide everything when ships are far
+//  • ETA of closest vessel > 60 min  → far mode
+//  • Far mode: visible 1 min, hidden 2.5 min, repeat
+//  • ETA ≤ 60 min → near mode: always visible, normal cycle
+// ═══════════════════════════════════════════════════════════
+var ETA_NEAR_MIN    = 60;       // threshold in minutes
+var BANNER_SHOW_MS  = 60000;    // 1 minute visible
+var BANNER_HIDE_MS  = 150000;   // 2.5 minutes hidden
+var BANNER_TRANS    = '0.6s ease-in-out';
+
+var farModeActive   = false;
+var bannerCycleTimer= null;
+
+function getClosestApproachingETA(){
+    var vessels = Object.keys(shipData).map(function(k){return shipData[k];})
+        .filter(function(s){return s.speed>0.5 && toMiles(s.distance)<=MAX_DIST_MI && !shouldHide(s.mmsi) && s.direction==='Approaching';})
+        .sort(function(a,b){return a.distance-b.distance;});
+    if(!vessels.length) return null;
+    var v = vessels[0];
+    var min = Math.round(v.distance/(v.speed*1.852)*60);
+    return min;
+}
+
+function slideBannerDown(){
+    var sl=document.getElementById('shipLayer');
+    var t1=document.querySelector('.ticker-wrap-1');
+    var t2=document.querySelector('.ticker-wrap-2');
+    if(sl){sl.style.transition='transform '+BANNER_TRANS;sl.style.transform='translateY(100%)';}
+    if(t1){t1.style.transition='transform '+BANNER_TRANS;t1.style.transform='translateY(100%)';t1.style.animationPlayState='paused';}
+    if(t2){t2.style.transition='transform '+BANNER_TRANS;t2.style.transform='translateY(100%)';t2.style.animationPlayState='paused';}
+}
+
+function slideBannerUp(){
+    var sl=document.getElementById('shipLayer');
+    var t1=document.querySelector('.ticker-wrap-1');
+    var t2=document.querySelector('.ticker-wrap-2');
+    // Ship layer slides up
+    if(sl){sl.style.transition='transform '+BANNER_TRANS;sl.style.transform='translateY(0)';}
+    // Restart ticker CSS animations from the beginning of their 300s cycle
+    [t1,t2].forEach(function(t){
+        if(!t)return;
+        t.style.transition='';
+        t.style.transform='';
+        t.style.animationPlayState='';
+        t.style.animation='none';
+        void t.offsetWidth; // force reflow so animation resets to 0%
+        t.style.animation='';
+    });
+}
+
+function startFarMode(){
+    if(farModeActive)return;
+    farModeActive=true;
+    console.log('Banner far mode: cycling (1min on / 2.5min off)');
+    function cycle(){
+        // Re-check before hiding — vessel may have gotten closer
+        var eta=getClosestApproachingETA();
+        if(eta!==null && eta<=ETA_NEAR_MIN){stopFarMode();return;}
+        slideBannerDown();
+        bannerCycleTimer=setTimeout(function(){
+            var eta2=getClosestApproachingETA();
+            if(eta2!==null && eta2<=ETA_NEAR_MIN){stopFarMode();return;}
+            slideBannerUp();
+            bannerCycleTimer=setTimeout(cycle, BANNER_SHOW_MS);
+        }, BANNER_HIDE_MS);
+    }
+    // Show first, then start cycle
+    slideBannerUp();
+    bannerCycleTimer=setTimeout(cycle, BANNER_SHOW_MS);
+}
+
+function stopFarMode(){
+    if(!farModeActive)return;
+    farModeActive=false;
+    if(bannerCycleTimer){clearTimeout(bannerCycleTimer);bannerCycleTimer=null;}
+    console.log('Banner near mode: vessel within 60 min — always visible');
+    slideBannerUp();
+}
+
+function checkBannerMode(){
+    var eta=getClosestApproachingETA();
+    var isFar=(eta===null || eta>ETA_NEAR_MIN);
+    if(isFar && !farModeActive) startFarMode();
+    else if(!isFar && farModeActive) stopFarMode();
 }
 
 window.onload = function() { refreshData(); connect(); };
