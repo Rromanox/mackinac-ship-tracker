@@ -432,21 +432,23 @@ document.addEventListener('visibilitychange', function() {
 //  Cycle sequence (all JS-timed, no CSS animation keyframes):
 //
 //    1. Banner slides UP
-//    2. Panel 1 (Ticker 1)  visible for  30 s  — slides in from right
-//    3. Panel 2 (Ticker 2)  visible for  30 s  — slides in from right
-//    4. Panel 3 (Vessel)    visible for 3 min  — slides in from right
-//         ↳ if vessel ETA ≤ 60 min at end of 3 min → extend by 30 s, repeat
-//         ↳ when no vessel nearby → proceed to hide
-//    5. Banner slides DOWN
-//    6. Hidden for 4 min
-//         ↳ if vessel ETA ≤ 60 min detected → cancel hide, restart cycle
-//    7. Go to step 1
+//    2. Panel 1 (Ticker 1)  visible for 30 s  — slides in from right
+//    3. Panel 2 (Ticker 2)  visible for 30 s  — slides in from right
+//    4. Panel 3 (Vessel)    visible for 90 s  — slides in from right
+//         ↳ if vessel ETA ≤ 30 min at end → extend by 30 s, repeat
+//         ↳ when no vessel nearby → outro tickers
+//    5. Panel 1 (Ticker 1)  visible for 30 s  — outro
+//    6. Panel 2 (Ticker 2)  visible for 30 s  — outro
+//    7. Banner slides DOWN
+//    8. Hidden for 4 min
+//         ↳ if vessel ETA ≤ 30 min detected → cancel hide, restart cycle
+//    9. Go to step 1
 //
 // ═══════════════════════════════════════════════════════════════
 
 var TICKER1_MS    = 30000;    // 30 s
 var TICKER2_MS    = 30000;    // 30 s
-var VESSEL_MS     = 180000;   // 3 min base vessel view
+var VESSEL_MS     = 90000;    // 90 s base vessel view
 var VESSEL_EXT_MS = 30000;    // 30 s extension while vessel nearby
 var HIDE_MS       = 240000;   // 4 min hidden
 var SLIDE_MS      = 2500;     // panel-to-panel slide duration (ms)
@@ -512,7 +514,7 @@ function hideBanner() {
 
 /*
  * vesselPhase(duration)
- * Wait `duration` ms, then either extend (if vessel nearby) or hide.
+ * Wait `duration` ms, then either extend (if vessel nearby) or run outro tickers.
  */
 function vesselPhase(duration) {
     clearTimeout(cycleTimer);
@@ -523,15 +525,32 @@ function vesselPhase(duration) {
             console.log('Vessel within ' + eta + ' min — extending vessel view by 30s');
             vesselPhase(VESSEL_EXT_MS);
         } else {
-            // No nearby vessel — slide banner down, enter hide phase
-            hideBanner();
-            inHidePhase = true;
-            hideTimer = setTimeout(function() {
-                inHidePhase = false;
-                runCycle();
-            }, HIDE_MS);
+            // No nearby vessel — play outro tickers then hide
+            runOutroTickers();
         }
     }, duration);
+}
+
+/*
+ * runOutroTickers()
+ * Play Ticker 1 → Ticker 2 again after the vessel panel, then hide.
+ */
+function runOutroTickers() {
+    slideToPanel(0, function() {                        // Ticker 1 outro
+        cycleTimer = setTimeout(function() {
+            slideToPanel(1, function() {                // Ticker 2 outro
+                cycleTimer = setTimeout(function() {
+                    // All done — slide banner down, enter hide phase
+                    hideBanner();
+                    inHidePhase = true;
+                    hideTimer = setTimeout(function() {
+                        inHidePhase = false;
+                        runCycle();
+                    }, HIDE_MS);
+                }, TICKER2_MS);
+            });
+        }, TICKER1_MS);
+    });
 }
 
 /*
