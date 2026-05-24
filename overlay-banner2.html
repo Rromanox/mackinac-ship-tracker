@@ -181,7 +181,7 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
     </div>
     <div class="ships-row" id="shipsRow">
       <div class="ships-inner" id="shipsInner">
-        <span class="no-ships-bar">Connecting…</span>
+        <span class="no-ships-bar">No approaching vessels nearby</span>
       </div>
     </div>
     <div class="live-area">
@@ -495,7 +495,7 @@ function connect() {
     if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
     setLive(false);
     ws = new WebSocket(WS_URL);
-    ws.onopen    = function() { reconnectAttempts = 0; setLive(true); };
+    ws.onopen    = function() { reconnectAttempts = 0; setLive(true); render(); };
     ws.onmessage = function(e) { try { var m = JSON.parse(e.data); if (m.type === 'ship_data') processMessage(m.data); } catch(ex) {} };
     ws.onerror   = function() { setLive(false); };
     ws.onclose   = function() {
