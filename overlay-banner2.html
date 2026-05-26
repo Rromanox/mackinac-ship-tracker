@@ -197,7 +197,9 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
 //  WEATHER — fetch from OpenWeatherMap, update panel 1 + branding
 // ═══════════════════════════════════════════════════════════════
 var yourApiKey     = '8d6e0169a641adc002688e82b9ab8ec3';
-var yourCity       = 'Mackinaw City, US';
+var yourCity       = 'Mackinaw City, MI';   // display label only
+var yourLat        = 45.7829;               // Mackinaw City exact coordinates
+var yourLon        = -84.7278;
 var yourUnits      = 'imperial';
 var time24hour     = false;
 
@@ -206,7 +208,7 @@ function refreshData() { weatherCheck(); setTimeout(refreshData, 60000); }
 function weatherCheck() {
     var time = time24hour ? time24(new Date()) : currentTime(new Date());
     fetch('https://api.openweathermap.org/data/2.5/weather?units=' + yourUnits +
-          '&q=' + encodeURIComponent(yourCity) + '&appid=' + yourApiKey)
+          '&lat=' + yourLat + '&lon=' + yourLon + '&appid=' + yourApiKey)
     .then(function(r) { return r.json(); })
     .then(function(d) {
         var desc    = toProperCase(d.weather[0].description);

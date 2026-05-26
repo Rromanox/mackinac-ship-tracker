@@ -263,7 +263,9 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
 //  WEATHER — original logic, jQuery replaced with fetch()
 // ═══════════════════════════════════════════════════════════
 var yourApiKey     = "8d6e0169a641adc002688e82b9ab8ec3";
-var yourCity       = "Mackinaw City, US";
+var yourCity       = "Mackinaw City, MI";  // display label only
+var yourLat        = 45.7829;              // Mackinaw City exact coordinates
+var yourLon        = -84.7278;
 var yourUnits      = "imperial";
 var iconHeight     = "50px";
 var clockSeperator = "-";
@@ -276,7 +278,7 @@ function refreshData() {
 function weatherCheck() {
     var time = time24hour ? time24(new Date()) : currentTime(new Date());
     fetch('https://api.openweathermap.org/data/2.5/weather?units=' + yourUnits +
-          '&q=' + encodeURIComponent(yourCity) + '&appid=' + yourApiKey)
+          '&lat=' + yourLat + '&lon=' + yourLon + '&appid=' + yourApiKey)
         .then(function(r) { return r.json(); })
         .then(function(apiResponse) {
             var weatherDescription = toProperCase(apiResponse.weather[0].description);
