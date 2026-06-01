@@ -276,7 +276,14 @@ var BLOCKED_MMSI = {
     367721960: 'THE HOPE',                // Shepler's Mackinac Island ferry
 };
 
+// ── Whitelist — overrides the type 60-69 passenger filter ─────
+// Large cruise/passenger ships that actually pass the bridge and should be shown.
+var ALLOWED_MMSI = {
+    311050300: 'VICTORY II',              // Great Lakes passenger cruise ship, St. Ignace → Marquette
+};
+
 function shouldHide(mmsi) {
+    if (ALLOWED_MMSI[mmsi]) return false;  // always show whitelisted vessels
     if (BLOCKED_MMSI[mmsi]) return true;
     var t = staticData[mmsi] && staticData[mmsi].type;
     return t && t >= 60 && t <= 69;

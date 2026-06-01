@@ -348,7 +348,12 @@ var BLOCKED_MMSI = {
 
 // AIS type 60-69 = Passenger vessels (ferries, excursion boats, etc.)
 // We hide these since they don't pass under the Mackinac Bridge
+var ALLOWED_MMSI = {
+    311050300: 'VICTORY II',              // Great Lakes passenger cruise ship, St. Ignace → Marquette
+};
+
 function shouldHide(mmsi){
+    if (ALLOWED_MMSI[mmsi]) return false;                   // always show whitelisted vessels
     if (BLOCKED_MMSI[mmsi]) return true;                    // explicit blocklist
     var t = staticData[mmsi] && staticData[mmsi].type;
     return t && t >= 60 && t <= 69;                         // passenger type filter
