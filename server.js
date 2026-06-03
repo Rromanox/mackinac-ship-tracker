@@ -4,7 +4,6 @@ const WebSocket = require('ws');
 const http = require('http');
 const path = require('path');
 const { MongoClient } = require('mongodb');
-const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -73,17 +72,12 @@ app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'o
 
 // Test notification endpoint
 app.get('/api/test-notify', async (req, res) => {
-  if (!mailTransporter) {
-    return res.json({ success: false, error: 'Mail transporter not initialized — check GMAIL_USER and GMAIL_PASS env vars' });
+  if (!BREVO_API_KEY) {
+    return res.json({ success: false, error: 'BREVO_API_KEY not set' });
   }
   const to = [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean);
   try {
-    await mailTransporter.sendMail({
-      from: GMAIL_USER,
-      to,
-      subject: '🚢 Test — Ship Tracker Alert',
-      text: 'This is a test notification from the Mackinac Bridge Ship Tracker. Alerts are working!'
-    });
+    await sendVesselAlert('TEST VESSEL', '8.2', 9);
     res.json({ success: true, to });
   } catch (err) {
     res.json({ success: false, error: err.message, to });
@@ -119,44 +113,48 @@ app.post('/api/ships/:mmsi/passed', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// VESSEL ALERT NOTIFICATIONS — email + free SMS via carrier gateway
+// VESSEL ALERT NOTIFICATIONS — Brevo API (HTTPS, works on Render)
 // ─────────────────────────────────────────────────────────────
-const GMAIL_USER  = process.env.GMAIL_USER;       // mundograficokevinai@gmail.com
-const GMAIL_PASS  = process.env.GMAIL_PASS;       // Gmail app password
-const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL;    // romandicesare@outlook.com
-const NOTIFY_SMS   = process.env.NOTIFY_SMS;      // 2318186017@txt.att.net
+const BREVO_API_KEY  = process.env.BREVO_API_KEY;
+const SENDER_EMAIL   = process.env.GMAIL_USER || 'mundograficokevinai@gmail.com';
+const NOTIFY_EMAIL   = process.env.NOTIFY_EMAIL;   // romandicesare@outlook.com
+const NOTIFY_SMS     = process.env.NOTIFY_SMS;     // carrier gateway (optional)
 
-const ETA_ALERT_MIN = 10;   // notify when vessel is within this many minutes
-const ALERT_COOLDOWN_MS = 90 * 60 * 1000; // 90 min cooldown per vessel
+const ETA_ALERT_MIN     = 10;                  // notify when within this many minutes
+const ALERT_COOLDOWN_MS = 90 * 60 * 1000;     // 90 min cooldown per vessel
 
-// Vessels that should never trigger alerts (same blocklist as frontend)
+// Same blocklist/allowlist as the frontend banners
 const BLOCKED_MMSI_ALERT = new Set([368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960]);
-const ALLOWED_MMSI_ALERT = new Set([311050300]); // VICTORY II — override passenger filter
+const ALLOWED_MMSI_ALERT = new Set([311050300]); // VICTORY II
 
 const alertedVessels = {}; // mmsi → timestamp of last alert
 
-let mailTransporter = null;
-if (GMAIL_USER && GMAIL_PASS) {
-  mailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: GMAIL_USER, pass: GMAIL_PASS }
-  });
-  console.log('✉️  Mail transporter ready');
+if (BREVO_API_KEY) {
+  console.log('✉️  Brevo notifications ready');
 } else {
-  console.warn('⚠️  GMAIL_USER / GMAIL_PASS not set — notifications disabled');
+  console.warn('⚠️  BREVO_API_KEY not set — notifications disabled');
 }
 
 async function sendVesselAlert(name, distMi, etaMin) {
-  if (!mailTransporter) return;
-  const subject = `🚢 ${name} approaching Mackinac Bridge`;
-  const text    = `${name} is ~${distMi} miles from the Mackinac Bridge with an ETA of approximately ${etaMin} minutes.\n\nhttps://mackinac-ship-tracker.onrender.com`;
-  const to      = [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean);
-  try {
-    await mailTransporter.sendMail({ from: GMAIL_USER, to, subject, text });
-    console.log(`📱 Alert sent for ${name} (ETA ~${etaMin} min)`);
-  } catch (err) {
-    console.error('❌ Alert send error:', err.message);
+  if (!BREVO_API_KEY) return;
+  const subject  = `🚢 ${name} approaching Mackinac Bridge`;
+  const text     = `${name} is ~${distMi} miles from the Mackinac Bridge with an ETA of approximately ${etaMin} minutes.\n\nhttps://mackinac-ship-tracker.onrender.com`;
+  const to       = [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean).map(e => ({ email: e }));
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sender:      { name: 'Mackinac Ship Tracker', email: SENDER_EMAIL },
+      to,
+      subject,
+      textContent: text
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Brevo API error');
   }
+  console.log(`📱 Alert sent for ${name} (ETA ~${etaMin} min)`);
 }
 
 function checkVesselAlert(mmsi, name, lat, lon, speed, course) {
