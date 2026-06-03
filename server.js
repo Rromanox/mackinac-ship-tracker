@@ -73,8 +73,21 @@ app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'o
 
 // Test notification endpoint
 app.get('/api/test-notify', async (req, res) => {
-  await sendVesselAlert('TEST VESSEL', '8.2', 9);
-  res.json({ success: true, to: [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean) });
+  if (!mailTransporter) {
+    return res.json({ success: false, error: 'Mail transporter not initialized — check GMAIL_USER and GMAIL_PASS env vars' });
+  }
+  const to = [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean);
+  try {
+    await mailTransporter.sendMail({
+      from: GMAIL_USER,
+      to,
+      subject: '🚢 Test — Ship Tracker Alert',
+      text: 'This is a test notification from the Mackinac Bridge Ship Tracker. Alerts are working!'
+    });
+    res.json({ success: true, to });
+  } catch (err) {
+    res.json({ success: false, error: err.message, to });
+  }
 });
 
 // Health / status check (used by UptimeRobot and monitoring)
