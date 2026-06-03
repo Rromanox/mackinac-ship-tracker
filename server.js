@@ -4,6 +4,7 @@ const WebSocket = require('ws');
 const http = require('http');
 const path = require('path');
 const { MongoClient } = require('mongodb');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -70,6 +71,12 @@ app.get('/overlay/corner',    (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner.html')));
 app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner2.html')));
 
+// Test notification endpoint
+app.get('/api/test-notify', async (req, res) => {
+  await sendVesselAlert('TEST VESSEL', '8.2', 9);
+  res.json({ success: true, to: [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean) });
+});
+
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {
   const stats = await getShipStats();
@@ -97,6 +104,77 @@ app.post('/api/ships/:mmsi/passed', async (req, res) => {
   await markShipAsPassed(mmsi, name || 'Unknown');
   res.json({ success: true });
 });
+
+// ─────────────────────────────────────────────────────────────
+// VESSEL ALERT NOTIFICATIONS — email + free SMS via carrier gateway
+// ─────────────────────────────────────────────────────────────
+const GMAIL_USER  = process.env.GMAIL_USER;       // mundograficokevinai@gmail.com
+const GMAIL_PASS  = process.env.GMAIL_PASS;       // Gmail app password
+const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL;    // romandicesare@outlook.com
+const NOTIFY_SMS   = process.env.NOTIFY_SMS;      // 2318186017@txt.att.net
+
+const ETA_ALERT_MIN = 10;   // notify when vessel is within this many minutes
+const ALERT_COOLDOWN_MS = 90 * 60 * 1000; // 90 min cooldown per vessel
+
+// Vessels that should never trigger alerts (same blocklist as frontend)
+const BLOCKED_MMSI_ALERT = new Set([368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960]);
+const ALLOWED_MMSI_ALERT = new Set([311050300]); // VICTORY II — override passenger filter
+
+const alertedVessels = {}; // mmsi → timestamp of last alert
+
+let mailTransporter = null;
+if (GMAIL_USER && GMAIL_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: GMAIL_USER, pass: GMAIL_PASS }
+  });
+  console.log('✉️  Mail transporter ready');
+} else {
+  console.warn('⚠️  GMAIL_USER / GMAIL_PASS not set — notifications disabled');
+}
+
+async function sendVesselAlert(name, distMi, etaMin) {
+  if (!mailTransporter) return;
+  const subject = `🚢 ${name} approaching Mackinac Bridge`;
+  const text    = `${name} is ~${distMi} miles from the Mackinac Bridge with an ETA of approximately ${etaMin} minutes.\n\nhttps://mackinac-ship-tracker.onrender.com`;
+  const to      = [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean);
+  try {
+    await mailTransporter.sendMail({ from: GMAIL_USER, to, subject, text });
+    console.log(`📱 Alert sent for ${name} (ETA ~${etaMin} min)`);
+  } catch (err) {
+    console.error('❌ Alert send error:', err.message);
+  }
+}
+
+function checkVesselAlert(mmsi, name, lat, lon, speed, course) {
+  // Skip blocked vessels (unless explicitly allowed)
+  if (BLOCKED_MMSI_ALERT.has(mmsi) && !ALLOWED_MMSI_ALERT.has(mmsi)) return;
+
+  // Only approaching vessels
+  const dLat = lat - BRIDGE_LAT, dLon = lon - BRIDGE_LON;
+  const bearing = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
+  const diff = Math.abs(((course - bearing) + 180 + 360) % 360 - 180);
+  if (diff >= 90) return; // departing
+
+  // Calculate distance and ETA
+  const R = 6371;
+  const dLatR = (BRIDGE_LAT - lat) * Math.PI / 180;
+  const dLonR = (BRIDGE_LON - lon) * Math.PI / 180;
+  const a = Math.sin(dLatR/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(BRIDGE_LAT*Math.PI/180)*Math.sin(dLonR/2)**2;
+  const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distMi = (distKm * 0.621371).toFixed(1);
+
+  if (!speed || speed < 0.5) return;
+  const etaMin = Math.round(distKm / (speed * 1.852) * 60);
+  if (etaMin > ETA_ALERT_MIN || etaMin < 1) return;
+
+  // Cooldown check
+  const lastAlert = alertedVessels[mmsi];
+  if (lastAlert && (Date.now() - lastAlert) < ALERT_COOLDOWN_MS) return;
+
+  alertedVessels[mmsi] = Date.now();
+  sendVesselAlert(name, distMi, etaMin).catch(console.error);
+}
 
 // AISStream configuration
 const API_KEY = process.env.AISSTREAM_API_KEY;
@@ -309,6 +387,10 @@ function connectToAISStream() {
         
         // Log ship received from AISStream
         console.log(`🚢 Ship received: ${shipInfo.name} (MMSI: ${shipInfo.mmsi}) Speed: ${shipInfo.speed} kts`);
+
+        // Check if this vessel should trigger an alert
+        const pos = message.Message.PositionReport;
+        checkVesselAlert(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog || 0);
         
         // Save to database (async, don't wait)
         saveShipToDatabase(shipInfo).catch(err => 
