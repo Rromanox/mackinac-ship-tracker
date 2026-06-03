@@ -75,7 +75,7 @@ app.get('/api/test-notify', async (req, res) => {
   if (!BREVO_API_KEY) {
     return res.json({ success: false, error: 'BREVO_API_KEY not set' });
   }
-  const to = [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean);
+  const to = [...(NOTIFY_EMAIL||'').split(','), ...(NOTIFY_SMS||'').split(',')].map(e=>e.trim()).filter(Boolean);
   try {
     await sendVesselAlert('TEST VESSEL', '8.2', 9);
     res.json({ success: true, to });
@@ -139,7 +139,10 @@ async function sendVesselAlert(name, distMi, etaMin) {
   if (!BREVO_API_KEY) return;
   const subject  = `🚢 ${name} approaching Mackinac Bridge`;
   const text     = `${name} is ~${distMi} miles from the Mackinac Bridge with an ETA of approximately ${etaMin} minutes.\n\nhttps://mackinac-ship-tracker.onrender.com`;
-  const to       = [NOTIFY_EMAIL, NOTIFY_SMS].filter(Boolean).map(e => ({ email: e }));
+  // NOTIFY_EMAIL can be a single address or comma-separated list
+  const emailList = (NOTIFY_EMAIL || '').split(',').map(e => e.trim()).filter(Boolean);
+  const smsList   = (NOTIFY_SMS   || '').split(',').map(e => e.trim()).filter(Boolean);
+  const to        = [...emailList, ...smsList].map(e => ({ email: e }));
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
