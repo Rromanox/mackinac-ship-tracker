@@ -87,10 +87,19 @@ app.get('/api/test-notify', async (req, res) => {
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {
   const stats = await getShipStats();
+  // Prune vessels not heard from in 10 minutes
+  const cutoff = Date.now() - 10 * 60 * 1000;
+  Object.keys(recentVessels).forEach(k => { if (recentVessels[k].lastSeen < cutoff) delete recentVessels[k]; });
   res.json({
     status: 'Ship Tracker Proxy Server Running',
     connections: wss.clients.size,
     database: db ? 'Connected' : 'Disconnected',
+    aisstream: {
+      connected: !!(aisConnection && aisConnection.readyState === WebSocket.OPEN),
+      lastMessageSecondsAgo: lastAisMessageAt ? Math.round((Date.now() - lastAisMessageAt) / 1000) : null,
+      messagesSinceBoot: aisMessagesTotal,
+      vesselsLast10Min: Object.values(recentVessels).map(v => v.name)
+    },
     stats: stats,
     timestamp: new Date().toISOString()
   });
@@ -214,6 +223,11 @@ let aisConnection = null;
 let reconnectTimeout = null;
 let isConnecting = false;
 let reconnectAttempts = 0;
+
+// Live diagnostics for /api/status — proves whether AIS data is flowing
+let lastAisMessageAt = null;
+let aisMessagesTotal = 0;
+const recentVessels = {}; // mmsi → { name, lastSeen } for vessels seen in last 10 min
 
 // Watchdog — if no message arrives within this window, assume zombie connection and reconnect
 const WATCHDOG_MS = 5 * 60 * 1000; // 5 minutes
@@ -386,6 +400,8 @@ function connectToAISStream() {
   
   aisConnection.on('message', (data) => {
     resetWatchdog(); // any incoming message proves the connection is alive
+    lastAisMessageAt = Date.now();
+    aisMessagesTotal++;
     try {
       const message = JSON.parse(data);
       
@@ -401,6 +417,9 @@ function connectToAISStream() {
         
         // Log ship received from AISStream
         console.log(`🚢 Ship received: ${shipInfo.name} (MMSI: ${shipInfo.mmsi}) Speed: ${shipInfo.speed} kts`);
+
+        // Track for /api/status diagnostics
+        recentVessels[shipInfo.mmsi] = { name: shipInfo.name, lastSeen: Date.now() };
 
         // Check if this vessel should trigger an alert
         const pos = message.Message.PositionReport;
