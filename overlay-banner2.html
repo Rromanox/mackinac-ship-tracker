@@ -263,7 +263,7 @@ var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
 var nearApproaching = {};  // mmsi → { name, lastSeen }
 var passedShips     = [];  // [{ mmsi, name, passedTime }]  most-recent first
 var MAX_PASSED_SHOW = 3;   // keep up to 3 in memory
-var PASSED_MAX_AGE_MS = 2 * 60 * 60 * 1000; // drop passed chips after 2 hours
+var PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000; // drop passed chips after 6 hours
 var TRACK_DIST_MI   = 20;  // start tracking when within this distance
 
 // ── Ferry / passenger vessel blocklist ────────────────────────
