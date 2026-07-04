@@ -404,9 +404,15 @@ function startPaging(){
     if(pageOffsets.length<=1)return;
     pageTimer=setInterval(function(){currentPage=(currentPage+1)%pageOffsets.length;showPage(currentPage);},PAGE_HOLD_MS);
 }
+function formatAgo(passedTime){
+    var min=Math.round((Date.now()-passedTime)/60000);
+    if(min<1)return 'just now';
+    if(min<60)return min+' min ago';
+    var h=Math.floor(min/60),m=min%60;
+    return h+'h'+(m?' '+m+'m':'')+' ago';
+}
 function buildPassedChipHTML(ship){
-    var ago=Math.round((Date.now()-ship.passedTime)/60000);
-    var agoStr=ago<1?'just now':ago+' min ago';
+    var agoStr=formatAgo(ship.passedTime);
     return '<div class="ship-chip passed" data-mmsi="'+ship.mmsi+'">'+
         '<span class="chip-arrow">&#10003;</span>'+
         '<span class="chip-name">'+ship.name+'</span>'+
@@ -490,9 +496,8 @@ function render(){
         padWith.forEach(function(ship){
             var chip=document.querySelector('.ship-chip.passed[data-mmsi="'+ship.mmsi+'"]');
             if(!chip)return;
-            var ago=Math.round((Date.now()-ship.passedTime)/60000);
             var agoEl=chip.querySelector('.chip-ago');
-            if(agoEl)agoEl.textContent=ago<1?'just now':ago+' min ago';
+            if(agoEl)agoEl.textContent=formatAgo(ship.passedTime);
         });
     }
     checkBannerMode();
