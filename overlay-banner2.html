@@ -258,13 +258,25 @@ var MAX_DIST_MI = 100;
 var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
 
 // ── Passed vessel tracking ────────────────────────────────────
-// When an approaching vessel within 20 mi disappears or flips to
-// departing within 10 mi, we record it as having passed the bridge.
-var nearApproaching = {};  // mmsi → { name, lastSeen }
+// Passings are detected SERVER-SIDE (longitude crossing near the
+// bridge, stored in MongoDB). The banner just polls /api/ships/recent
+// so records survive page refreshes and OBS restarts.
 var passedShips     = [];  // [{ mmsi, name, passedTime }]  most-recent first
-var MAX_PASSED_SHOW = 3;   // keep up to 3 in memory
-var PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000; // drop passed chips after 6 hours
-var TRACK_DIST_MI   = 20;  // start tracking when within this distance
+var PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000; // don't show chips older than 6 hours
+var HTTP_BASE = isLocal ? 'http://localhost:' + (location.port || 3000) : 'https://' + RENDER_URL;
+
+function refreshPassedShips() {
+    fetch(HTTP_BASE + '/api/ships/recent?limit=5')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            passedShips = (d.ships || []).map(function(s) {
+                return { mmsi: s.mmsi, name: s.name, passedTime: new Date(s.passedTime).getTime() };
+            });
+            render();
+        })
+        .catch(function(e) { console.error('Passed-ships fetch failed:', e); });
+}
+setInterval(refreshPassedShips, 60000);
 
 // ── Ferry / passenger vessel blocklist ────────────────────────
 var BLOCKED_MMSI = {
@@ -376,40 +388,6 @@ function buildPassedChipHTML(ship) {
         '</div>';
 }
 
-// Track vessels approaching within TRACK_DIST_MI; record them as passed
-// when they vanish from AIS or flip to departing close to the bridge.
-function updatePassedTracking() {
-    var now = Date.now();
-
-    // Update tracking list with currently approaching vessels
-    Object.keys(shipData).forEach(function(k) {
-        var s  = shipData[k];
-        var mi = toMiles(s.distance);
-        if (!shouldHide(s.mmsi) && s.direction === 'Approaching' && mi <= TRACK_DIST_MI && s.speed > 0.5) {
-            nearApproaching[s.mmsi] = { name: s.name, lastSeen: now };
-        }
-    });
-
-    // Check if any tracked vessel has passed
-    Object.keys(nearApproaching).forEach(function(mmsi) {
-        var tracked = nearApproaching[mmsi];
-        var current = shipData[mmsi];
-        var stale   = !current || (now - current.lastUpdate) > 600000; // gone > 10 min
-        var flipped = current && current.direction === 'Departing' && toMiles(current.distance) < 10;
-
-        if (stale || flipped) {
-            // Avoid duplicates
-            var alreadyLogged = passedShips.some(function(p) { return p.mmsi === parseInt(mmsi); });
-            if (!alreadyLogged) {
-                passedShips.unshift({ mmsi: parseInt(mmsi), name: tracked.name, passedTime: now });
-                if (passedShips.length > MAX_PASSED_SHOW) passedShips.pop();
-                console.log('Recorded as passed:', tracked.name);
-            }
-            delete nearApproaching[mmsi];
-        }
-    });
-}
-
 function updateChipValues(ships) {
     ships.forEach(function(ship) {
         var chip = document.querySelector('.ship-chip[data-mmsi="' + ship.mmsi + '"]');
@@ -430,8 +408,6 @@ function getVisibleShips() {
 }
 
 function render() {
-    updatePassedTracking();
-
     var all         = getVisibleShips();
     var approaching = all.filter(function(s) { return s.direction === 'Approaching'; })
                          .sort(function(a,b) { return a.distance - b.distance; });
@@ -517,7 +493,13 @@ function connect() {
     setLive(false);
     ws = new WebSocket(WS_URL);
     ws.onopen    = function() { reconnectAttempts = 0; setLive(true); render(); };
-    ws.onmessage = function(e) { try { var m = JSON.parse(e.data); if (m.type === 'ship_data') processMessage(m.data); } catch(ex) {} };
+    ws.onmessage = function(e) {
+        try {
+            var m = JSON.parse(e.data);
+            if (m.type === 'ship_data') processMessage(m.data);
+            else if (m.type === 'bridge_passing') refreshPassedShips(); // server detected a pass — update immediately
+        } catch(ex) {}
+    };
     ws.onerror   = function() { setLive(false); };
     ws.onclose   = function() {
         setLive(false);
@@ -708,7 +690,8 @@ function checkNearbyDuringHide() {
 window.onload = function() {
     refreshData();
     connect();
-    runCycle();   // start the cycle immediately on load
+    refreshPassedShips();  // load passings recorded by the server
+    runCycle();            // start the cycle immediately on load
 };
 </script>
 </body>

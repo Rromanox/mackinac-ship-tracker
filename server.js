@@ -14,6 +14,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'shiptracker';
 let db = null;
 let shipsCollection = null;
+let passingsCollection = null;
 
 // Connect to MongoDB
 async function connectToMongoDB() {
@@ -22,11 +23,14 @@ async function connectToMongoDB() {
     await client.connect();
     db = client.db(DB_NAME);
     shipsCollection = db.collection('ships');
-    
+    passingsCollection = db.collection('passings');
+
     // Create indexes for better performance
     await shipsCollection.createIndex({ mmsi: 1 });
     await shipsCollection.createIndex({ timestamp: -1 });
     await shipsCollection.createIndex({ passedBridge: 1 });
+    await passingsCollection.createIndex({ passedTime: -1 });
+    await passingsCollection.createIndex({ mmsi: 1 });
     
     console.log('✓ Connected to MongoDB');
     console.log('📊 Database:', DB_NAME);
@@ -105,10 +109,10 @@ app.get('/api/status', async (req, res) => {
   });
 });
 
-// Recent ships that passed the bridge
+// Recent ships that passed the bridge (server-detected longitude crossings)
 app.get('/api/ships/recent', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 10, 50);
-  const ships = await getRecentShips(limit);
+  const ships = await getRecentPassings(limit);
   res.json({ ships });
 });
 
@@ -197,6 +201,80 @@ function checkVesselAlert(mmsi, name, lat, lon, speed, course) {
 
   alertedVessels[mmsi] = Date.now();
   sendVesselAlert(name, distMi, etaMin).catch(console.error);
+}
+
+// ─────────────────────────────────────────────────────────────
+// BRIDGE PASSING DETECTION
+// The bridge spans the straits north–south, so any vessel that
+// transits it crosses the bridge's longitude. We track which side
+// (west = Lake Michigan, east = Lake Huron) each vessel is on while
+// it's near the bridge; a side flip = it passed underneath.
+// ─────────────────────────────────────────────────────────────
+const PASS_TRACK_KM     = 16;                 // only watch vessels within ~10 mi of the bridge
+const PASS_STALE_MS     = 30 * 60 * 1000;     // forget a side observation older than 30 min
+const PASS_COOLDOWN_MS  = 60 * 60 * 1000;     // record at most one pass per vessel per hour
+
+const vesselSides         = {}; // mmsi → { side, at }
+const lastPassRecordedAt  = {}; // mmsi → timestamp
+const recentPassingsMemory = []; // newest first — fallback + fast reads if DB is down
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function checkBridgePassing(mmsi, name, lat, lon, speed) {
+  if (BLOCKED_MMSI_ALERT.has(mmsi) && !ALLOWED_MMSI_ALERT.has(mmsi)) return;
+
+  const distKm = haversineKm(lat, lon, BRIDGE_LAT, BRIDGE_LON);
+  if (distKm > PASS_TRACK_KM) { delete vesselSides[mmsi]; return; }
+  if (!speed || speed < 0.5) return; // ignore drifting/moored vessels
+
+  const side = lon < BRIDGE_LON ? 'west' : 'east';
+  const prev = vesselSides[mmsi];
+  vesselSides[mmsi] = { side, at: Date.now() };
+
+  if (!prev) {
+    console.log(`🌉 Near bridge: ${name} (${mmsi}) on ${side} side, ${(distKm * 0.621371).toFixed(1)} mi out`);
+    return;
+  }
+  if (prev.side === side) return;
+  if (Date.now() - prev.at > PASS_STALE_MS) return; // old observation — treat as a fresh sighting
+
+  // Side flipped while near the bridge → it passed underneath
+  const last = lastPassRecordedAt[mmsi];
+  if (last && Date.now() - last < PASS_COOLDOWN_MS) return;
+  lastPassRecordedAt[mmsi] = Date.now();
+
+  const direction = side === 'east' ? 'eastbound' : 'westbound';
+  recordPassing(mmsi, name, direction).catch(err =>
+    console.error('❌ Error recording passing:', err.message));
+}
+
+async function recordPassing(mmsi, name, direction) {
+  const rec = { mmsi, name, direction, passedTime: new Date() };
+  recentPassingsMemory.unshift(rec);
+  if (recentPassingsMemory.length > 20) recentPassingsMemory.pop();
+  console.log(`🌉 PASSED THE BRIDGE: ${name} (${mmsi}) ${direction} at ${rec.passedTime.toISOString()}`);
+  if (passingsCollection) {
+    await passingsCollection.insertOne({ ...rec });
+  }
+  // Push to connected banners so they can update without waiting for the next poll
+  broadcastToClients({ type: 'bridge_passing', data: { mmsi, name, direction, passedTime: rec.passedTime.toISOString() } });
+}
+
+async function getRecentPassings(limit = 10) {
+  if (!passingsCollection) return recentPassingsMemory.slice(0, limit);
+  try {
+    const rows = await passingsCollection.find({}).sort({ passedTime: -1 }).limit(limit).toArray();
+    return rows.map(r => ({ mmsi: r.mmsi, name: r.name, direction: r.direction, passedTime: r.passedTime }));
+  } catch (error) {
+    console.error('❌ Error reading passings:', error.message);
+    return recentPassingsMemory.slice(0, limit);
+  }
 }
 
 // AISStream configuration
@@ -424,6 +502,9 @@ function connectToAISStream() {
         // Check if this vessel should trigger an alert
         const pos = message.Message.PositionReport;
         checkVesselAlert(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog || 0);
+
+        // Detect bridge passings (side-of-bridge crossing)
+        checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed);
         
         // Save to database (async, don't wait)
         saveShipToDatabase(shipInfo).catch(err => 

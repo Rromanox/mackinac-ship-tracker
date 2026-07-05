@@ -330,8 +330,22 @@ var MAX_DIST_MI   = 100;
 
 var shipData={}, staticData={}, ws, reconnectTimer, reconnectAttempts=0;
 
-var nearApproaching={}, passedShips=[], MAX_PASSED_SHOW=3, TRACK_DIST_MI=20;
-var PASSED_MAX_AGE_MS=6*60*60*1000; // drop passed chips after 6 hours
+// Passings are detected server-side (longitude crossing) and stored in
+// MongoDB — the banner just polls /api/ships/recent so records survive
+// page refreshes and OBS restarts.
+var passedShips=[];
+var PASSED_MAX_AGE_MS=6*60*60*1000; // don't show chips older than 6 hours
+var HTTP_BASE=isLocalhost?'http://localhost:'+(location.port||3000):'https://'+RENDER_URL;
+function refreshPassedShips(){
+    fetch(HTTP_BASE+'/api/ships/recent?limit=5')
+        .then(function(r){return r.json();})
+        .then(function(d){
+            passedShips=(d.ships||[]).map(function(s){return {mmsi:s.mmsi,name:s.name,passedTime:new Date(s.passedTime).getTime()};});
+            render();
+        })
+        .catch(function(e){console.error('Passed-ships fetch failed:',e);});
+}
+setInterval(refreshPassedShips,60000);
 
 // ── FERRY BLOCKLIST ───────────────────────────────────────────
 // Vessels that should never appear on the banner.
@@ -420,24 +434,6 @@ function buildPassedChipHTML(ship){
         '<span class="chip-ago">'+agoStr+'</span>'+
         '</div>';
 }
-function updatePassedTracking(){
-    var now=Date.now();
-    Object.keys(shipData).forEach(function(k){
-        var s=shipData[k],mi=toMiles(s.distance);
-        if(!shouldHide(s.mmsi)&&s.direction==='Approaching'&&mi<=TRACK_DIST_MI&&s.speed>0.5)
-            nearApproaching[s.mmsi]={name:s.name,lastSeen:now};
-    });
-    Object.keys(nearApproaching).forEach(function(mmsi){
-        var tracked=nearApproaching[mmsi],current=shipData[mmsi];
-        var stale=!current||(now-current.lastUpdate)>600000;
-        var flipped=current&&current.direction==='Departing'&&toMiles(current.distance)<10;
-        if(stale||flipped){
-            var dup=passedShips.some(function(p){return p.mmsi===parseInt(mmsi);});
-            if(!dup){passedShips.unshift({mmsi:parseInt(mmsi),name:tracked.name,passedTime:now});if(passedShips.length>MAX_PASSED_SHOW)passedShips.pop();}
-            delete nearApproaching[mmsi];
-        }
-    });
-}
 function buildChipHTML(ship){
     var mi=toMiles(ship.distance).toFixed(1);
     var spd=ship.speed?ship.speed.toFixed(1)+' kts':'';
@@ -468,7 +464,6 @@ function updateChipValues(ships){
     });
 }
 function render(){
-    updatePassedTracking();
     var all=Object.keys(shipData).map(function(k){return shipData[k];}).filter(function(s){return s.speed>0.5&&toMiles(s.distance)<=MAX_DIST_MI&&!shouldHide(s.mmsi);});
     var approaching=all.filter(function(s){return s.direction==='Approaching';}).sort(function(a,b){return a.distance-b.distance;});
     var active=approaching.length>0?approaching:all.sort(function(a,b){return a.distance-b.distance;}).slice(0,3);
@@ -530,7 +525,7 @@ function connect(){
     if(ws&&(ws.readyState===WebSocket.CONNECTING||ws.readyState===WebSocket.OPEN))return;
     setLive(false);ws=new WebSocket(WS_URL);
     ws.onopen=function(){reconnectAttempts=0;setLive(true);};
-    ws.onmessage=function(e){try{var m=JSON.parse(e.data);if(m.type==='ship_data')processMessage(m.data);}catch(ex){}};
+    ws.onmessage=function(e){try{var m=JSON.parse(e.data);if(m.type==='ship_data')processMessage(m.data);else if(m.type==='bridge_passing')refreshPassedShips();}catch(ex){}};
     ws.onerror=function(){setLive(false);};
     ws.onclose=function(){setLive(false);reconnectAttempts++;var d=Math.min(2000*Math.pow(2,reconnectAttempts-1),30000);reconnectTimer=setTimeout(connect,d);};
 }
@@ -622,7 +617,7 @@ function checkBannerMode(){
     else if(!isFar && farModeActive) stopFarMode();
 }
 
-window.onload = function() { refreshData(); connect(); };
+window.onload = function() { refreshData(); connect(); refreshPassedShips(); };
 </script>
 </body>
 </html>
