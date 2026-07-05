@@ -57,7 +57,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '2mb' })); // AIS-catcher batches can be sizeable
+
+// Shared secret for the local AIS receiver feed (set on Render)
+const LOCAL_AIS_KEY = process.env.LOCAL_AIS_KEY;
 
 // Serve the frontend
 app.get('/', (req, res) => {
@@ -73,6 +76,34 @@ app.get('/overlay/minimal',   (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/corner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-corner.html')));
 app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner.html')));
 app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner2.html')));
+
+// Local AIS receiver feed — AIS-catcher (or the ais-relay.js helper) POSTs
+// its decoded JSON here. Accepts either a bare array of messages or the
+// AIS-catcher envelope { protocol, msgs: [...] }.
+app.post('/api/local-ais', (req, res) => {
+  if (!LOCAL_AIS_KEY) return res.status(503).json({ error: 'LOCAL_AIS_KEY not configured on server' });
+  const key = req.query.key || req.headers['x-api-key'];
+  if (key !== LOCAL_AIS_KEY) return res.status(403).json({ error: 'Invalid key' });
+
+  const body = req.body;
+  const msgs = Array.isArray(body) ? body
+             : (body && Array.isArray(body.msgs)) ? body.msgs
+             : null;
+  if (!msgs) return res.status(400).json({ error: 'Expected an array of AIS messages or { msgs: [...] }' });
+
+  let accepted = 0;
+  for (const m of msgs) {
+    try {
+      const converted = aisCatcherToStreamMessage(m);
+      if (converted) { processAisMessage(converted, 'local'); accepted++; }
+    } catch (err) {
+      console.error('Local AIS message error:', err.message);
+    }
+  }
+  lastLocalMessageAt = Date.now();
+  localMessagesTotal += accepted;
+  res.json({ ok: true, accepted });
+});
 
 // Test notification endpoint
 app.get('/api/test-notify', async (req, res) => {
@@ -103,6 +134,11 @@ app.get('/api/status', async (req, res) => {
       lastMessageSecondsAgo: lastAisMessageAt ? Math.round((Date.now() - lastAisMessageAt) / 1000) : null,
       messagesSinceBoot: aisMessagesTotal,
       vesselsLast10Min: Object.values(recentVessels).map(v => v.name)
+    },
+    localReceiver: {
+      configured: !!LOCAL_AIS_KEY,
+      lastMessageSecondsAgo: lastLocalMessageAt ? Math.round((Date.now() - lastLocalMessageAt) / 1000) : null,
+      messagesSinceBoot: localMessagesTotal
     },
     stats: stats,
     timestamp: new Date().toISOString()
@@ -437,6 +473,105 @@ async function getShipStats() {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// SHARED AIS PIPELINE — every message, whether from AISStream or
+// the local motel receiver, goes through here: DB save, alerts,
+// bridge-passing detection, and broadcast to connected banners.
+// ─────────────────────────────────────────────────────────────
+function processAisMessage(message, source) {
+  if (message.MessageType === 'PositionReport' && message.MetaData) {
+    const shipInfo = {
+      mmsi: message.MetaData.MMSI,
+      name: message.MetaData.ShipName?.trim() || 'Unknown',
+      type: message.MetaData.ShipType || null,
+      speed: message.Message?.PositionReport?.Sog || 0,
+      direction: null // Will be calculated by frontend
+    };
+
+    console.log(`🚢 Ship received (${source}): ${shipInfo.name} (MMSI: ${shipInfo.mmsi}) Speed: ${shipInfo.speed} kts`);
+
+    // Track for /api/status diagnostics
+    recentVessels[shipInfo.mmsi] = { name: shipInfo.name, lastSeen: Date.now() };
+
+    // Check if this vessel should trigger an alert
+    const pos = message.Message.PositionReport;
+    checkVesselAlert(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog || 0);
+
+    // Detect bridge passings (side-of-bridge crossing)
+    checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed);
+
+    // Save to database (async, don't wait)
+    saveShipToDatabase(shipInfo).catch(err =>
+      console.error('Database save error:', err.message)
+    );
+  }
+
+  // Forward all messages to connected clients (banners)
+  broadcastToClients({
+    type: 'ship_data',
+    data: message
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// LOCAL AIS RECEIVER — AIS-catcher on the motel streaming PC
+// POSTs decoded JSON here. Messages are converted to the same
+// shape AISStream uses and fed through the shared pipeline.
+// ─────────────────────────────────────────────────────────────
+let lastLocalMessageAt = null;
+let localMessagesTotal = 0;
+const localShipNames = {}; // mmsi → name learned from static messages (position reports carry no name)
+
+// Convert one AIS-catcher decoded message (gpsd-style fields) to the AISStream shape
+function aisCatcherToStreamMessage(m) {
+  if (!m || typeof m.mmsi !== 'number') return null;
+  const t = m.type;
+
+  // Position reports: Class A (1,2,3), Class B (18,19), long-range (27)
+  if ([1, 2, 3, 18, 19, 27].includes(t) && typeof m.lat === 'number' && typeof m.lon === 'number') {
+    if (m.lat > 90 || m.lat < -90 || m.lon > 180 || m.lon < -180) return null; // "unavailable" AIS placeholders
+    const name = (m.shipname || localShipNames[m.mmsi] || 'Unknown');
+    return {
+      MessageType: 'PositionReport',
+      MetaData: {
+        MMSI: m.mmsi,
+        ShipName: name,
+        latitude: m.lat,
+        longitude: m.lon,
+        time_utc: m.rxtime || new Date().toISOString()
+      },
+      Message: {
+        PositionReport: {
+          Latitude: m.lat,
+          Longitude: m.lon,
+          Sog: m.speed ?? m.sog ?? 0,
+          Cog: m.course ?? m.cog ?? 0
+        }
+      }
+    };
+  }
+
+  // Static data: Class A voyage data (5), Class B static (24)
+  if ((t === 5 || t === 24) && (m.shipname || m.shiptype || m.destination)) {
+    if (m.shipname) localShipNames[m.mmsi] = String(m.shipname).trim();
+    return {
+      MessageType: 'ShipStaticData',
+      MetaData: {
+        MMSI: m.mmsi,
+        ShipName: m.shipname || localShipNames[m.mmsi] || 'Unknown'
+      },
+      Message: {
+        ShipStaticData: {
+          Type: m.shiptype || null,
+          Destination: (m.destination || '').trim() || null
+        }
+      }
+    };
+  }
+
+  return null;
+}
+
 // Connect to AISStream
 function connectToAISStream() {
   if (isConnecting) return;
@@ -482,42 +617,7 @@ function connectToAISStream() {
     aisMessagesTotal++;
     try {
       const message = JSON.parse(data);
-      
-      // Save ship data to database when received
-      if (message.MessageType === "PositionReport" && message.MetaData) {
-        const shipInfo = {
-          mmsi: message.MetaData.MMSI,
-          name: message.MetaData.ShipName?.trim() || 'Unknown',
-          type: message.MetaData.ShipType || null,
-          speed: message.Message?.PositionReport?.Sog || 0,
-          direction: null // Will be calculated by frontend
-        };
-        
-        // Log ship received from AISStream
-        console.log(`🚢 Ship received: ${shipInfo.name} (MMSI: ${shipInfo.mmsi}) Speed: ${shipInfo.speed} kts`);
-
-        // Track for /api/status diagnostics
-        recentVessels[shipInfo.mmsi] = { name: shipInfo.name, lastSeen: Date.now() };
-
-        // Check if this vessel should trigger an alert
-        const pos = message.Message.PositionReport;
-        checkVesselAlert(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog || 0);
-
-        // Detect bridge passings (side-of-bridge crossing)
-        checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed);
-        
-        // Save to database (async, don't wait)
-        saveShipToDatabase(shipInfo).catch(err => 
-          console.error('Database save error:', err.message)
-        );
-      }
-      
-      // Forward all messages to connected clients
-      broadcastToClients({
-        type: 'ship_data',
-        data: message
-      });
-      
+      processAisMessage(message, 'aisstream');
     } catch (error) {
       console.error('Error parsing AIS message:', error);
     }
