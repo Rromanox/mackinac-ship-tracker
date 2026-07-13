@@ -105,20 +105,6 @@ app.post('/api/local-ais', (req, res) => {
   res.json({ ok: true, accepted });
 });
 
-// Test notification endpoint
-app.get('/api/test-notify', async (req, res) => {
-  if (!BREVO_API_KEY) {
-    return res.json({ success: false, error: 'BREVO_API_KEY not set' });
-  }
-  const to = [...(NOTIFY_EMAIL||'').split(','), ...(NOTIFY_SMS||'').split(',')].map(e=>e.trim()).filter(Boolean);
-  try {
-    await sendVesselAlert('TEST VESSEL', '8.2', 9);
-    res.json({ success: true, to });
-  } catch (err) {
-    res.json({ success: false, error: err.message, to });
-  }
-});
-
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {
   const stats = await getShipStats();
@@ -161,83 +147,9 @@ app.post('/api/ships/:mmsi/passed', async (req, res) => {
   res.json({ success: true });
 });
 
-// ─────────────────────────────────────────────────────────────
-// VESSEL ALERT NOTIFICATIONS — Brevo API (HTTPS, works on Render)
-// ─────────────────────────────────────────────────────────────
-const BREVO_API_KEY  = process.env.BREVO_API_KEY;
-const SENDER_EMAIL   = process.env.GMAIL_USER || 'mundograficokevinai@gmail.com';
-const NOTIFY_EMAIL   = process.env.NOTIFY_EMAIL;   // romandicesare@outlook.com
-const NOTIFY_SMS     = process.env.NOTIFY_SMS;     // carrier gateway (optional)
-
-const ETA_ALERT_MIN     = 10;                  // notify when within this many minutes
-const ALERT_COOLDOWN_MS = 90 * 60 * 1000;     // 90 min cooldown per vessel
-
-// Same blocklist/allowlist as the frontend banners
-const BLOCKED_MMSI_ALERT = new Set([368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960]);
-const ALLOWED_MMSI_ALERT = new Set([311050300]); // VICTORY II
-
-const alertedVessels = {}; // mmsi → timestamp of last alert
-
-if (BREVO_API_KEY) {
-  console.log('✉️  Brevo notifications ready');
-} else {
-  console.warn('⚠️  BREVO_API_KEY not set — notifications disabled');
-}
-
-async function sendVesselAlert(name, distMi, etaMin) {
-  if (!BREVO_API_KEY) return;
-  const subject  = `🚢 ${name} approaching Mackinac Bridge`;
-  const text     = `${name} is ~${distMi} miles from the Mackinac Bridge with an ETA of approximately ${etaMin} minutes.\n\nhttps://mackinac-ship-tracker.onrender.com`;
-  // NOTIFY_EMAIL can be a single address or comma-separated list
-  const emailList = (NOTIFY_EMAIL || '').split(',').map(e => e.trim()).filter(Boolean);
-  const smsList   = (NOTIFY_SMS   || '').split(',').map(e => e.trim()).filter(Boolean);
-  const to        = [...emailList, ...smsList].map(e => ({ email: e }));
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sender:      { name: 'Mackinac Ship Tracker', email: SENDER_EMAIL },
-      to,
-      subject,
-      textContent: text
-    })
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Brevo API error');
-  }
-  console.log(`📱 Alert sent for ${name} (ETA ~${etaMin} min)`);
-}
-
-function checkVesselAlert(mmsi, name, lat, lon, speed, course) {
-  // Skip blocked vessels (unless explicitly allowed)
-  if (BLOCKED_MMSI_ALERT.has(mmsi) && !ALLOWED_MMSI_ALERT.has(mmsi)) return;
-
-  // Only approaching vessels
-  const dLat = lat - BRIDGE_LAT, dLon = lon - BRIDGE_LON;
-  const bearing = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
-  const diff = Math.abs(((course - bearing) + 180 + 360) % 360 - 180);
-  if (diff >= 90) return; // departing
-
-  // Calculate distance and ETA
-  const R = 6371;
-  const dLatR = (BRIDGE_LAT - lat) * Math.PI / 180;
-  const dLonR = (BRIDGE_LON - lon) * Math.PI / 180;
-  const a = Math.sin(dLatR/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(BRIDGE_LAT*Math.PI/180)*Math.sin(dLonR/2)**2;
-  const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distMi = (distKm * 0.621371).toFixed(1);
-
-  if (!speed || speed < 0.5) return;
-  const etaMin = Math.round(distKm / (speed * 1.852) * 60);
-  if (etaMin > ETA_ALERT_MIN || etaMin < 1) return;
-
-  // Cooldown check
-  const lastAlert = alertedVessels[mmsi];
-  if (lastAlert && (Date.now() - lastAlert) < ALERT_COOLDOWN_MS) return;
-
-  alertedVessels[mmsi] = Date.now();
-  sendVesselAlert(name, distMi, etaMin).catch(console.error);
-}
+// Vessels to skip for bridge-passing detection (same list as the frontend banners)
+const BLOCKED_MMSI_SERVER = new Set([368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960]);
+const ALLOWED_MMSI_SERVER = new Set([311050300]); // VICTORY II — overrides the passenger filter
 
 // ─────────────────────────────────────────────────────────────
 // BRIDGE PASSING DETECTION
@@ -263,7 +175,7 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 }
 
 function checkBridgePassing(mmsi, name, lat, lon, speed) {
-  if (BLOCKED_MMSI_ALERT.has(mmsi) && !ALLOWED_MMSI_ALERT.has(mmsi)) return;
+  if (BLOCKED_MMSI_SERVER.has(mmsi) && !ALLOWED_MMSI_SERVER.has(mmsi)) return;
 
   const distKm = haversineKm(lat, lon, BRIDGE_LAT, BRIDGE_LON);
   if (distKm > PASS_TRACK_KM) { delete vesselSides[mmsi]; return; }
@@ -493,11 +405,8 @@ function processAisMessage(message, source) {
     // Track for /api/status diagnostics
     recentVessels[shipInfo.mmsi] = { name: shipInfo.name, lastSeen: Date.now() };
 
-    // Check if this vessel should trigger an alert
-    const pos = message.Message.PositionReport;
-    checkVesselAlert(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog || 0);
-
     // Detect bridge passings (side-of-bridge crossing)
+    const pos = message.Message.PositionReport;
     checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed);
 
     // Save to database (async, don't wait)
