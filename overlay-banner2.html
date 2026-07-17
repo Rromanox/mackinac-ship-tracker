@@ -129,6 +129,7 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
     letter-spacing: 0.5px; white-space: nowrap;
     background: rgba(0,0,0,0.1); padding: 3px 12px; border-radius: 12px;
 }
+.chip-passtime { font-size: 1.15rem; font-weight: bold; opacity: 0.8; white-space: nowrap; }
 .chip-ago   { opacity: 0.5; font-size: 1.1rem; white-space: nowrap; }
 .no-ships-bar { opacity: 0.45; font-size: 1.6rem; font-weight: bold; }
 
@@ -403,6 +404,13 @@ function formatAgo(passedTime) {
     var h = Math.floor(min / 60), m = min % 60;
     return h + 'h' + (m ? ' ' + m + 'm' : '') + ' ago';
 }
+// A timestamp → local clock time, e.g. "2:14 PM"
+function formatClockTime(ts) {
+    var d = new Date(ts);
+    var h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; h = h ? h : 12; m = m < 10 ? '0' + m : m;
+    return h + ':' + m + ' ' + ap;
+}
 
 function buildPassedChipHTML(ship) {
     var agoStr = formatAgo(ship.passedTime);
@@ -410,6 +418,7 @@ function buildPassedChipHTML(ship) {
         '<span class="chip-arrow">&#10003;</span>' +
         '<span class="chip-name">' + ship.name + '</span>' +
         '<span class="chip-passed-tag">Passed the Bridge</span>' +
+        '<span class="chip-passtime">' + formatClockTime(ship.passedTime) + '</span>' +
         '<span class="chip-ago">' + agoStr + '</span>' +
         '</div>';
 }
