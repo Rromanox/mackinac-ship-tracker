@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<title>Mackinac Straits — Spotlight Focus</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', Tahoma, sans-serif; }
+html, body { background: transparent; }
+body { width: 2560px; height: 1440px; overflow: hidden; position: relative; }
+:root{
+  --ink:#eaf2ff; --sub:rgba(210,224,245,.62); --faint:rgba(210,224,245,.34);
+  --green:#31e08a; --amber:#ffb02e; --red:#ff4d4d; --cyan:#5fd0ff;
+  --panel:rgba(10,15,24,.90); --panel2:rgba(16,23,36,.90);
+  --stroke:rgba(255,255,255,.10);
+  --accent:var(--green);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Roboto',system-ui,sans-serif;}
+
+#sl-wrap{
+  position:fixed; left:52px; bottom:48px; width:872px;
+  color:var(--ink); -webkit-font-smoothing:antialiased;
+  filter:drop-shadow(0 24px 60px rgba(0,0,0,.55));
+}
+
+/* ---------- header chip ---------- */
+#sl-head{
+  display:flex; align-items:center; gap:14px;
+  background:var(--panel2); border:1px solid var(--stroke);
+  border-radius:14px 14px 4px 4px; padding:11px 18px;
+  backdrop-filter:blur(14px);
+}
+.sl-brand{display:flex; align-items:baseline; gap:10px; font-weight:700; letter-spacing:.5px; font-size:20px;}
+.sl-brand .fa-ship{color:var(--cyan); font-size:19px; align-self:center;}
+.sl-brand b{font-weight:900;}
+.sl-brand span{font-size:12px; font-weight:700; letter-spacing:2.5px; color:var(--faint); text-transform:uppercase;}
+.sl-head-r{margin-left:auto; display:flex; align-items:center; gap:16px;}
+.sl-weather{font-size:14px; font-weight:500; color:var(--sub); white-space:nowrap; max-width:280px; overflow:hidden; text-overflow:ellipsis;}
+.sl-live{
+  display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900;
+  letter-spacing:2px; color:var(--faint);
+  background:rgba(255,255,255,.05); border:1px solid var(--stroke);
+  padding:6px 12px; border-radius:20px;
+}
+.sl-live .d{width:9px; height:9px; border-radius:50%; background:#6a7688; box-shadow:0 0 0 0 rgba(0,0,0,0);}
+.sl-live.on{color:#eafff4;}
+.sl-live.on .d{background:var(--green); animation:sl-pulse 2s infinite;}
+@keyframes sl-pulse{0%,100%{box-shadow:0 0 0 0 rgba(49,224,138,.5);}50%{box-shadow:0 0 0 7px rgba(49,224,138,0);}}
+
+/* ---------- main card ---------- */
+#sl-card{
+  position:relative; overflow:hidden;
+  background:var(--panel); border:1px solid var(--stroke); border-top:none;
+  border-radius:4px 4px 20px 20px; padding:26px 30px 24px 40px;
+  min-height:296px; backdrop-filter:blur(14px);
+  transition:box-shadow .5s;
+}
+#sl-card::before{ /* accent bar */
+  content:''; position:absolute; left:0; top:0; bottom:0; width:9px;
+  background:var(--accent); transition:background .5s;
+  box-shadow:0 0 26px 1px var(--accent);
+}
+#sl-card.is-passing{animation:sl-nearGlow 1.4s ease-in-out infinite;}
+@keyframes sl-nearGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,0);}50%{box-shadow:0 0 60px 4px rgba(255,77,77,.34);}}
+
+#sl-feature{ display:flex; align-items:center; gap:26px; opacity:1; transition:opacity .34s ease, transform .34s ease; }
+#sl-feature.sl-out{opacity:0; transform:translateX(-26px);}
+
+.sl-main{flex:1; min-width:0;}
+
+/* top row */
+.sl-toprow{display:flex; align-items:center; gap:14px; margin-bottom:6px;}
+.sl-status{
+  display:inline-flex; align-items:center; gap:9px;
+  font-size:14px; font-weight:900; letter-spacing:2.5px; text-transform:uppercase;
+  padding:7px 15px; border-radius:9px;
+  background:color-mix(in srgb, var(--accent) 18%, transparent);
+  color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.sl-status.passing{animation:sl-blink 1s steps(2,start) infinite;}
+@keyframes sl-blink{50%{opacity:.55;}}
+
+.sl-queue{margin-left:auto; display:flex; align-items:center; gap:12px;}
+.sl-next{font-size:13px; color:var(--faint); font-weight:500; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.sl-next b{color:var(--sub); font-weight:700;}
+.sl-dots{display:flex; gap:7px;}
+.sl-dots i{width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.18); transition:all .3s;}
+.sl-dots i.on{background:var(--accent); box-shadow:0 0 10px var(--accent); transform:scale(1.15);}
+
+/* hero name */
+.sl-name{
+  font-weight:900; line-height:.98; letter-spacing:-1px; color:#fff;
+  margin:8px 0 18px; text-shadow:0 3px 20px rgba(0,0,0,.5);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* stats */
+.sl-stats{display:flex; gap:14px;}
+.sl-stat{
+  flex:1; min-width:0; background:rgba(255,255,255,.045);
+  border:1px solid var(--stroke); border-radius:13px; padding:12px 16px;
+}
+.sl-stat .l{font-size:12px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:var(--faint); margin-bottom:4px;}
+.sl-stat .v{font-size:32px; font-weight:900; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.sl-stat.hot .v{color:var(--accent);}
+.sl-stat.eta{background:color-mix(in srgb, var(--accent) 14%, transparent); border-color:color-mix(in srgb, var(--accent) 40%, transparent);}
+.sl-stat.eta .l{color:color-mix(in srgb, var(--accent) 80%, #fff);}
+.sl-stat.eta .v{color:var(--accent);}
+
+/* compass */
+.sl-compass{flex:0 0 190px; display:flex; flex-direction:column; align-items:center; gap:14px;}
+.sl-ring{
+  position:relative; width:158px; height:158px; border-radius:50%;
+  border:3px solid var(--stroke);
+  background:radial-gradient(circle at 50% 42%, rgba(255,255,255,.07), rgba(0,0,0,.25));
+  display:flex; align-items:center; justify-content:center;
+}
+.sl-ring::after{content:'N'; position:absolute; top:7px; font-size:12px; font-weight:900; color:var(--faint); letter-spacing:1px;}
+.sl-arrow{
+  font-size:74px; color:var(--accent); transition:transform .6s cubic-bezier(.3,1.2,.4,1);
+  filter:drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 60%, transparent));
+}
+.sl-course{
+  font-size:26px; font-weight:900; letter-spacing:1px; color:#fff;
+  background:rgba(255,255,255,.06); border:1px solid var(--stroke);
+  padding:5px 18px; border-radius:11px;
+}
+
+/* empty state */
+.sl-empty{display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; padding:34px 0; text-align:center; gap:12px;}
+.sl-empty .fa-water{font-size:46px; color:var(--faint);}
+.sl-empty .t{font-size:30px; font-weight:900; color:var(--sub);}
+.sl-empty .s{font-size:15px; color:var(--faint); letter-spacing:1px;}
+
+/* passed footer */
+#sl-passed{
+  display:flex; align-items:center; gap:11px; margin-top:14px; padding:11px 18px;
+  background:var(--panel2); border:1px solid var(--stroke); border-radius:14px;
+  font-size:15px; color:var(--sub); backdrop-filter:blur(14px);
+}
+#sl-passed .fa-circle-check{color:var(--cyan);}
+#sl-passed b{color:var(--ink); font-weight:800;}
+#sl-passed .ago{margin-left:auto; color:var(--faint); font-size:13px; white-space:nowrap;}
+#sl-passed[hidden]{display:none;}
+</style>
+</head>
+<body>
+<div id="sl-wrap">
+  <div id="sl-head">
+    <div class="sl-brand"><i class="fas fa-ship"></i> <b>Mackinac Straits</b> <span>Live Ship Tracker</span></div>
+    <div class="sl-head-r">
+      <div class="sl-weather" id="sl-weather"></div>
+      <div class="sl-live" id="sl-live"><i class="d"></i> OFFLINE</div>
+    </div>
+  </div>
+  <div id="sl-card">
+    <div id="sl-feature"></div>
+  </div>
+  <div id="sl-passed" hidden></div>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  MACKINAC OVERLAY CORE  — shared data pipeline for all overlays.
+//  Exposes a global `Tracker` API; designs only handle presentation.
+//
+//    Tracker.onUpdate(fn)  → fn(state) on every data change (+ once now)
+//    Tracker.getState()    → latest state snapshot
+//    Tracker.fmt           → { clock, ago, eta, arrival, courseToDir }
+//
+//  state = {
+//    live: bool,
+//    weather: { tempStr, temp, desc, isDay, iconUrl, background, textColor } | null,
+//    vessels: [ {                       // approaching nearest-first, then others
+//        mmsi, name,
+//        distanceMi, distanceStr,        // 2.8, "2.8 mi"
+//        speed, speedStr,               // 13.5, "13.5 kts"
+//        course, courseStr,             // 84, "W→E"
+//        direction,                     // "Approaching" | "Departing"
+//        near,                          // bool, within 8 mi of bridge
+//        etaStr, arrivalStr             // "11m", "3:34 PM"  (null unless approaching)
+//    } ],
+//    passed: [ { mmsi, name, passedTime, clockStr, agoStr } ]  // most recent first
+//  }
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  var RENDER_URL = 'mackinac-ship-tracker.onrender.com';
+  var isLocal    = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+  var WS_URL     = isLocal ? 'ws://localhost:' + (location.port || 3000) : 'wss://' + RENDER_URL;
+  var HTTP_BASE  = isLocal ? 'http://localhost:' + (location.port || 3000) : 'https://' + RENDER_URL;
+  var BRIDGE_LAT = 45.8174, BRIDGE_LON = -84.7278, MAX_DIST_MI = 100;
+  var PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
+  var shipData = {}, staticData = {}, passedShips = [], live = false, weather = null;
+  var ws, reconnectTimer, reconnectAttempts = 0, listeners = [];
+
+  var BLOCKED_MMSI = {368165150:1,367031360:1,367139210:1,367349450:1,367721870:1,367721930:1,367721960:1,367782080:1,338158987:1,338926364:1,367721890:1};
+  var ALLOWED_MMSI = {311050300:1};
+  function shouldHide(mmsi) {
+    if (ALLOWED_MMSI[mmsi]) return false;
+    if (BLOCKED_MMSI[mmsi]) return true;
+    var t = staticData[mmsi] && staticData[mmsi].type;
+    return t && t >= 60 && t <= 69;
+  }
+
+  function haversine(la1, lo1, la2, lo2) {
+    var R = 6371, dLa = (la2-la1)*Math.PI/180, dLo = (lo2-lo1)*Math.PI/180;
+    var a = Math.sin(dLa/2)*Math.sin(dLa/2) + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  function toMiles(km) { return km * 0.621371; }
+  function getDirection(lat, lon, course) {
+    var dLat = lat - BRIDGE_LAT, dLon = lon - BRIDGE_LON;
+    var tb = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
+    return Math.abs(((course - tb) + 180 + 360) % 360 - 180) < 90 ? 'Approaching' : 'Departing';
+  }
+  function etaMin(distKm, spd) {
+    if (!spd || spd < 0.5) return null;
+    var min = Math.round(distKm / (spd * 1.852) * 60);
+    return min > 600 ? null : min;
+  }
+  function fmtETA(min) {
+    if (min == null) return null;
+    return min < 60 ? min + 'm' : Math.floor(min/60) + 'h' + (min%60 ? min%60+'m' : '');
+  }
+  function fmtClock(ts) {
+    var d = new Date(ts), h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; h = h ? h : 12; m = m < 10 ? '0' + m : m;
+    return h + ':' + m + ' ' + ap;
+  }
+  function fmtArrival(min) { return min == null ? null : fmtClock(Date.now() + min * 60000); }
+  function fmtAgo(ts) {
+    var min = Math.round((Date.now() - ts) / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return min + ' min ago';
+    var h = Math.floor(min/60), m = min % 60;
+    return h + 'h' + (m ? ' ' + m + 'm' : '') + ' ago';
+  }
+  function courseToDir(cog) {
+    if (cog == null || isNaN(cog)) return null;
+    var dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    var idx = Math.round((((cog % 360) + 360) % 360) / 45) % 8;
+    return dirs[(idx + 4) % 8] + '→' + dirs[idx];
+  }
+
+  function buildState() {
+    var all = Object.keys(shipData).map(function (k) { return shipData[k]; })
+      .filter(function (s) { return s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI && !shouldHide(s.mmsi); });
+    var approaching = all.filter(function (s) { return s.direction === 'Approaching'; }).sort(function (a,b) { return a.distance - b.distance; });
+    var others      = all.filter(function (s) { return s.direction !== 'Approaching'; }).sort(function (a,b) { return a.distance - b.distance; });
+    var vessels = approaching.concat(others).map(function (s) {
+      var em = s.direction === 'Approaching' ? etaMin(s.distance, s.speed) : null;
+      return {
+        mmsi: s.mmsi, name: s.name,
+        distanceMi: toMiles(s.distance), distanceStr: toMiles(s.distance).toFixed(1) + ' mi',
+        speed: s.speed, speedStr: s.speed ? s.speed.toFixed(1) + ' kts' : '',
+        course: s.course, courseStr: courseToDir(s.course),
+        direction: s.direction, near: s.distance < 8,
+        etaStr: fmtETA(em), arrivalStr: fmtArrival(em)
+      };
+    });
+    passedShips = passedShips.filter(function (p) { return (Date.now() - p.passedTime) < PASSED_MAX_AGE_MS; });
+    var passed = passedShips.map(function (p) {
+      return { mmsi: p.mmsi, name: p.name, passedTime: p.passedTime, clockStr: fmtClock(p.passedTime), agoStr: fmtAgo(p.passedTime) };
+    });
+    return { live: live, weather: weather, vessels: vessels, passed: passed };
+  }
+
+  var emitScheduled = false;
+  function emit() {
+    if (emitScheduled) return;
+    emitScheduled = true;
+    setTimeout(function () {
+      emitScheduled = false;
+      var st = buildState();
+      for (var i = 0; i < listeners.length; i++) { try { listeners[i](st); } catch (e) {} }
+    }, 250);
+  }
+
+  function processMessage(data) {
+    if (data.MessageType === 'ShipStaticData' && data.Message && data.Message.ShipStaticData) {
+      var mmsi = data.MetaData.MMSI;
+      staticData[mmsi] = { type: data.Message.ShipStaticData.Type || null, destination: (data.Message.ShipStaticData.Destination || '').trim() || null };
+      emit(); return;
+    }
+    if (data.MessageType === 'PositionReport' && data.Message && data.Message.PositionReport) {
+      var pos = data.Message.PositionReport, meta = data.MetaData;
+      var dist = haversine(BRIDGE_LAT, BRIDGE_LON, pos.Latitude, pos.Longitude);
+      shipData[meta.MMSI] = {
+        mmsi: meta.MMSI, name: (meta.ShipName || 'Unknown').trim(),
+        lat: pos.Latitude, lon: pos.Longitude, speed: pos.Sog || 0, course: pos.Cog || 0,
+        distance: dist, direction: getDirection(pos.Latitude, pos.Longitude, pos.Cog || 0), lastUpdate: Date.now()
+      };
+      var cut = Date.now() - 600000;
+      Object.keys(shipData).forEach(function (k) { if (shipData[k].lastUpdate < cut) delete shipData[k]; });
+      emit();
+    }
+  }
+
+  function refreshPassed() {
+    fetch(HTTP_BASE + '/api/ships/recent?limit=6')
+      .then(function (r) { return r.json(); })
+      .then(function (d) { passedShips = (d.ships || []).map(function (s) { return { mmsi: s.mmsi, name: s.name, passedTime: new Date(s.passedTime).getTime() }; }); emit(); })
+      .catch(function () {});
+  }
+
+  function connect() {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+    live = false;
+    ws = new WebSocket(WS_URL);
+    ws.onopen = function () { reconnectAttempts = 0; live = true; emit(); };
+    ws.onmessage = function (e) { try { var m = JSON.parse(e.data); if (m.type === 'ship_data') processMessage(m.data); else if (m.type === 'bridge_passing') refreshPassed(); } catch (ex) {} };
+    ws.onerror = function () { live = false; emit(); };
+    ws.onclose = function () { live = false; emit(); reconnectAttempts++; var delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000); reconnectTimer = setTimeout(connect, delay); };
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) connect(); });
+
+  var W_KEY = '8d6e0169a641adc002688e82b9ab8ec3', W_LAT = 45.7829, W_LON = -84.7278;
+  function weatherCheck() {
+    fetch('https://api.openweathermap.org/data/2.5/weather?units=imperial&lat=' + W_LAT + '&lon=' + W_LON + '&appid=' + W_KEY)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var desc = d.weather[0].description.replace(/\w\S*/g, function (t) { return t.charAt(0).toUpperCase() + t.substr(1).toLowerCase(); });
+        var temp = Math.round(d.main.temp), icon = d.weather[0].icon, isDay = icon.slice(-1) === 'd';
+        var bg = isDay ? 'linear-gradient(to bottom, skyblue, lightgrey)' : 'linear-gradient(to bottom, black, dimgrey)';
+        var tc = isDay ? 'black' : 'white';
+        document.documentElement.style.setProperty('--dynamic-background', bg);
+        document.documentElement.style.setProperty('--dynamic-text-color', tc);
+        weather = { tempStr: temp + '°F', temp: temp, desc: desc, isDay: isDay, iconUrl: 'https://openweathermap.org/img/wn/' + icon + '@2x.png', background: bg, textColor: tc };
+        emit();
+      }).catch(function () {});
+  }
+
+  window.Tracker = {
+    onUpdate: function (cb) { listeners.push(cb); cb(buildState()); },
+    getState: buildState,
+    fmt: { clock: fmtClock, ago: fmtAgo, eta: fmtETA, arrival: fmtArrival, courseToDir: courseToDir }
+  };
+
+  function start() {
+    weatherCheck(); setInterval(weatherCheck, 60000);
+    connect(); refreshPassed(); setInterval(refreshPassed, 60000);
+    setInterval(emit, 15000); // keep "ago"/arrival strings fresh even without new data
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){
+  var feature = document.getElementById('sl-feature');
+  var card    = document.getElementById('sl-card');
+  var elW     = document.getElementById('sl-weather');
+  var elLive  = document.getElementById('sl-live');
+  var elPass  = document.getElementById('sl-passed');
+  var idx = 0, lastMmsi = null;
+
+  function esc(s){ if(s==null) return ''; return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function nameSize(n){ var L=(n||'').length; if(L<=9)return 96; if(L<=12)return 82; if(L<=15)return 70; if(L<=18)return 60; return 50; }
+
+  function statusFor(v){
+    if(v.near) return {cls:'is-passing', accent:'var(--red)', label:'<i class="fas fa-bolt"></i> PASSING NOW', extra:'passing'};
+    if(v.direction==='Departing') return {cls:'is-departing', accent:'var(--amber)', label:'<i class="fas fa-arrow-right-from-bracket"></i> DEPARTING', extra:''};
+    return {cls:'is-approaching', accent:'var(--green)', label:'<i class="fas fa-arrow-right-to-bracket"></i> APPROACHING', extra:''};
+  }
+
+  function statCell(label,val,cls){ return '<div class="sl-stat '+(cls||'')+'"><div class="l">'+label+'</div><div class="v">'+esc(val)+'</div></div>'; }
+
+  function featureHTML(v, list){
+    var st = statusFor(v);
+    var isDep = v.direction==='Departing';
+
+    var dots = list.map(function(_,i){ return '<i class="'+(i===idx?'on':'')+'"></i>'; }).join('');
+    var nextName = list.length>1 ? esc(list[(idx+1)%list.length].name) : '';
+    var nextHtml = list.length>1 ? '<div class="sl-next">Up next &middot; <b>'+nextName+'</b></div>' : '';
+
+    var stats = '';
+    stats += statCell('Distance', v.distanceStr, v.near?'hot':'');
+    if(!isDep && v.etaStr) stats += statCell('ETA', v.etaStr, 'eta');
+    if(!isDep && v.arrivalStr) stats += statCell('Arrives', '~'+v.arrivalStr, '');
+    stats += statCell('Speed', v.speedStr, '');
+
+    var arrow='', courseLbl='';
+    if(v.course!=null){
+      arrow = '<i class="fas fa-arrow-up sl-arrow" style="transform:rotate('+v.course+'deg)"></i>';
+    } else {
+      arrow = '<i class="fas fa-location-crosshairs sl-arrow"></i>';
+    }
+    courseLbl = '<div class="sl-course">'+(v.courseStr?esc(v.courseStr):'—')+'</div>';
+
+    return ''+
+      '<div class="sl-main">'+
+        '<div class="sl-toprow">'+
+          '<div class="sl-status '+st.extra+'">'+st.label+'</div>'+
+          '<div class="sl-queue">'+nextHtml+'<div class="sl-dots">'+dots+'</div></div>'+
+        '</div>'+
+        '<div class="sl-name" style="font-size:'+nameSize(v.name)+'px">'+esc(v.name)+'</div>'+
+        '<div class="sl-stats">'+stats+'</div>'+
+      '</div>'+
+      '<div class="sl-compass"><div class="sl-ring">'+arrow+'</div>'+courseLbl+'</div>';
+  }
+
+  function emptyHTML(){
+    return '<div class="sl-empty"><i class="fas fa-water"></i><div class="t">All Clear</div><div class="s">No vessels approaching the bridge</div></div>';
+  }
+
+  function applyStatus(v){
+    card.classList.remove('is-approaching','is-departing','is-passing','is-empty');
+    if(!v){ card.style.setProperty('--accent','var(--cyan)'); card.classList.add('is-empty'); return; }
+    var st = statusFor(v);
+    card.classList.add(st.cls);
+    card.style.setProperty('--accent', st.accent);
+  }
+
+  function paint(v, list, animate){
+    var html = v ? featureHTML(v, list) : emptyHTML();
+    if(animate){
+      feature.classList.add('sl-out');
+      setTimeout(function(){ feature.innerHTML = html; applyStatus(v); feature.classList.remove('sl-out'); }, 340);
+    } else {
+      feature.innerHTML = html; applyStatus(v);
+    }
+  }
+
+  function renderHeader(state){
+    var w = state.weather;
+    elW.textContent = w ? (w.tempStr + ' · ' + w.desc) : '';
+    if(state.live){ elLive.classList.add('on'); elLive.innerHTML = '<i class="d"></i> LIVE'; }
+    else { elLive.classList.remove('on'); elLive.innerHTML = '<i class="d"></i> OFFLINE'; }
+
+    var p = (state.passed && state.passed.length) ? state.passed[0] : null;
+    if(p){
+      elPass.hidden = false;
+      elPass.innerHTML = '<i class="fas fa-circle-check"></i> Recently passed &middot; <b>'+esc(p.name)+'</b> at '+esc(p.clockStr)+' <span class="ago">'+esc(p.agoStr)+'</span>';
+    } else { elPass.hidden = true; }
+  }
+
+  function render(animate){
+    var state = Tracker.getState();
+    renderHeader(state);
+    var list = state.vessels || [];
+    if(list.length===0){ if(lastMmsi!==null){ animate=true; } lastMmsi=null; idx=0; paint(null, list, animate); return; }
+    if(idx>=list.length) idx=0;
+    var v = list[idx];
+    var doAnim = animate && v.mmsi!==lastMmsi;
+    lastMmsi = v.mmsi;
+    paint(v, list, doAnim);
+  }
+
+  Tracker.onUpdate(function(){ render(false); });
+
+  setInterval(function(){
+    var list = Tracker.getState().vessels || [];
+    if(list.length<=1) return;
+    idx = (idx+1) % list.length;
+    render(true);
+  }, 9000);
+})();
+</script>
+</body>
+</html>

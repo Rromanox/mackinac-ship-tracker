@@ -77,6 +77,10 @@ app.get('/overlay/minimal',   (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/corner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-corner.html')));
 app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner.html')));
 app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner2.html')));
+// New high-visibility overlay options (design candidates)
+app.get('/overlay/hud/board',     (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-board.html')));
+app.get('/overlay/hud/spotlight', (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-spotlight.html')));
+app.get('/overlay/hud/rail',      (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-rail.html')));
 
 // Local AIS receiver feed — AIS-catcher (or the ais-relay.js helper) POSTs
 // its decoded JSON here. Accepts either a bare array of messages or the

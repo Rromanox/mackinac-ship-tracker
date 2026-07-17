@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<title>Mackinac Straits — Departure Board</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', Tahoma, sans-serif; }
+html, body { background: transparent; }
+body { width: 2560px; height: 1440px; overflow: hidden; position: relative; }
+*{box-sizing:border-box}
+#db-board{position:fixed;left:0;right:0;bottom:0;width:2560px;font-family:'Roboto',Arial,sans-serif;color:#fff;background:rgba(15,20,30,.85);border-top:5px solid #ffb733;box-shadow:0 -14px 60px rgba(0,0,0,.55);overflow:hidden;-webkit-font-smoothing:antialiased}
+#db-board:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,0) 42%);pointer-events:none}
+/* HEADER */
+#db-head{display:flex;align-items:center;justify-content:space-between;height:82px;padding:0 40px;background:rgba(8,12,20,.72);border-bottom:2px solid rgba(255,255,255,.09)}
+#db-brand{display:flex;align-items:center;gap:22px}
+#db-brand .db-badge{display:flex;align-items:center;justify-content:center;width:58px;height:58px;background:#ffb733;color:#0c1220;border-radius:12px;font-size:30px;box-shadow:0 4px 14px rgba(255,183,51,.35)}
+#db-brand .db-tt{display:flex;flex-direction:column;line-height:1.05}
+#db-brand .db-t1{font-size:34px;font-weight:700;letter-spacing:.06em;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+#db-brand .db-t2{font-size:17px;font-weight:700;letter-spacing:.42em;color:#ffb733;margin-top:5px}
+#db-headR{display:flex;align-items:center;gap:34px}
+#db-weather{font-size:24px;font-weight:700;letter-spacing:.02em;color:#dfe7f2;text-shadow:0 2px 5px rgba(0,0,0,.6);white-space:nowrap}
+#db-livewrap{display:flex;align-items:center;gap:13px;background:rgba(0,0,0,.4);padding:11px 22px;border-radius:40px;border:1.5px solid rgba(255,255,255,.14)}
+.db-dot{width:17px;height:17px;border-radius:50%;background:#7a8494;box-shadow:0 0 0 0 rgba(0,0,0,0)}
+.db-dot.on{background:#39e07a;box-shadow:0 0 16px rgba(57,224,122,.9);animation:dbPulseDot 2.2s ease-in-out infinite}
+#db-live-txt{font-size:22px;font-weight:700;letter-spacing:.22em}
+@keyframes dbPulseDot{0%,100%{opacity:1}50%{opacity:.35}}
+/* COLUMN HEADER */
+#db-colhead,.db-row{display:grid;grid-template-columns:230px minmax(0,1fr) 300px 230px 250px 200px 300px;align-items:center}
+#db-colhead{height:46px;padding:0 40px;background:rgba(0,0,0,.34);border-bottom:2px solid rgba(255,183,51,.32)}
+#db-colhead .db-c{font-size:18px;font-weight:700;letter-spacing:.2em;color:#9fb0c6}
+/* BODY ROWS */
+#db-body{padding:0 40px}
+.db-row{height:60px;border-bottom:1px solid rgba(255,255,255,.08);transition:background .35s ease}
+.db-row:nth-child(even){background:rgba(255,255,255,.035)}
+.db-c{padding-right:20px;overflow:hidden}
+.db-name{display:flex;align-items:center;gap:16px;min-width:0}
+.db-name i{color:#7fa8d8;font-size:26px;flex:0 0 auto}
+.db-name span{font-size:34px;font-weight:700;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 5px rgba(0,0,0,.55)}
+.db-dist{font-size:30px;font-weight:700;color:#fff}
+.db-course{font-size:27px;font-weight:700;color:#8fd0ff;letter-spacing:.04em}
+.db-speed{font-size:27px;font-weight:400;color:#cdd8e6}
+.db-eta{font-size:31px;font-weight:700;color:#ffcf5c}
+.db-arr{font-size:28px;font-weight:700;color:#eaf0f8}
+.db-tag{display:inline-block;padding:7px 15px;border-radius:7px;font-size:18px;font-weight:700;letter-spacing:.12em}
+.db-tag.inbound{background:rgba(57,224,122,.16);color:#5cf29a;border:1.5px solid rgba(57,224,122,.5)}
+.db-tag.departing{background:rgba(150,168,190,.16);color:#b7c6da;border:1.5px solid rgba(150,168,190,.42)}
+.db-tag.passing{background:#ff3b47;color:#fff;border:1.5px solid #ff7b83;animation:dbTag 1.15s ease-in-out infinite}
+@keyframes dbTag{0%,100%{box-shadow:0 0 0 0 rgba(255,59,71,.85)}50%{box-shadow:0 0 24px 4px rgba(255,59,71,.9)}}
+/* NEAR ROW HIGHLIGHT */
+.db-row.near{background:rgba(255,59,71,.2) !important;border-bottom:1px solid rgba(255,120,128,.5);border-left:6px solid #ff3b47;margin-left:-40px;padding-left:34px;animation:dbNear 2.1s ease-in-out infinite}
+.db-row.near .db-name span{color:#fff}
+.db-row.near .db-eta{color:#ffd86b}
+@keyframes dbNear{0%,100%{background:rgba(255,59,71,.16)}50%{background:rgba(255,59,71,.3)}}
+/* EMPTY */
+.db-empty{display:flex;align-items:center;justify-content:center;gap:18px;height:180px;font-size:32px;font-weight:700;letter-spacing:.06em;color:#8a99ad}
+.db-empty i{font-size:36px;color:#5f7089}
+/* FOOTER */
+#db-passed{display:flex;align-items:center;gap:26px;height:56px;padding:0 40px;background:rgba(6,10,16,.78);border-top:2px solid rgba(255,255,255,.09);overflow:hidden}
+.db-passed-lbl{display:flex;align-items:center;gap:11px;font-size:19px;font-weight:700;letter-spacing:.18em;color:#5cf29a;flex:0 0 auto}
+.db-passed-lbl i{font-size:22px}
+.db-passed-item{font-size:25px;font-weight:400;color:#c6d2e2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-passed-item b{font-weight:700;color:#fff;letter-spacing:.02em}
+.db-passed-ago{color:#8a99ad}
+#db-pager{position:absolute;right:40px;bottom:15px;font-size:17px;font-weight:700;letter-spacing:.2em;color:#ffb733;opacity:.9}
+</style>
+</head>
+<body>
+<div id="db-board">
+  <div id="db-head">
+    <div id="db-brand">
+      <div class="db-badge"><i class="fas fa-ship"></i></div>
+      <div class="db-tt">
+        <div class="db-t1">MACKINAC STRAITS</div>
+        <div class="db-t2">LIVE SHIP TRACKER</div>
+      </div>
+    </div>
+    <div id="db-headR">
+      <div id="db-weather"></div>
+      <div id="db-livewrap"><span id="db-live-dot" class="db-dot"></span><span id="db-live-txt">LIVE</span></div>
+    </div>
+  </div>
+  <div id="db-colhead">
+    <div class="db-c">STATUS</div>
+    <div class="db-c">VESSEL</div>
+    <div class="db-c">DISTANCE</div>
+    <div class="db-c">COURSE</div>
+    <div class="db-c">SPEED</div>
+    <div class="db-c">ETA</div>
+    <div class="db-c">ARRIVES</div>
+  </div>
+  <div id="db-body"></div>
+  <div id="db-passed"></div>
+  <div id="db-pager"></div>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  MACKINAC OVERLAY CORE  — shared data pipeline for all overlays.
+//  Exposes a global `Tracker` API; designs only handle presentation.
+//
+//    Tracker.onUpdate(fn)  → fn(state) on every data change (+ once now)
+//    Tracker.getState()    → latest state snapshot
+//    Tracker.fmt           → { clock, ago, eta, arrival, courseToDir }
+//
+//  state = {
+//    live: bool,
+//    weather: { tempStr, temp, desc, isDay, iconUrl, background, textColor } | null,
+//    vessels: [ {                       // approaching nearest-first, then others
+//        mmsi, name,
+//        distanceMi, distanceStr,        // 2.8, "2.8 mi"
+//        speed, speedStr,               // 13.5, "13.5 kts"
+//        course, courseStr,             // 84, "W→E"
+//        direction,                     // "Approaching" | "Departing"
+//        near,                          // bool, within 8 mi of bridge
+//        etaStr, arrivalStr             // "11m", "3:34 PM"  (null unless approaching)
+//    } ],
+//    passed: [ { mmsi, name, passedTime, clockStr, agoStr } ]  // most recent first
+//  }
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  var RENDER_URL = 'mackinac-ship-tracker.onrender.com';
+  var isLocal    = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+  var WS_URL     = isLocal ? 'ws://localhost:' + (location.port || 3000) : 'wss://' + RENDER_URL;
+  var HTTP_BASE  = isLocal ? 'http://localhost:' + (location.port || 3000) : 'https://' + RENDER_URL;
+  var BRIDGE_LAT = 45.8174, BRIDGE_LON = -84.7278, MAX_DIST_MI = 100;
+  var PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
+  var shipData = {}, staticData = {}, passedShips = [], live = false, weather = null;
+  var ws, reconnectTimer, reconnectAttempts = 0, listeners = [];
+
+  var BLOCKED_MMSI = {368165150:1,367031360:1,367139210:1,367349450:1,367721870:1,367721930:1,367721960:1,367782080:1,338158987:1,338926364:1,367721890:1};
+  var ALLOWED_MMSI = {311050300:1};
+  function shouldHide(mmsi) {
+    if (ALLOWED_MMSI[mmsi]) return false;
+    if (BLOCKED_MMSI[mmsi]) return true;
+    var t = staticData[mmsi] && staticData[mmsi].type;
+    return t && t >= 60 && t <= 69;
+  }
+
+  function haversine(la1, lo1, la2, lo2) {
+    var R = 6371, dLa = (la2-la1)*Math.PI/180, dLo = (lo2-lo1)*Math.PI/180;
+    var a = Math.sin(dLa/2)*Math.sin(dLa/2) + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  function toMiles(km) { return km * 0.621371; }
+  function getDirection(lat, lon, course) {
+    var dLat = lat - BRIDGE_LAT, dLon = lon - BRIDGE_LON;
+    var tb = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
+    return Math.abs(((course - tb) + 180 + 360) % 360 - 180) < 90 ? 'Approaching' : 'Departing';
+  }
+  function etaMin(distKm, spd) {
+    if (!spd || spd < 0.5) return null;
+    var min = Math.round(distKm / (spd * 1.852) * 60);
+    return min > 600 ? null : min;
+  }
+  function fmtETA(min) {
+    if (min == null) return null;
+    return min < 60 ? min + 'm' : Math.floor(min/60) + 'h' + (min%60 ? min%60+'m' : '');
+  }
+  function fmtClock(ts) {
+    var d = new Date(ts), h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; h = h ? h : 12; m = m < 10 ? '0' + m : m;
+    return h + ':' + m + ' ' + ap;
+  }
+  function fmtArrival(min) { return min == null ? null : fmtClock(Date.now() + min * 60000); }
+  function fmtAgo(ts) {
+    var min = Math.round((Date.now() - ts) / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return min + ' min ago';
+    var h = Math.floor(min/60), m = min % 60;
+    return h + 'h' + (m ? ' ' + m + 'm' : '') + ' ago';
+  }
+  function courseToDir(cog) {
+    if (cog == null || isNaN(cog)) return null;
+    var dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    var idx = Math.round((((cog % 360) + 360) % 360) / 45) % 8;
+    return dirs[(idx + 4) % 8] + '→' + dirs[idx];
+  }
+
+  function buildState() {
+    var all = Object.keys(shipData).map(function (k) { return shipData[k]; })
+      .filter(function (s) { return s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI && !shouldHide(s.mmsi); });
+    var approaching = all.filter(function (s) { return s.direction === 'Approaching'; }).sort(function (a,b) { return a.distance - b.distance; });
+    var others      = all.filter(function (s) { return s.direction !== 'Approaching'; }).sort(function (a,b) { return a.distance - b.distance; });
+    var vessels = approaching.concat(others).map(function (s) {
+      var em = s.direction === 'Approaching' ? etaMin(s.distance, s.speed) : null;
+      return {
+        mmsi: s.mmsi, name: s.name,
+        distanceMi: toMiles(s.distance), distanceStr: toMiles(s.distance).toFixed(1) + ' mi',
+        speed: s.speed, speedStr: s.speed ? s.speed.toFixed(1) + ' kts' : '',
+        course: s.course, courseStr: courseToDir(s.course),
+        direction: s.direction, near: s.distance < 8,
+        etaStr: fmtETA(em), arrivalStr: fmtArrival(em)
+      };
+    });
+    passedShips = passedShips.filter(function (p) { return (Date.now() - p.passedTime) < PASSED_MAX_AGE_MS; });
+    var passed = passedShips.map(function (p) {
+      return { mmsi: p.mmsi, name: p.name, passedTime: p.passedTime, clockStr: fmtClock(p.passedTime), agoStr: fmtAgo(p.passedTime) };
+    });
+    return { live: live, weather: weather, vessels: vessels, passed: passed };
+  }
+
+  var emitScheduled = false;
+  function emit() {
+    if (emitScheduled) return;
+    emitScheduled = true;
+    setTimeout(function () {
+      emitScheduled = false;
+      var st = buildState();
+      for (var i = 0; i < listeners.length; i++) { try { listeners[i](st); } catch (e) {} }
+    }, 250);
+  }
+
+  function processMessage(data) {
+    if (data.MessageType === 'ShipStaticData' && data.Message && data.Message.ShipStaticData) {
+      var mmsi = data.MetaData.MMSI;
+      staticData[mmsi] = { type: data.Message.ShipStaticData.Type || null, destination: (data.Message.ShipStaticData.Destination || '').trim() || null };
+      emit(); return;
+    }
+    if (data.MessageType === 'PositionReport' && data.Message && data.Message.PositionReport) {
+      var pos = data.Message.PositionReport, meta = data.MetaData;
+      var dist = haversine(BRIDGE_LAT, BRIDGE_LON, pos.Latitude, pos.Longitude);
+      shipData[meta.MMSI] = {
+        mmsi: meta.MMSI, name: (meta.ShipName || 'Unknown').trim(),
+        lat: pos.Latitude, lon: pos.Longitude, speed: pos.Sog || 0, course: pos.Cog || 0,
+        distance: dist, direction: getDirection(pos.Latitude, pos.Longitude, pos.Cog || 0), lastUpdate: Date.now()
+      };
+      var cut = Date.now() - 600000;
+      Object.keys(shipData).forEach(function (k) { if (shipData[k].lastUpdate < cut) delete shipData[k]; });
+      emit();
+    }
+  }
+
+  function refreshPassed() {
+    fetch(HTTP_BASE + '/api/ships/recent?limit=6')
+      .then(function (r) { return r.json(); })
+      .then(function (d) { passedShips = (d.ships || []).map(function (s) { return { mmsi: s.mmsi, name: s.name, passedTime: new Date(s.passedTime).getTime() }; }); emit(); })
+      .catch(function () {});
+  }
+
+  function connect() {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+    live = false;
+    ws = new WebSocket(WS_URL);
+    ws.onopen = function () { reconnectAttempts = 0; live = true; emit(); };
+    ws.onmessage = function (e) { try { var m = JSON.parse(e.data); if (m.type === 'ship_data') processMessage(m.data); else if (m.type === 'bridge_passing') refreshPassed(); } catch (ex) {} };
+    ws.onerror = function () { live = false; emit(); };
+    ws.onclose = function () { live = false; emit(); reconnectAttempts++; var delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000); reconnectTimer = setTimeout(connect, delay); };
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) connect(); });
+
+  var W_KEY = '8d6e0169a641adc002688e82b9ab8ec3', W_LAT = 45.7829, W_LON = -84.7278;
+  function weatherCheck() {
+    fetch('https://api.openweathermap.org/data/2.5/weather?units=imperial&lat=' + W_LAT + '&lon=' + W_LON + '&appid=' + W_KEY)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var desc = d.weather[0].description.replace(/\w\S*/g, function (t) { return t.charAt(0).toUpperCase() + t.substr(1).toLowerCase(); });
+        var temp = Math.round(d.main.temp), icon = d.weather[0].icon, isDay = icon.slice(-1) === 'd';
+        var bg = isDay ? 'linear-gradient(to bottom, skyblue, lightgrey)' : 'linear-gradient(to bottom, black, dimgrey)';
+        var tc = isDay ? 'black' : 'white';
+        document.documentElement.style.setProperty('--dynamic-background', bg);
+        document.documentElement.style.setProperty('--dynamic-text-color', tc);
+        weather = { tempStr: temp + '°F', temp: temp, desc: desc, isDay: isDay, iconUrl: 'https://openweathermap.org/img/wn/' + icon + '@2x.png', background: bg, textColor: tc };
+        emit();
+      }).catch(function () {});
+  }
+
+  window.Tracker = {
+    onUpdate: function (cb) { listeners.push(cb); cb(buildState()); },
+    getState: buildState,
+    fmt: { clock: fmtClock, ago: fmtAgo, eta: fmtETA, arrival: fmtArrival, courseToDir: courseToDir }
+  };
+
+  function start() {
+    weatherCheck(); setInterval(weatherCheck, 60000);
+    connect(); refreshPassed(); setInterval(refreshPassed, 60000);
+    setInterval(emit, 15000); // keep "ago"/arrival strings fresh even without new data
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){
+  var PAGE_SIZE = 4, PAGE_MS = 12000, PASS_MS = 4500;
+  var pageIdx = 0, passIdx = 0;
+
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function pageCount(n){ return Math.max(1, Math.ceil(n / PAGE_SIZE)); }
+
+  function renderHeader(state){
+    var live = state && state.live;
+    var dot = document.getElementById('db-live-dot');
+    var liveTxt = document.getElementById('db-live-txt');
+    if(dot) dot.className = 'db-dot' + (live ? ' on' : '');
+    if(liveTxt) liveTxt.textContent = live ? 'LIVE' : 'OFFLINE';
+    var wx = document.getElementById('db-weather');
+    if(wx){
+      if(state && state.weather && state.weather.tempStr){
+        wx.textContent = state.weather.tempStr + ' · ' + (state.weather.desc || '');
+        wx.style.display = '';
+      } else { wx.style.display = 'none'; }
+    }
+  }
+
+  function rowHTML(v){
+    var near = !!v.near;
+    var dep = v.direction === 'Departing';
+    var statusTag, statusCls;
+    if(near){ statusTag = 'PASSING'; statusCls = 'passing'; }
+    else if(dep){ statusTag = 'DEPARTING'; statusCls = 'departing'; }
+    else { statusTag = 'INBOUND'; statusCls = 'inbound'; }
+    var eta = (!dep && v.etaStr) ? v.etaStr : '—';
+    var arr = (!dep && v.arrivalStr) ? v.arrivalStr : '—';
+    var course = v.courseStr || '—';
+    return '<div class="db-row' + (near ? ' near' : '') + '">' +
+      '<div class="db-c db-status"><span class="db-tag ' + statusCls + '">' + esc(statusTag) + '</span></div>' +
+      '<div class="db-c db-name"><i class="fas fa-ship"></i><span>' + esc(v.name || 'UNKNOWN') + '</span></div>' +
+      '<div class="db-c db-dist">' + esc(v.distanceStr || '—') + '</div>' +
+      '<div class="db-c db-course">' + esc(course) + '</div>' +
+      '<div class="db-c db-speed">' + esc(v.speedStr || '—') + '</div>' +
+      '<div class="db-c db-eta">' + esc(eta) + '</div>' +
+      '<div class="db-c db-arr">' + esc(arr) + '</div>' +
+    '</div>';
+  }
+
+  function renderRows(state){
+    var body = document.getElementById('db-body');
+    var pager = document.getElementById('db-pager');
+    if(!body) return;
+    var vessels = (state && state.vessels) || [];
+    if(!vessels.length){
+      body.innerHTML = '<div class="db-empty"><i class="fas fa-water"></i> No vessels approaching the bridge</div>';
+      if(pager) pager.textContent = '';
+      return;
+    }
+    var pc = pageCount(vessels.length);
+    if(pageIdx >= pc) pageIdx = 0;
+    var start = pageIdx * PAGE_SIZE;
+    var slice = vessels.slice(start, start + PAGE_SIZE);
+    body.innerHTML = slice.map(rowHTML).join('');
+    if(pager){
+      pager.textContent = pc > 1 ? ('PAGE ' + (pageIdx+1) + ' / ' + pc + '  ·  ' + vessels.length + ' VESSELS') : (vessels.length + (vessels.length===1?' VESSEL':' VESSELS'));
+    }
+  }
+
+  function renderPassed(state){
+    var foot = document.getElementById('db-passed');
+    if(!foot) return;
+    var passed = (state && state.passed) || [];
+    if(!passed.length){ foot.style.display = 'none'; return; }
+    foot.style.display = '';
+    if(passIdx >= passed.length) passIdx = 0;
+    var p = passed[passIdx];
+    foot.innerHTML = '<span class="db-passed-lbl"><i class="fas fa-check-circle"></i> RECENTLY PASSED</span>' +
+      '<span class="db-passed-item"><b>' + esc(p.name || 'UNKNOWN') + '</b> — passed ' + esc(p.clockStr || '') +
+      ' <span class="db-passed-ago">(' + esc(p.agoStr || '') + ')</span></span>';
+  }
+
+  function renderAll(state){
+    renderHeader(state);
+    renderRows(state);
+    renderPassed(state);
+  }
+
+  Tracker.onUpdate(renderAll);
+
+  setInterval(function(){
+    var s = Tracker.getState();
+    var n = (s && s.vessels) ? s.vessels.length : 0;
+    var pc = pageCount(n);
+    if(pc > 1){ pageIdx = (pageIdx + 1) % pc; renderRows(s); }
+  }, PAGE_MS);
+
+  setInterval(function(){
+    var s = Tracker.getState();
+    var pn = (s && s.passed) ? s.passed.length : 0;
+    if(pn > 1){ passIdx = (passIdx + 1) % pn; renderPassed(s); }
+  }, PASS_MS);
+})();
+</script>
+</body>
+</html>
