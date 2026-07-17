@@ -34,6 +34,7 @@ async function connectToMongoDB() {
     
     console.log('✓ Connected to MongoDB');
     console.log('📊 Database:', DB_NAME);
+    await loadNameCache();
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
     console.error('⚠️ Running without database - data will not be saved');
@@ -386,11 +387,53 @@ async function getShipStats() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// VESSEL NAME CACHE — position reports carry no name; names arrive
+// only in infrequent static messages (every ~6 min). We seed a cache
+// from names AISStream logged historically (the `ships` collection)
+// and learn new ones live, so "Unknown" vessels get named on their
+// next position report instead of waiting for a static broadcast.
+// ─────────────────────────────────────────────────────────────
+const nameCache = {}; // mmsi -> name
+
+async function loadNameCache() {
+  if (!shipsCollection) return;
+  try {
+    const rows = await shipsCollection
+      .find({ name: { $nin: [null, '', 'Unknown'] } }, { projection: { mmsi: 1, name: 1 } })
+      .toArray();
+    let n = 0;
+    for (const r of rows) {
+      if (r.mmsi && r.name) { nameCache[r.mmsi] = r.name; n++; }
+    }
+    console.log(`📇 Loaded ${n} vessel names from history`);
+  } catch (err) {
+    console.error('❌ Name cache load error:', err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // SHARED AIS PIPELINE — every message, whether from AISStream or
-// the local motel receiver, goes through here: DB save, alerts,
+// the local motel receiver, goes through here: DB save,
 // bridge-passing detection, and broadcast to connected banners.
 // ─────────────────────────────────────────────────────────────
 function processAisMessage(message, source) {
+  // Resolve the vessel name against the cache before anything else,
+  // so both the DB save and the banner broadcast carry the real name.
+  const meta = message.MetaData;
+  if (meta && meta.MMSI) {
+    const rawName = (meta.ShipName || '').trim();
+    if (rawName && rawName !== 'Unknown') {
+      // Learn a real name (and persist it once so it survives restarts)
+      if (nameCache[meta.MMSI] !== rawName) {
+        nameCache[meta.MMSI] = rawName;
+        if (shipsCollection) shipsCollection.updateMany({ mmsi: meta.MMSI }, { $set: { name: rawName } }).catch(() => {});
+      }
+    } else if (nameCache[meta.MMSI]) {
+      // Backfill an "Unknown" from the cache so the banner shows a name now
+      meta.ShipName = nameCache[meta.MMSI];
+    }
+  }
+
   if (message.MessageType === 'PositionReport' && message.MetaData) {
     const shipInfo = {
       mmsi: message.MetaData.MMSI,
