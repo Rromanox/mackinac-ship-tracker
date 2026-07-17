@@ -479,8 +479,10 @@ function aisCatcherToStreamMessage(m) {
   if (!m || typeof m.mmsi !== 'number') return null;
   const t = m.type;
 
-  // Position reports: Class A (1,2,3), Class B (18,19), long-range (27)
-  if ([1, 2, 3, 18, 19, 27].includes(t) && typeof m.lat === 'number' && typeof m.lon === 'number') {
+  // Position reports: CLASS A ONLY (1,2,3) + long-range (27).
+  // Class B (18/19) is small recreational craft — excluded so the banner
+  // shows commercial ships, matching how AISStream's feed behaved.
+  if ([1, 2, 3, 27].includes(t) && typeof m.lat === 'number' && typeof m.lon === 'number') {
     if (m.lat > 90 || m.lat < -90 || m.lon > 180 || m.lon < -180) return null; // "unavailable" AIS placeholders
     const name = (m.shipname || localShipNames[m.mmsi] || 'Unknown');
     return {
