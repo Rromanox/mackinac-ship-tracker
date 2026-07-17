@@ -71,7 +71,9 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
 .chip-name  { font-weight: bold; }
 .chip-dist  { opacity: 0.6; font-size: 1.4rem; }
 .chip-speed { opacity: 0.5; font-size: 1.2rem; }
+.chip-eta-wrap { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
 .chip-eta   { font-size: 1.2rem; font-weight: bold; color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+.chip-arrival { font-size: 1.0rem; font-weight: bold; opacity: 0.85; white-space: nowrap; }
 .no-ships-bar { opacity: 0.45; font-size: 1.6rem; font-weight: bold; }
 
 /* live dot */
@@ -394,6 +396,16 @@ function formatETA(distKm,spd){
     if(min>600)return null;
     return min<60?min+'m':Math.floor(min/60)+'h'+(min%60?min%60+'m':'');
 }
+// Approximate wall-clock arrival time (now + ETA), so viewers can plan when to watch
+function formatArrival(distKm,spd){
+    if(!spd||spd<0.5)return null;
+    var min=Math.round(distKm/(spd*1.852)*60);
+    if(min>600)return null;
+    var d=new Date(Date.now()+min*60000);
+    var h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';
+    h=h%12;h=h?h:12;m=m<10?'0'+m:m;
+    return h+':'+m+' '+ap;
+}
 
 var PAGE_HOLD_MS=15000,pageOffsets=[],currentPage=0,pageTimer=null,lastShipKey='';
 
@@ -438,6 +450,7 @@ function buildChipHTML(ship){
     var mi=toMiles(ship.distance).toFixed(1);
     var spd=ship.speed?ship.speed.toFixed(1)+' kts':'';
     var eta=ship.direction==='Approaching'?formatETA(ship.distance,ship.speed):null;
+    var arrival=ship.direction==='Approaching'?formatArrival(ship.distance,ship.speed):null;
     var isNear=ship.distance<8;
     var cls=isNear?'near-bridge':ship.direction==='Approaching'?'approaching':'departing';
     var arrow=isNear?'&#9889;':ship.direction==='Approaching'?'&#9650;':'&#9660;';
@@ -446,7 +459,8 @@ function buildChipHTML(ship){
         '<span class="chip-name">'+ship.name+'</span>'+
         '<span class="chip-dist">'+mi+' mi</span>'+
         (spd?'<span class="chip-speed">'+spd+'</span>':'')+
-        (eta?'<span class="chip-eta">ETA '+eta+'</span>':'')+
+        (eta?'<span class="chip-eta-wrap"><span class="chip-eta">ETA '+eta+'</span>'+
+             (arrival?'<span class="chip-arrival">~'+arrival+'</span>':'')+'</span>':'')+
         '</div>';
 }
 function updateChipValues(ships){
@@ -456,11 +470,13 @@ function updateChipValues(ships){
         var mi=toMiles(ship.distance).toFixed(1);
         var isNear=ship.distance<8;
         var eta=ship.direction==='Approaching'?formatETA(ship.distance,ship.speed):null;
+        var arrival=ship.direction==='Approaching'?formatArrival(ship.distance,ship.speed):null;
         chip.className='ship-chip '+(isNear?'near-bridge':ship.direction==='Approaching'?'approaching':'departing');
         chip.querySelector('.chip-arrow').innerHTML=isNear?'&#9889;':ship.direction==='Approaching'?'&#9650;':'&#9660;';
         chip.querySelector('.chip-dist').textContent=mi+' mi';
         var spdEl=chip.querySelector('.chip-speed');if(spdEl)spdEl.textContent=ship.speed?ship.speed.toFixed(1)+' kts':'';
         var etaEl=chip.querySelector('.chip-eta');if(etaEl)etaEl.textContent=eta?'ETA '+eta:'';
+        var arrEl=chip.querySelector('.chip-arrival');if(arrEl)arrEl.textContent=arrival?'~'+arrival:'';
     });
 }
 function render(){
