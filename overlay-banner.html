@@ -69,7 +69,9 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 1
 
 .chip-arrow { font-size: 1.6rem; }
 .chip-name  { font-weight: bold; }
+.chip-dist-wrap { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
 .chip-dist  { opacity: 0.6; font-size: 1.4rem; }
+.chip-course { font-size: 1.0rem; font-weight: bold; opacity: 0.7; letter-spacing: 1px; white-space: nowrap; }
 .chip-speed { opacity: 0.5; font-size: 1.2rem; }
 .chip-eta-wrap { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
 .chip-eta   { font-size: 1.2rem; font-weight: bold; color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
@@ -447,9 +449,17 @@ function buildPassedChipHTML(ship){
         '<span class="chip-ago">'+agoStr+'</span>'+
         '</div>';
 }
+// Course over ground (0-360) → "from→to" compass direction, e.g. 270 → "E→W"
+function courseToDirection(cog){
+    if(cog==null||isNaN(cog))return null;
+    var dirs=['N','NE','E','SE','S','SW','W','NW'];
+    var idx=Math.round((((cog%360)+360)%360)/45)%8;
+    return dirs[(idx+4)%8]+'→'+dirs[idx];
+}
 function buildChipHTML(ship){
     var mi=toMiles(ship.distance).toFixed(1);
     var spd=ship.speed?ship.speed.toFixed(1)+' kts':'';
+    var course=courseToDirection(ship.course);
     var eta=ship.direction==='Approaching'?formatETA(ship.distance,ship.speed):null;
     var arrival=ship.direction==='Approaching'?formatArrival(ship.distance,ship.speed):null;
     var isNear=ship.distance<8;
@@ -458,7 +468,8 @@ function buildChipHTML(ship){
     return '<div class="ship-chip '+cls+'" data-mmsi="'+ship.mmsi+'">'+
         '<span class="chip-arrow">'+arrow+'</span>'+
         '<span class="chip-name">'+ship.name+'</span>'+
-        '<span class="chip-dist">'+mi+' mi</span>'+
+        '<span class="chip-dist-wrap"><span class="chip-dist">'+mi+' mi</span>'+
+            (course?'<span class="chip-course">'+course+'</span>':'')+'</span>'+
         (spd?'<span class="chip-speed">'+spd+'</span>':'')+
         (eta?'<span class="chip-eta-wrap"><span class="chip-eta">ETA '+eta+'</span>'+
              (arrival?'<span class="chip-arrival">~'+arrival+'</span>':'')+'</span>':'')+
@@ -475,6 +486,7 @@ function updateChipValues(ships){
         chip.className='ship-chip '+(isNear?'near-bridge':ship.direction==='Approaching'?'approaching':'departing');
         chip.querySelector('.chip-arrow').innerHTML=isNear?'&#9889;':ship.direction==='Approaching'?'&#9650;':'&#9660;';
         chip.querySelector('.chip-dist').textContent=mi+' mi';
+        var crsEl=chip.querySelector('.chip-course');if(crsEl)crsEl.textContent=courseToDirection(ship.course)||'';
         var spdEl=chip.querySelector('.chip-speed');if(spdEl)spdEl.textContent=ship.speed?ship.speed.toFixed(1)+' kts':'';
         var etaEl=chip.querySelector('.chip-eta');if(etaEl)etaEl.textContent=eta?'ETA '+eta:'';
         var arrEl=chip.querySelector('.chip-arrival');if(arrEl)arrEl.textContent=arrival?'~'+arrival:'';
