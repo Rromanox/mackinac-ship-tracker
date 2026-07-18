@@ -152,9 +152,42 @@ app.post('/api/ships/:mmsi/passed', async (req, res) => {
   res.json({ success: true });
 });
 
-// Vessels to skip for bridge-passing detection (same list as the frontend banners)
+// ─────────────────────────────────────────────────────────────
+// VESSEL VISIBILITY FILTER — THE SINGLE SOURCE OF TRUTH.
+// The server decides which vessels appear and drops the rest BEFORE
+// broadcasting, so every banner/overlay shows the same thing and
+// future changes happen in ONE place (this file). The client-side
+// lists in the HTML overlays are now just harmless fallback.
+//
+//   • ALLOWED (whitelist) → always show (overrides everything)
+//   • BLOCKED (blocklist) → always hide (known ferries/small craft)
+//   • AIS type            → hide passenger/ferry (60-69), pleasure (37),
+//                           sailing (36), fishing (30)
+//   • size                → hide vessels known to be under MIN_VESSEL_LEN
+//                           metres (freighters are 150m+; ferries, tour
+//                           boats and pleasure craft are 15-40m)
+//
+// Type & length come from AIS static messages (broadcast ~every 6 min).
+// A vessel with no static yet is SHOWN — we never hide a possible
+// freighter just because its details haven't arrived.  ← To block a new
+// ferry by hand, add its MMSI to BLOCKED_MMSI_SERVER below. That's it.
+// ─────────────────────────────────────────────────────────────
 const BLOCKED_MMSI_SERVER = new Set([368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960, 367782080, 338158987, 338926364, 367721890, 367783160]);
-const ALLOWED_MMSI_SERVER = new Set([311050300]); // VICTORY II — overrides the passenger filter
+const ALLOWED_MMSI_SERVER = new Set([311050300]); // VICTORY II — big cruise ship, overrides size/type filters
+const MIN_VESSEL_LEN = 50; // metres — below this, a vessel is not a Great Lakes freighter
+const staticInfo = {};     // mmsi -> { type, length }  (learned from static messages)
+
+function shouldHideVessel(mmsi) {
+  if (ALLOWED_MMSI_SERVER.has(mmsi)) return false;
+  if (BLOCKED_MMSI_SERVER.has(mmsi)) return true;
+  const info = staticInfo[mmsi];
+  if (info) {
+    const t = info.type;
+    if (t === 30 || t === 36 || t === 37 || (t >= 60 && t <= 69)) return true; // fishing, sailing, pleasure, passenger/ferry
+    if (info.length && info.length < MIN_VESSEL_LEN) return true;               // too small to be a freighter
+  }
+  return false;
+}
 
 // ─────────────────────────────────────────────────────────────
 // BRIDGE PASSING DETECTION
@@ -438,7 +471,19 @@ function processAisMessage(message, source) {
     }
   }
 
+  // Learn vessel type + length from static messages (drives the size/type filter)
+  if (message.MessageType === 'ShipStaticData' && message.Message && message.Message.ShipStaticData && meta && meta.MMSI) {
+    const sd = message.Message.ShipStaticData;
+    const dim = sd.Dimension || {};
+    const length = (dim.A || 0) + (dim.B || 0);
+    staticInfo[meta.MMSI] = { type: sd.Type || null, length: length || null };
+  }
+
   if (message.MessageType === 'PositionReport' && message.MetaData) {
+    // Single source of truth: drop hidden vessels (ferries, small craft,
+    // blocklist) here so no overlay ever sees them.
+    if (shouldHideVessel(message.MetaData.MMSI)) return;
+
     const shipInfo = {
       mmsi: message.MetaData.MMSI,
       name: message.MetaData.ShipName?.trim() || 'Unknown',
@@ -521,7 +566,8 @@ function aisCatcherToStreamMessage(m) {
       Message: {
         ShipStaticData: {
           Type: m.shiptype || null,
-          Destination: (m.destination || '').trim() || null
+          Destination: (m.destination || '').trim() || null,
+          Dimension: { A: m.to_bow || 0, B: m.to_stern || 0, C: m.to_port || 0, D: m.to_starboard || 0 }
         }
       }
     };
