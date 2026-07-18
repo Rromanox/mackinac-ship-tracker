@@ -153,7 +153,7 @@ app.post('/api/ships/:mmsi/passed', async (req, res) => {
 });
 
 // Vessels to skip for bridge-passing detection (same list as the frontend banners)
-const BLOCKED_MMSI_SERVER = new Set([368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960, 367782080, 338158987, 338926364, 367721890]);
+const BLOCKED_MMSI_SERVER = new Set([368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960, 367782080, 338158987, 338926364, 367721890, 367783160]);
 const ALLOWED_MMSI_SERVER = new Set([311050300]); // VICTORY II — overrides the passenger filter
 
 // ─────────────────────────────────────────────────────────────
