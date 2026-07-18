@@ -110,6 +110,30 @@ app.post('/api/local-ais', (req, res) => {
   res.json({ ok: true, accepted });
 });
 
+// Local antenna range diagnostics — how far out the receiver is hearing vessels.
+app.get('/api/local-range', (req, res) => {
+  const now = Date.now();
+  const windowMin = Math.min(parseInt(req.query.mins) || 20, 180);
+  const windowMs = windowMin * 60 * 1000;
+  // prune anything older than 3 h so the map doesn't grow forever
+  Object.keys(localReception).forEach(k => { if (now - localReception[k].at > 3 * 60 * 60 * 1000) delete localReception[k]; });
+  const recent = Object.values(localReception).filter(v => now - v.at < windowMs).sort((a, b) => b.distanceMi - a.distanceMi);
+  const buckets = { '0-5mi': 0, '5-10mi': 0, '10-20mi': 0, '20-30mi': 0, '30-40mi': 0, '40-50mi': 0, '50mi+': 0 };
+  recent.forEach(v => {
+    const d = v.distanceMi;
+    if (d < 5) buckets['0-5mi']++; else if (d < 10) buckets['5-10mi']++; else if (d < 20) buckets['10-20mi']++;
+    else if (d < 30) buckets['20-30mi']++; else if (d < 40) buckets['30-40mi']++; else if (d < 50) buckets['40-50mi']++; else buckets['50mi+']++;
+  });
+  res.json({
+    note: 'Range the LOCAL antenna is currently hearing vessels (all vessels, incl. filtered small craft).',
+    windowMinutes: windowMin,
+    vesselsHeard: recent.length,
+    maxRangeMi: recent.length ? +recent[0].distanceMi.toFixed(1) : null,
+    farthest: recent.slice(0, 12).map(v => ({ name: v.name, mmsi: v.mmsi, mi: +v.distanceMi.toFixed(1) })),
+    buckets: buckets
+  });
+});
+
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {
   const stats = await getShipStats();
@@ -471,6 +495,16 @@ function processAisMessage(message, source) {
     }
   }
 
+  // Range diagnostics — record how far the LOCAL antenna heard this vessel (pre-filter,
+  // so ferries/small craft count too; they still prove the antenna reached that distance).
+  if (source === 'local' && message.MessageType === 'PositionReport' && message.Message && message.Message.PositionReport && meta && meta.MMSI) {
+    const p = message.Message.PositionReport;
+    if (typeof p.Latitude === 'number' && typeof p.Longitude === 'number') {
+      const dMi = haversineKm(p.Latitude, p.Longitude, BRIDGE_LAT, BRIDGE_LON) * 0.621371;
+      localReception[meta.MMSI] = { name: (meta.ShipName || 'Unknown'), mmsi: meta.MMSI, distanceMi: dMi, lat: p.Latitude, lon: p.Longitude, at: Date.now() };
+    }
+  }
+
   // Learn vessel type + length from static messages (drives the size/type filter)
   if (message.MessageType === 'ShipStaticData' && message.Message && message.Message.ShipStaticData && meta && meta.MMSI) {
     const sd = message.Message.ShipStaticData;
@@ -522,6 +556,9 @@ function processAisMessage(message, source) {
 let lastLocalMessageAt = null;
 let localMessagesTotal = 0;
 const localShipNames = {}; // mmsi → name learned from static messages (position reports carry no name)
+// Range diagnostics: how far from the bridge the LOCAL antenna is actually hearing vessels.
+// Tracks every local-source position report (pre-filter, so small craft count too).
+const localReception = {}; // mmsi → { name, mmsi, distanceMi, lat, lon, at }
 
 // Convert one AIS-catcher decoded message (gpsd-style fields) to the AISStream shape
 function aisCatcherToStreamMessage(m) {
