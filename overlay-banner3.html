@@ -117,29 +117,28 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 2
 }
 .ship-chip.approaching { border-color: rgba(0,130,0,0.5);  background: rgba(0,140,0,0.12); }
 .ship-chip.departing   { border-color: rgba(160,80,0,0.45); background: rgba(170,90,0,0.1); }
-.ship-chip.near-bridge { border-color: rgba(200,0,0,0.6);   background: rgba(200,0,0,0.12); animation: chipPulse 1s infinite; }
+/* No pulse here: the chip's opacity animation cascades into the notch and makes
+   the fun fact fade in and out. Kept the red styling, dropped the movement. */
+.ship-chip.near-bridge { border-color: rgba(200,0,0,0.6);   background: rgba(200,0,0,0.12); }
 .ship-chip.passed      { border-color: rgba(0,0,0,0.2);     background: rgba(0,0,0,0.06); opacity: 0.72; }
-@keyframes chipPulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
 
 /* ── FUN-FACT NOTCH — the tab that rises above the bar over the vessel name ── */
 .chip-notch {
     position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-    margin-bottom: -4px;                 /* tuck under the chip so they read as one piece */
+    margin-bottom: 13px;                 /* floats above the chip, not attached to it */
     max-width: 640px;
-    padding: 9px 20px 13px;
-    border-radius: 16px 16px 0 0;
-    background: rgba(17,22,32,.92);
+    padding: 11px 24px;                  /* even padding all round */
+    border-radius: 20px;                 /* fully rounded — floating pill, no cut edge */
+    background: rgba(17,22,32,.93);
     color: #fff;
     font-size: 1.05rem; font-weight: bold; letter-spacing: .2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    box-shadow: 0 -3px 14px rgba(0,0,0,.3);
+    box-shadow: 0 4px 18px rgba(0,0,0,.45);   /* even drop shadow so it lifts off the video */
     pointer-events: none;
 }
-.ship-chip.approaching .chip-notch { background: rgba(12,58,32,.93); }
-.ship-chip.departing   .chip-notch { background: rgba(48,38,16,.92); }
-.ship-chip.near-bridge .chip-notch { background: rgba(120,16,20,.94); animation: notchPulse 1.6s ease-in-out infinite; }
-@keyframes notchPulse { 0%,100% { box-shadow: 0 -3px 14px rgba(0,0,0,.3); }
-                        50%     { box-shadow: 0 -3px 22px rgba(255,60,70,.7); } }
+.ship-chip.approaching .chip-notch { background: rgba(12,58,32,.94); }
+.ship-chip.departing   .chip-notch { background: rgba(48,38,16,.93); }
+.ship-chip.near-bridge .chip-notch { background: rgba(120,16,20,.95); }
 
 .chip-arrow { font-size: 1.6rem; }
 .chip-name  { font-weight: bold; }
