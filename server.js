@@ -196,7 +196,13 @@ app.post('/api/ships/:mmsi/passed', async (req, res) => {
 // freighter just because its details haven't arrived.  ← To block a new
 // ferry by hand, add its MMSI to BLOCKED_MMSI_SERVER below. That's it.
 // ─────────────────────────────────────────────────────────────
-const BLOCKED_MMSI_SERVER = new Set([368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960, 367782080, 338158987, 338926364, 367721890, 367783160]);
+const BLOCKED_MMSI_SERVER = new Set([
+  368165150, 367031360, 367139210, 367349450, 367721870, 367721930, 367721960,
+  367782080, 338158987, 338926364, 367721890, 367783160,
+  // Unnamed local craft — never broadcast a name we could catch, but loiter in the
+  // ferry zone all day at ferry speeds (not freighter behaviour). Unblock if identified.
+  367706323, 368162611,
+]);
 const ALLOWED_MMSI_SERVER = new Set([311050300]); // VICTORY II — big cruise ship, overrides size/type filters
 const MIN_VESSEL_LEN = 50; // metres — below this, a vessel is not a Great Lakes freighter
 const staticInfo = {};     // mmsi -> { type, length }  (learned from static messages)
