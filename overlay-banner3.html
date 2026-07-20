@@ -413,7 +413,8 @@ function startPaging() {
 //  FUN FACTS — curated list from /api/vessel-facts, with a fallback
 //  built from the vessel's own AIS length/type so a notch is never blank.
 // ═══════════════════════════════════════════════════════════════
-var FACTS = {};   // NAME (uppercase) -> fact
+var FACTS = {};    // NAME (uppercase) -> vessel-specific fact
+var GENERAL = [];  // Straits of Mackinac facts, used only as a last resort
 
 function loadFacts() {
     fetch(HTTP_BASE + '/api/vessel-facts')
@@ -422,6 +423,7 @@ function loadFacts() {
             (d && d.vessels ? d.vessels : []).forEach(function (v) {
                 if (v && v.name && v.fact) FACTS[v.name.trim().toUpperCase()] = v.fact;
             });
+            GENERAL = (d && d.general) ? d.general : [];
             lastShipKey = '';   // force a rebuild so notches appear immediately
             render();
         })
@@ -441,14 +443,25 @@ function typeName(t) {
     return '';
 }
 
-function factFor(ship) {
+// Most specific fact wins:  curated vessel fact  ->  its own AIS size/type
+//                           ->  a general straits fact (live vessels only).
+// allowGeneral is false for passed chips so they stay quiet and uncluttered.
+function factFor(ship, allowGeneral) {
     var key = (ship.name || '').trim().toUpperCase();
     if (FACTS[key]) return FACTS[key];
+
     var bits = [];
     if (ship.lengthM && ship.lengthM > 10) bits.push(Math.round(ship.lengthM * 3.28084).toLocaleString() + ' ft');
     var t = typeName(ship.typeCode);
     if (t) bits.push(t);
-    return bits.join('  ·  ');
+    if (bits.length) return bits.join('  ·  ');
+
+    // Pick a general fact deterministically from the MMSI so it stays put
+    // for that vessel instead of changing on every re-render.
+    if (allowGeneral && GENERAL.length) {
+        return GENERAL[Math.abs(parseInt(ship.mmsi, 10) || 0) % GENERAL.length];
+    }
+    return '';
 }
 
 function escHtml(s) {
@@ -473,7 +486,7 @@ function buildChipHTML(ship) {
     var near = ship.distance < 8;
     var cls  = near ? 'near-bridge' : ship.direction === 'Approaching' ? 'approaching' : 'departing';
     var arr  = near ? '&#9889;' : ship.direction === 'Approaching' ? '&#9650;' : '&#9660;';
-    var fact = factFor(ship);
+    var fact = factFor(ship, true);   // live vessel — general fact allowed as a last resort
     return '<div class="ship-chip ' + cls + '" data-mmsi="' + ship.mmsi + '">' +
         (fact ? '<div class="chip-notch">' + escHtml(fact) + '</div>' : '') +
         '<span class="chip-arrow">' + arr + '</span>' +
@@ -502,9 +515,9 @@ function formatClockTime(ts) {
 
 function buildPassedChipHTML(ship) {
     var agoStr = formatAgo(ship.passedTime);
-    // Passed vessels only get a notch if we have a curated fact for them — they
-    // carry no live AIS length/type, so there's no fallback fact to fall back on.
-    var fact = factFor(ship);
+    // Passed vessels: curated facts only (no general-fact filler) so these chips
+    // stay quiet and don't compete with the incoming vessels.
+    var fact = factFor(ship, false);
     return '<div class="ship-chip passed" data-mmsi="' + ship.mmsi + '">' +
         (fact ? '<div class="chip-notch">' + escHtml(fact) + '</div>' : '') +
         '<span class="chip-arrow">&#10003;</span>' +

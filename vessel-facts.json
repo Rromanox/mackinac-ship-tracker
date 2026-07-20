@@ -1,6 +1,6 @@
 {
- "note": "Curated vessel fun facts for the banner notch. Researched + adversarially fact-checked. Keyed by name (case-insensitive). Vessels not listed fall back to an auto-fact from AIS length/type.",
- "generated": "2026-07-19",
+ "note": "Curated vessel fun facts for the banner notch, researched + adversarially fact-checked. `vessels` keyed by name (case-insensitive). `general` = Straits of Mackinac shipping facts used as a last-resort fallback when a vessel has no fact and no AIS size/type.",
+ "generated": "2026-07-20",
  "vessels": [
   {
    "name": "PAUL R TREGURTHA",
@@ -678,6 +678,476 @@
    "built": 1953,
    "lengthFt": 410,
    "source": "ssbadger.com/history/; en.wikipedia.org/wiki/SS_Badger"
+  },
+  {
+   "name": "CGC BUCKTHORN",
+   "fact": "Oldest Coast Guard cutter on the Great Lakes — built 1963",
+   "built": 1963,
+   "lengthFt": 100,
+   "source": "atlanticarea.uscg.mil District 9 BUCKTHORN History; greatlakesnow.org 2020 'Oldest Coast Guard cutter'"
+  },
+  {
+   "name": "KATHY MCKEIL",
+   "fact": "Ex-tanker Algosea — rebuilt as a dry bulk carrier in 2025",
+   "built": 1998,
+   "lengthFt": 588,
+   "source": "mckeil.com/our-fleet/kathy-mckeil/ (1998/2025, 588'4\", dry bulk); vesselfinder.com IMO 9127198 (ex-Algosea to Nov 2023)"
+  },
+  {
+   "name": "ONTARIO VENTURE",
+   "fact": "A 2004 tanker stern joined to a brand-new self-unloading bow",
+   "built": 2004,
+   "lengthFt": 679,
+   "source": "mckeil.com/our-fleet/ontario-venture/ (2004/2025, 679'10\", self-unloading bulk carrier)"
+  },
+  {
+   "name": "PRESQUE ISLE",
+   "fact": "The only 1,000-footer that's a tug and barge locked together",
+   "built": 1973,
+   "lengthFt": 1000,
+   "source": "boatnerd.com/pictures/fleet/prsqisle.htm; gltugs.wordpress.com/presque-isle/ (only integrated tug on the Great Lakes)"
+  },
+  {
+   "name": "R/V LAKE EXPLORER II",
+   "fact": "An EPA floating lab sampling Great Lakes water quality",
+   "source": "EPA Great Lakes monitoring research vessel program; build year 1966 and 90-ft length could NOT be confirmed, so omitted"
+  },
+  {
+   "name": "CSL ASSINIBOINE",
+   "fact": "Built 1977 — a 728-ft self-unloader still working the Lakes",
+   "built": 1977,
+   "lengthFt": 728,
+   "source": "vesselfinder.com IMO 7413218 (1977, 222m = 728ft, self-discharging bulk carrier). Original cited URLs were dead; 2005 forebody-splice claim unverifiable, removed"
+  },
+  {
+   "name": "KAMINISTIQUA",
+   "fact": "Built 1983, sailed as Voyageur Pioneer until 2008",
+   "built": 1983,
+   "lengthFt": 730,
+   "source": "vesselfinder.com IMO 8119285 (1983, 222.54m = 730ft, ex-VOYAGEUR PIONEER pre-2008). Clyde/Scotland build claim unverifiable, removed"
+  },
+  {
+   "name": "CARIBOU ISLE",
+   "fact": "Canadian Coast Guard small buoy tender",
+   "source": "Wikipedia, List of equipment of the Canadian Coast Guard — lists CCGS Caribou Isle as small buoy tender. 2.5-ton crane claim, 75 ft and 1985 could not be verified."
+  },
+  {
+   "name": "WELLAND",
+   "fact": "Russel Brothers tug of 1954 — still docking ships today",
+   "built": 1954,
+   "lengthFt": 86,
+   "source": "gltugs.wordpress.com/welland/ — built 1954 Russel Brothers, Owen Sound; 86 ft; ship-docking at Sarnia since 2022. Original entry said 80 ft and 'built for the Seaway' — it was built for the Dept of Transport, Seaway Authority came later."
+  },
+  {
+   "name": "AMERICAN SPIRIT",
+   "fact": "1,004 feet — launched 1978 as the George A. Stinson",
+   "built": 1978,
+   "lengthFt": 1004,
+   "source": "Wikipedia 'Queen of the Lakes' — George A. Stinson, 1,004 ft, launched 15 July 1978, renamed American Spirit. Confirmed by Wikipedia 'American Steamship Company' fleet list."
+  },
+  {
+   "name": "CAROLINE MCKEE",
+   "fact": "Built 1972 in Louisiana — 5,120 hp of barge-pushing muscle",
+   "built": 1972,
+   "lengthFt": 129,
+   "source": "gltugs.wordpress.com/caroline-mckee/ — built 1972 by Main Iron Works, Houma LA; 5,120 bhp (two ALCO 16-251E); 129 ft (entry said 135 ft — corrected); pushes cement barge Commander for Port City Marine."
+  },
+  {
+   "name": "VICTORY II",
+   "fact": "Great Lakes cruise ship — sailed as Ocean Navigator",
+   "source": "Wikipedia 'American Queen' — AQSC acquired Victory Cruise Lines (Victory I and Victory II) in Jan 2019; reintroduced as Ocean Voyager and Ocean Navigator respectively. The '190 guests' figure and 'visits all five Lakes' claim could not be verified (sister ship Victory I is 202-210), so both were dropped."
+  },
+  {
+   "name": "JOE DERBAS",
+   "fact": "Built 1973 — renamed in 2023 after four earlier names",
+   "built": 1973,
+   "source": "gltugs.wordpress.com/joe-derbas/ — built 1973 by Main Iron Works, Houma LA; prior names National Freedom, Compass Freedom, Mike Marlier, Al Weaver (exactly four); renamed by Illinois & Michigan Oil around 2023."
+  },
+  {
+   "name": "KIOWA",
+   "fact": "Built 1965 as the Will Lewis — still pushing aggregate",
+   "built": 1965,
+   "lengthFt": 76,
+   "source": "gltugs.wordpress.com/kiowa/ — built 1965 as Will Lewis; 76 ft; Hanson Material Service, moves aggregate barges in the Chicago area."
+  },
+  {
+   "name": "OMSTEADER",
+   "fact": "1981 Hurley-built fish tug — 80 ft of classic Lake Erie trawler",
+   "built": 1981,
+   "lengthFt": 80,
+   "source": "https://evercleverwilson.com/fish-tugs-project/"
+  },
+  {
+   "name": "ALBERT",
+   "fact": "Four names since 1979 — now pushes the tank barge Margaret",
+   "built": 1979,
+   "lengthFt": 114,
+   "source": "https://en.wikipedia.org/wiki/Albert_(tugboat)"
+  },
+  {
+   "name": "EVERLAST",
+   "fact": "Built in Japan in 1976 — now pushes asphalt barge Norman McLeod",
+   "built": 1976,
+   "lengthFt": 143,
+   "source": "https://gltugs.wordpress.com/everlast/"
+  },
+  {
+   "name": "EDGAR B SPEER",
+   "fact": "1,004 ft, 1980 — tied for 2nd-longest on the Great Lakes",
+   "built": 1980,
+   "lengthFt": 1004,
+   "source": "Wikipedia MV Edgar B. Speer / Great Lakes 1000-footer length lists"
+  },
+  {
+   "name": "AMERICAN INTEGRITY",
+   "fact": "1,000-footer from 1978 — unloads 10,000 tons per hour",
+   "built": 1978,
+   "lengthFt": 1000,
+   "source": "American Steamship Co. fleet page / Wikipedia MV American Integrity"
+  },
+  {
+   "name": "CSL NIAGARA",
+   "fact": "1972 stern, 1999 bow — half this ship is 27 years newer",
+   "built": 1972,
+   "lengthFt": 740,
+   "source": "Boatnerd CSL Niagara / Shipwatcher News J.W. McGiffin"
+  },
+  {
+   "name": "BAIE ST PAUL",
+   "fact": "First of CSL's Trillium class, 2012 — 740 ft of Seaway max",
+   "built": 2012,
+   "lengthFt": 740,
+   "source": "Wikipedia Baie St. Paul (2012 ship) / Trillium-class freighter / CSL"
+  },
+  {
+   "name": "WHITEFISH BAY",
+   "fact": "Trillium laker, 2013 — swings a 259-foot unloading boom",
+   "built": 2013,
+   "lengthFt": 740,
+   "source": "CSL official vessel page (boom 79.00 m, built 2013)"
+  },
+  {
+   "name": "SPRUCEGLEN",
+   "fact": "1983 Seawaymax bulk carrier — gearless, 34,150 tonnes dwt",
+   "built": 1983,
+   "lengthFt": 729,
+   "source": "CSL official vessel page (222.17 m LOA, 34,150 t dwt, gearless)"
+  },
+  {
+   "name": "ATLANTIC HURON",
+   "fact": "Built 1984, converted to a self-unloader in 1989",
+   "built": 1984,
+   "lengthFt": 736,
+   "source": "CSL Atlantic Huron technical specification sheet (736'6\")"
+  },
+  {
+   "name": "ALGOMA HARVESTER",
+   "fact": "Equinox class, 2014 — 45% more fuel-efficient by design",
+   "built": 2014,
+   "lengthFt": 740,
+   "source": "Wikipedia Equinox-class freighter / Algoma Central fleet page"
+  },
+  {
+   "name": "ALGOMA INTEGRITY",
+   "fact": "2009 handysize bulk carrier — 46,293 tonnes deadweight",
+   "built": 2009,
+   "lengthFt": 647,
+   "source": "Algoma Central official fleet page"
+  },
+  {
+   "name": "ALGOMA MARINER",
+   "fact": "2011 — first new Canadian-flag ship on the Lakes in 25 years",
+   "built": 2011,
+   "lengthFt": 740,
+   "source": "Wikipedia MV Algoma Mariner / Algoma Central fleet page"
+  },
+  {
+   "name": "ALGOMA VICTORY",
+   "fact": "Panamax bulk carrier, 1999 — 66,188 tonnes deadweight",
+   "built": 1999,
+   "lengthFt": 738,
+   "source": "Algoma Central official fleet page"
+  },
+  {
+   "name": "ALGOMA VERITY",
+   "fact": "Ocean-going self-unloader, ex-Alice Oldendorff, built 2000",
+   "built": 2000,
+   "lengthFt": 623,
+   "source": "VesselFinder IMO 9183776 (190m LOA, ex ALICE OLDENDORFF, ex NING RUI YANG); offshore-energy.biz Algoma/Oldendorff acquisition"
+  },
+  {
+   "name": "ALGOTERRA",
+   "fact": "473-ft product tanker — carries refined fuel, not iron ore",
+   "built": 2010,
+   "lengthFt": 473,
+   "source": "algonet.com Algoterra spec sheet (LOA 144.18 m = 473 ft, 16,512 dwt); Marine Log 2019 delivery"
+  },
+  {
+   "name": "JOSEPH H THOMPSON",
+   "fact": "WWII troopship Marine Robin of 1944 — now a lakes barge",
+   "built": 1944,
+   "lengthFt": 714,
+   "source": "Wikipedia SS Marine Robin (1943); greatlakesvesselhistory.com. D-DAY CLAIM REMOVED — Wikipedia notes she is absent from the Normandy Operation Plan and the American Merchant Marine at War invasion list; she was in the Mediterranean for Operation Dragoon."
+  },
+  {
+   "name": "GREAT LAKES TRADER",
+   "fact": "740-ft barge of 2000, built in two halves in Mississippi",
+   "built": 2000,
+   "lengthFt": 740,
+   "source": "vtbarge.com fleet page (740 ft LOA, built 2000); greatlakesships.wordpress.com. SUPERLATIVE REMOVED — two fleetmates are also 740 ft."
+  },
+  {
+   "name": "ERIE TRADER",
+   "fact": "740-ft barge of 2012 — sailed as Lakes Contender till 2017",
+   "built": 2012,
+   "lengthFt": 740,
+   "source": "vtbarge.com fleet page (740 ft, built 2012); greatlakesships.wordpress.com Great Lakes Trader page confirms ex-Lakes Contender"
+  },
+  {
+   "name": "SAGINAW",
+   "fact": "Working since 1953 — launched as the John J. Boland",
+   "built": 1953,
+   "lengthFt": 640,
+   "source": "Wikipedia MV Saginaw — built 1953, launched as John J. Boland, 195.0 m (639 ft 9 in), in active service"
+  },
+  {
+   "name": "LEWIS J KUBER",
+   "fact": "Built 1952 — engine cut out in 2006 to make her a barge",
+   "built": 1952,
+   "lengthFt": 620,
+   "source": "greatlakesships.wordpress.com/sparrows-point — built 1952, engine removed and stern notched at Erie Marine in 2006, renamed Lewis J. Kuber, paired with tug Olive L. Moore"
+  },
+  {
+   "name": "PATHFINDER",
+   "fact": "Steamer J.L. Mauthe of 1952, reborn as a barge in 1998",
+   "built": 1952,
+   "lengthFt": 606,
+   "source": "Wikipedia J. L. Mauthe — built 1952 (input said 1953, CORRECTED), converted to self-unloading barge and renamed Pathfinder in 1998"
+  },
+  {
+   "name": "ST MARYS CHALLENGER",
+   "fact": "Hull dates to 1906 — cut down to a cement barge in 2014",
+   "built": 1906,
+   "lengthFt": 552,
+   "source": "Wikipedia SS St. Marys Challenger; professionalmariner.com 2014. SUPERLATIVE SOFTENED — she was the oldest operating self-propelled laker, a title that lapsed at conversion. NOTE: 552 ft is as-built; Wikipedia gives 527 ft as the shortened barge length."
+  },
+  {
+   "name": "ST MARYS CONQUEST",
+   "fact": "Born 1937 as the oil tanker Red Crown — now hauls cement",
+   "built": 1937,
+   "lengthFt": 437,
+   "source": "greatlakesships.wordpress.com/red-crown — built 1937 by Manitowoc for Standard Oil of Indiana as tanker Red Crown; barge conversion 1987. LENGTH CORRECTED: 465 ft was as-built; 437 ft 6 in after the 1992 rebuild."
+  },
+  {
+   "name": "USCGC MACKINAW",
+   "fact": "Great Lakes heavy icebreaker — replaced the 1944 Mackinaw",
+   "built": 2005,
+   "lengthFt": 240,
+   "source": "https://en.wikipedia.org/wiki/USCGC_Mackinaw_(WLBB-30)"
+  },
+  {
+   "name": "CGC HOLLYHOCK",
+   "fact": "225-ft buoy tender and icebreaker — left the Lakes in 2023",
+   "built": 2003,
+   "lengthFt": 225,
+   "source": "https://en.wikipedia.org/wiki/USCGC_Hollyhock_(WLB-214)"
+  },
+  {
+   "name": "CGC ALDER",
+   "fact": "The last Juniper-class buoy tender ever built — launched 2004",
+   "built": 2004,
+   "lengthFt": 225,
+   "source": "https://en.wikipedia.org/wiki/USCGC_Alder_(WLB-216)"
+  },
+  {
+   "name": "CGC BISCAYNE BAY",
+   "fact": "Homeported at St. Ignace since 1979 — the bridge's own icebreaker",
+   "built": 1979,
+   "lengthFt": 140,
+   "source": "https://en.wikipedia.org/wiki/USCGC_Biscayne_Bay"
+  },
+  {
+   "name": "CGC NEAH BAY",
+   "fact": "Blows air bubbles under her hull to slip through thick ice",
+   "built": 1980,
+   "lengthFt": 140,
+   "source": "https://en.wikipedia.org/wiki/USCGC_Neah_Bay"
+  },
+  {
+   "name": "CGC KATMAI BAY",
+   "fact": "Lead ship of the Bay class — first of nine, Soo-based since 1979",
+   "built": 1978,
+   "lengthFt": 140,
+   "source": "https://en.wikipedia.org/wiki/USCGC_Katmai_Bay"
+  },
+  {
+   "name": "CGC MOBILE BAY",
+   "fact": "Breaks 27 inches of ice at 3 knots — Sturgeon Bay's icebreaker",
+   "built": 1978,
+   "lengthFt": 140,
+   "source": "https://www.atlanticarea.uscg.mil/Our-Organization/District-9/Ninth-District-Staff/Prevention-Division/Cutters/MOBILE-BAY/Characteristics/"
+  },
+  {
+   "name": "CGC BRISTOL BAY",
+   "fact": "Sails with her own 120-ft buoy barge, mated back in 1991",
+   "built": 1978,
+   "lengthFt": 140,
+   "source": "https://en.wikipedia.org/wiki/USCGC_Bristol_Bay"
+  },
+  {
+   "name": "VIKING POLARIS",
+   "fact": "Carries two six-passenger submarines — built 2022 for polar ice",
+   "built": 2022,
+   "lengthFt": 666,
+   "source": "https://www.vard.com/shipbuilding/references/viking-polaris"
+  },
+  {
+   "name": "LE CHAMPLAIN",
+   "fact": "Has 'Blue Eye' — a lounge with windows below the waterline",
+   "built": 2018,
+   "lengthFt": 430,
+   "source": "https://en.wikipedia.org/wiki/Le_Champlain"
+  },
+  {
+   "name": "JOHN D LEITCH",
+   "fact": "Sailing since 1967 — rebuilt in 2002 and renamed John D. Leitch",
+   "built": 1967,
+   "lengthFt": 730,
+   "source": "https://www.boatnerd.com/pictures/fleet/JohnDLeitch.htm"
+  },
+  {
+   "name": "RADCLIFFE R LATIMER",
+   "fact": "Rebuilt in China 2008-09 — sailed as Algobay until renamed 2012",
+   "built": 1978,
+   "lengthFt": 741,
+   "source": "https://en.wikipedia.org/wiki/Radcliffe_R._Latimer — LENGTH CORRECTED: 730ft was the pre-rebuild figure; the 2009 China rebuild took LOA to 741ft 10in. Renamed 4 Oct 2012 for a former Algoma Central board chairman."
+  },
+  {
+   "name": "TIM MCKEIL",
+   "fact": "Built in Japan in 1991 to serve Australian iron ore ports",
+   "built": 1991,
+   "lengthFt": 107.75,
+   "source": "https://gltugs.wordpress.com/tim-mckeil/ — built 1991 by Matsuura Tekko Zosen, Higashino, Japan as Pannawonica I for Cleveland Cliffs-Robe River Iron (Australia). LENGTH CORRECTED 105 -> 107ft 09in. Single-source."
+  },
+  {
+   "name": "JARRETT M",
+   "fact": "Built 1945 in Owen Sound, Ontario as the tug Atomic",
+   "built": 1945,
+   "lengthFt": 82,
+   "source": "https://gltugs.wordpress.com/jarrett-m/ — built 1945 by Russel Brothers Ltd, Owen Sound, as Atomic; still active for McKeil. LENGTH CORRECTED 80.5 -> 82ft. Dropped '80 years on the towline' — it is 81 years as of 2026 and the number goes stale."
+  },
+  {
+   "name": "VICTORIOUS",
+   "fact": "China-built 2009 ATB tug — 5,384 hp pushing heated asphalt",
+   "built": 2009,
+   "lengthFt": 122,
+   "source": "https://gltugs.wordpress.com/leo-a-mcarthur/ — verified: 2009 Penglai Bohai Shipyard, China; 5,384 bhp; 122ft; mated to heated asphalt barge John J. Carrick. CAVEAT: renamed Leo A. McArthur in 2017, so the AIS name is likely a stale static entry on the same hull — the fact remains true of that hull."
+  },
+  {
+   "name": "JOHN J CARRICK",
+   "fact": "Heated asphalt barge — 70,000 barrels, built in China in 2009",
+   "built": 2009,
+   "lengthFt": 410,
+   "source": "https://professionalmariner.com/another-new-atb-for-great-lakes-service-tug-victorious-is-second-unit-for-mcasphalt/ — BUILD YEAR CORRECTED 2008 -> 2009 (Penglai Bohai Shipyard). Length filled in at ~410ft LOA. 70,000 bbl and heated asphalt (to 350F) confirmed."
+  },
+  {
+   "name": "MENOMINEE",
+   "fact": "Built 1952, stretched 72 ft in 1958, cut down to a barge in 2006",
+   "built": 1952,
+   "lengthFt": 616,
+   "source": "https://greatlakesships.wordpress.com/sparrows-point/ — ex-Sparrows Point. Lengthened 72ft at American Shipbuilding South Chicago over winter 1957-58; barged at Erie Marine 2006. LENGTH CORRECTED 698 -> 616ft (barge alone); 728ft only when combined with tug Olive L. Moore."
+  },
+  {
+   "name": "UNDAUNTED",
+   "fact": "WWII Navy tug, then Kings Point training ship, now a barge pusher",
+   "built": 1943,
+   "lengthFt": 143,
+   "source": "https://gltugs.wordpress.com/undaunted/ — BUILD YEAR CORRECTED 1944 -> 1943 (ATA-199, Gulfport Boiler & Welding Works, Port Arthur TX). Decommissioned 1948; to Kings Point 1963 as Kings Pointer; now paired with barge Pere Marquette 41. Year is single-source; Wikipedia ATA-199 page not independently re-checked."
+  },
+  {
+   "name": "PERE MARQUETTE 41",
+   "fact": "Carried a million railcars in 47 years as a carferry",
+   "built": 1941,
+   "lengthFt": 406,
+   "source": "https://en.wikipedia.org/wiki/SS_City_of_Midland_41 — the million-railcars/47-years claim CHECKS OUT (carferry 1941-1988, ~1 million cars, 3.5 million miles). LENGTH CORRECTED 403 -> 406ft. Launched Sept 1940, completed March 1941; barged 1997."
+  },
+  {
+   "name": "G L OSTRANDER",
+   "fact": "Built 1976 in Louisiana as the Andrew Martin — renamed 2004",
+   "built": 1976,
+   "lengthFt": 140.17,
+   "source": "https://gltugs.wordpress.com/g-l-ostrander/ — built 1976 by Halter Marine, Pierre Part LA; ex-Andrew Martin; renamed 2004; pushes cement barge Integrity. REMOVED 'named for a Lafarge executive' — the source does NOT state the namesake, so that was unverified. Length 140ft 02in."
+  },
+  {
+   "name": "INTEGRITY",
+   "fact": "Cement barge built 1996 — 17,557 tons across eight holds",
+   "built": 1996,
+   "lengthFt": 460,
+   "source": "https://greatlakesships.wordpress.com/integrity/ — every element confirmed exactly: 1996, 460ft barge alone (544ft with tug), 17,557 tons, 8 holds, self-unloading cement carrier. No changes needed."
+  },
+  {
+   "name": "JOYCE L VANENKEVORT",
+   "fact": "Just 135 ft of tug — pushes the 740-ft barge Great Lakes Trader",
+   "built": 1998,
+   "lengthFt": 135,
+   "source": "VERIFIED. gltugs.wordpress.com/joyce-l-vanenkevort/ gives LOA 135'04\", built 1998 by Bay Shipbuilding; Great Lakes Trader barge confirmed at 740 ft LOA (vtbarge.com/vtbourfleet, greatlakesships.wordpress.com/great-lakes-trader/)."
+  },
+  {
+   "name": "GREAT REPUBLIC",
+   "fact": "Twin props and eight rudders — built to twist up the Cuyahoga",
+   "built": 1981,
+   "lengthFt": 635,
+   "source": "CORRECTED — original said 'four rudders'; boatnerd.com/vessel-info/great-lakes-fleet/great-republic/ documents an EIGHT-rudder system (two aft plus two flanking rudders per Kort-nozzled propeller). Length 634'10\", launched 1981 at Bay Shipbuilding, purpose-built for the Cuyahoga River."
+  },
+  {
+   "name": "KEN BOOTHE SR",
+   "fact": "135-ft, 10,700-hp tug built at Erie, PA to push a 740-ft barge",
+   "built": 2012,
+   "lengthFt": 135,
+   "source": "CORRECTED — the original superlative was mis-attributed: erieshipnews.blogspot.com applies 'first new bulk cargo vessel built in Erie in almost forty years' to the BARGE Lakes Contender, not to this tug. Replaced with tug specs verified in the same article (135 ft, 10,700 hp, Donjon Shipbuilding, Erie PA; christened 4/10/2012, so built year set to 2012 not 2011). CAUTION: this hull was reportedly renamed CLYDE S. VANENKEVORT after the VanEnkevort acquisition, so an AIS contact under the old name may be stale or a different vessel."
+  },
+  {
+   "name": "LAKES CONTENDER",
+   "fact": "740-ft self-unloading barge with no engines of its own",
+   "built": 2012,
+   "lengthFt": 740,
+   "source": "CORRECTED — dropped the disputed tonnage: erieshipnews.blogspot.com says 34,000 tons while greatlakesships.wordpress.com/lakes-contender/ says 38,516 tons, so no figure is safe to broadcast. The 740-ft length, 2012 build at Donjon Shipbuilding (Erie, PA) and the engineless articulated-barge design (Hydraconn ATB connection, pushed by a tug) are confirmed by both sources."
+  },
+  {
+   "name": "MARK W BARKER",
+   "fact": "First new U.S.-built Great Lakes freighter since 1983",
+   "built": 2022,
+   "lengthFt": 639,
+   "source": "Interlake Steamship / Wikipedia / Professional Mariner"
   }
+ ],
+ "general": [
+  "Ships get 155 feet of clearance under the bridge's center span",
+  "The navigation channel under the bridge is 3,000 feet wide",
+  "Clearance drops to 135 feet at the navigation channel's edges",
+  "The only natural water link from Lake Michigan to Lake Huron",
+  "The straits reach 295 feet deep at their deepest point",
+  "Soo Locks close Jan 15 and reopen March 25 every year",
+  "Over 70 million tons of cargo pass the Soo Locks each year",
+  "Typical cargo: iron ore, limestone, coal, cement and grain",
+  "Minnesota iron ore passes here bound for Gary, Indiana steel",
+  "Seaway locks cap ships at 740 feet — 1,000-footers never leave",
+  "The Poe Lock, 1,200 by 110 feet, is the only one that fits them",
+  "Icebreaker Mackinaw keeps a winter lane open through the ice",
+  "The Paul R. Tregurtha is the longest laker at 1,013.5 feet",
+  "The Tregurtha can unload 10,000 tons of iron ore per hour",
+  "Self-unloading booms empty these ships with no shore cranes",
+  "Pilothouse forward, engines aft — a look set by the 1869 R.J. Hackett",
+  "Deck hatches sit 24 feet apart, matching 1800s ore dock chutes",
+  "Even the biggest lakers top out around 15 knots",
+  "The bridge towers rise 552 feet above the water",
+  "The bridge's tower foundations reach 210 feet below the water",
+  "Longest suspension bridge between anchorages in the Americas",
+  "Currents here reverse direction about once every 1.5 days",
+  "Wind can push 80,000 cubic meters of water per second through",
+  "The freighter Cedarville sank here in 1965 fog, killing 10",
+  "Icebreaker Mackinaw, 240 feet long, is based in Cheboygan",
+  "Mackinaw cuts 32 inches of ice at 3 knots, 42 by riding on top",
+  "Great Lakes ice cover hit a record 94.7% back in 1979"
  ]
 }
