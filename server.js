@@ -122,6 +122,51 @@ app.get('/api/vessel-facts', (req, res) => {
   }
 });
 
+// Which vessels have shown up but still have NO curated fun fact?
+// Self-maintaining gap list — check this periodically and research the top entries.
+// Confirmed bridge crossings are ranked first: those are guaranteed straits traffic.
+app.get('/api/missing-facts', async (req, res) => {
+  try {
+    const facts = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'vessel-facts.json'), 'utf8'));
+    const have = new Set((facts.vessels || []).map(v => String(v.name).trim().toUpperCase()));
+    const skip = n => !n || n === 'Unknown' || /^CG\d/i.test(n) || /^DIVE BOAT/i.test(n);
+
+    // 1) vessels that actually crossed the bridge (highest value)
+    let crossed = [];
+    if (passingsCollection) {
+      const rows = await passingsCollection.find({}).sort({ passedTime: -1 }).limit(400).toArray();
+      const seen = new Set();
+      rows.forEach(r => {
+        const n = (r.name || '').trim();
+        if (skip(n) || seen.has(n.toUpperCase()) || have.has(n.toUpperCase())) return;
+        seen.add(n.toUpperCase());
+        crossed.push({ name: n, lastPassed: r.passedTime });
+      });
+    }
+
+    // 2) heard by the local antenna recently but never given a fact
+    const heard = [];
+    const seenH = new Set();
+    Object.values(localReception)
+      .sort((a, b) => b.at - a.at)
+      .forEach(v => {
+        const n = (v.name || '').trim();
+        if (skip(n) || seenH.has(n.toUpperCase()) || have.has(n.toUpperCase())) return;
+        seenH.add(n.toUpperCase());
+        heard.push({ name: n, milesFromBridge: +v.distanceMi.toFixed(1) });
+      });
+
+    res.json({
+      note: 'Vessels seen at the bridge with no curated fun fact yet. Research these next.',
+      curatedFactCount: have.size,
+      crossedBridgeNeedingFacts: crossed.slice(0, 40),
+      heardRecentlyNeedingFacts: heard.slice(0, 40),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Local antenna range diagnostics — how far out the receiver is hearing vessels.
 app.get('/api/local-range', (req, res) => {
   const now = Date.now();
