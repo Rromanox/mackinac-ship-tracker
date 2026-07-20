@@ -1,4 +1,683 @@
 {
-  "note": "Curated fun facts shown in the banner notch. Keyed by vessel name (matched case-insensitively). Vessels not listed here fall back to an auto-generated fact from AIS length/type.",
-  "vessels": []
+ "note": "Curated vessel fun facts for the banner notch. Researched + adversarially fact-checked. Keyed by name (case-insensitive). Vessels not listed fall back to an auto-fact from AIS length/type.",
+ "generated": "2026-07-19",
+ "vessels": [
+  {
+   "name": "PAUL R TREGURTHA",
+   "fact": "Queen of the Lakes — longest ship on the Great Lakes, 1,013 ft",
+   "built": 1981,
+   "lengthFt": 1013,
+   "source": "interlake-steamship.com (1013.5 ft, Queen of the Lakes since 1981)"
+  },
+  {
+   "name": "VIKING OCTANTIS",
+   "fact": "Largest cruise ship sailing the Great Lakes — 665 ft",
+   "built": 2021,
+   "lengthFt": 665,
+   "source": "seatrade-cruise.com / urbanmilwaukee.com 2025 (polar-rating claim dropped, unverified; sources vary 665-673 ft)"
+  },
+  {
+   "name": "LEO A.MCARTHUR",
+   "fact": "Tug that pushes a heated liquid-asphalt barge year-round",
+   "built": 2009,
+   "source": "gltugs.wordpress.com/leo-a-mcarthur (built 2009 as Victorious, renamed 2017; mated to heated asphalt barge John J. Carrick, year-round). Length 122 ft not confirmed — zeroed."
+  },
+  {
+   "name": "FLORENCE SPIRIT",
+   "fact": "Collided head-on in the Welland Canal in 2020 — both survived",
+   "built": 2004,
+   "source": "TSB Canada report M20C0188 (11 July 2020 collision with Alanis). Corrected: it was an actual head-on collision, not a 'near' miss; 'went viral' unverified and removed. Length 447 ft not confirmed — zeroed."
+  },
+  {
+   "name": "ALGOMA NIAGARA",
+   "fact": "First Equinox-class self-unloader built for Algoma",
+   "built": 2017,
+   "source": "drybulkmagazine.com / businesswire.com 2017 (first Equinox-class self-unloader; earlier Equinox ships were gearless). Length 740 ft not confirmed — zeroed."
+  },
+  {
+   "name": "OLIVE L. MOORE",
+   "fact": "Built 1928 — still pushing barges after 97 years",
+   "built": 1928,
+   "source": "boatnerd.com / masoncountypress.com May 2025 (launched 16 Apr 1928 as John F. Cushing; confirmed still working with barge Menominee)"
+  },
+  {
+   "name": "HON JAMES L OBERSTAR",
+   "fact": "Built 1959, stretched 96 ft in 1972 — now 806 ft long",
+   "built": 1959,
+   "lengthFt": 806,
+   "source": "boatnerd.com / interlake-steamship.com (built 1959 as Shenango II, lengthened 96 ft at Fraser Shipyards 1972, now 806.0 ft)"
+  },
+  {
+   "name": "STERLING ENERGY",
+   "fact": "A floating gas station — refuels other ships in port",
+   "built": 2002,
+   "lengthFt": 210,
+   "source": "sterlingfuels.ca / seawayreview.com / vesselfinder IMO 9277058 (bunkering tanker, built 2002, 64 m = 210 ft; corrected from 213 ft). Upgraded from medium to high."
+  },
+  {
+   "name": "ALGOMA DISCOVERY",
+   "fact": "Gearless bulk carrier built 1987 — no self-unloading boom",
+   "built": 1987,
+   "source": "Wikipedia Algoma Central fleet list (1987, gearless bulk carrier, in service). Croatian-build claim could NOT be verified and was removed. Length 729 ft not confirmed — zeroed."
+  },
+  {
+   "name": "EEMSBORG",
+   "fact": "Dutch-flagged 'salty' — an ocean ship visiting the Lakes",
+   "built": 2009,
+   "lengthFt": 452,
+   "source": "vesselfinder IMO 9423748 (general cargo ship, built 2009, Netherlands flag, 137.84 m = 452 ft; corrected from 453 ft)"
+  },
+  {
+   "name": "EDWIN H. GOTT",
+   "fact": "1,004 ft — longest self-unloading boom on the Great Lakes",
+   "built": 1979,
+   "lengthFt": 1004,
+   "source": "en.wikipedia.org/wiki/MV_Edwin_H._Gott"
+  },
+  {
+   "name": "FRONTENAC",
+   "fact": "Helped search for the Edmund Fitzgerald in 1975",
+   "built": 1968,
+   "lengthFt": 730,
+   "source": "greatlakesships.wordpress.com/frontenac/ · cslships.com/vessel/frontenac"
+  },
+  {
+   "name": "LEE A. TREGURTHA",
+   "fact": "WWII Navy oiler USS Chiwawa — earned two battle stars",
+   "built": 1942,
+   "lengthFt": 826,
+   "source": "interlake-steamship.com · en.wikipedia.org/wiki/USS_Chiwawa"
+  },
+  {
+   "name": "PERELIK",
+   "fact": "Bulgarian-run saltie named for the Rhodopes' highest peak",
+   "built": 2022,
+   "lengthFt": 623,
+   "source": "vesselfinder.com IMO 9905722 · en.wikipedia.org/wiki/Golyam_Perelik"
+  },
+  {
+   "name": "SEA EAGLE II",
+   "fact": "7,200 hp pusher tug coupled into a cement barge as one unit",
+   "built": 1979,
+   "lengthFt": 132,
+   "source": "gltugs.wordpress.com/sea-eagle-ii/"
+  },
+  {
+   "name": "STORMONT",
+   "fact": "Built 1953 — still pushing barges after 70+ years",
+   "built": 1953,
+   "source": "mckeil.com/our-fleet/stormont/ · gltugs.wordpress.com/stormont/"
+  },
+  {
+   "name": "MACCOA",
+   "fact": "Canfornav names its whole fleet after ducks — this one too",
+   "built": 2009,
+   "lengthFt": 607,
+   "source": "canfornav.com/fleet · vesselfinder.com IMO 9413913"
+  },
+  {
+   "name": "OAKGLEN",
+   "fact": "730 ft Seaway-max bulker in CSL's 'glen' fleet since 1980",
+   "built": 1980,
+   "lengthFt": 730,
+   "source": "cslships.com/vessel/oakglen"
+  },
+  {
+   "name": "SAMUEL RISLEY",
+   "fact": "Icebreaker that can chew through 2 ft of Great Lakes ice",
+   "built": 1985,
+   "lengthFt": 229,
+   "source": "en.wikipedia.org/wiki/CCGS_Samuel_Risley"
+  },
+  {
+   "name": "IVER BRIGHT",
+   "fact": "Dutch-flag bitumen tanker hauling hot liquid asphalt",
+   "built": 2012,
+   "lengthFt": 366,
+   "source": "vesselfinder.com IMO 9616759"
+  },
+  {
+   "name": "MCASPHALT ADVANTAGE",
+   "fact": "New in 2024 — keeps its cargo heated so it stays liquid",
+   "built": 2024,
+   "source": "shipfax.blogspot.com/2025/09/mcasphalt-advantage-first-timer.html"
+  },
+  {
+   "name": "ALGOMA ENDEAVOUR",
+   "fact": "Delivered 2025 — one of Algoma's newest Seaway-max lakers",
+   "built": 2024,
+   "source": "algonet.com/ship/algoma-endeavour/"
+  },
+  {
+   "name": "FEDERAL SAKURA",
+   "fact": "Japanese-built 2005 saltie sailing for Montreal's Fednav",
+   "built": 2005,
+   "lengthFt": 625,
+   "source": "vesselfinder.com IMO 9288291 — built Shin Kurushima Onishi, Japan; owner Fednav, Montreal; LOA 190.44 m"
+  },
+  {
+   "name": "JAMES J. VERSLUIS",
+   "fact": "Chicago's ice-crushing tug — smashing lake ice since 1957",
+   "built": 1957,
+   "lengthFt": 90,
+   "source": "en.wikipedia.org/wiki/James_J._Versluis; WBEZ Chicago — 90 ft, built 1957 Sturgeon Bay, breaks 18 in of ice"
+  },
+  {
+   "name": "MUNTGRACHT",
+   "fact": "Spliethoff cargo ship · 3 cranes, biggest lifting 80 tons",
+   "built": 2009,
+   "lengthFt": 466,
+   "source": "scheepvaartwest.be IMO 9571545 — cranes 80/65/50 t, LOA 142.1 m. CORRECTED: built 2009 at Zhoushan, China, not 2012"
+  },
+  {
+   "name": "DETROIT PRINCESS",
+   "fact": "Ex-casino boat from 1993 Louisiana · carries 1,900 guests",
+   "built": 1993,
+   "lengthFt": 222,
+   "source": "detroitprincess.com/page-about-1.php. CORRECTED: NOT a paddlewheeler (two Cummins diesels); deck count not supported by official source"
+  },
+  {
+   "name": "J.S.ST.JOHN",
+   "fact": "Built 1945 as US Navy oiler YO-178 · now a sand dredger",
+   "built": 1945,
+   "lengthFt": 167,
+   "source": "greatlakes.bgsu.edu/item/441100 — built 1945 Pensacola FL as USS YO-178, converted to sandsucker 1951, renamed J.S. St. John 1967; 51 m"
+  },
+  {
+   "name": "BURNS HARBOR",
+   "fact": "1,000 ft long · hauls 80,900 tons of coal or iron ore",
+   "built": 1980,
+   "lengthFt": 1000,
+   "source": "en.wikipedia.org/wiki/MV_Burns_Harbor. CORRECTED: 80,900 dwt at midsummer draft; the '78,850 tons in seven holds' claim was not supported"
+  },
+  {
+   "name": "INDIANA HARBOR",
+   "fact": "1,000-ft self-unloader built 1979 in Sturgeon Bay, Wisconsin",
+   "built": 1979,
+   "lengthFt": 1000,
+   "source": "en.wikipedia.org/wiki/MV_Indiana_Harbor. CORRECTED: 250-ft swinging boom claim unverifiable; replaced with confirmed build details"
+  },
+  {
+   "name": "JOHN J. BOLAND",
+   "fact": "Sailed as Charles E. Wilson until 2000 · 680 ft self-unloader",
+   "built": 1973,
+   "lengthFt": 680,
+   "source": "en.wikipedia.org/wiki/MV_John_J._Boland — launched Mar 1973 as Charles E. Wilson, renamed Jan 2000; 680 ft; American Steamship Co"
+  },
+  {
+   "name": "ROBERT S. PIERSON",
+   "fact": "Sailed as Wolverine for 34 years · renamed Pierson in 2008",
+   "built": 1973,
+   "lengthFt": 630,
+   "source": "en.wikipedia.org/wiki/MV_Robert_S._Pierson. CORRECTED: launched Sept 1973 (maiden voyage 1974); 630 ft, not unknown"
+  },
+  {
+   "name": "HERBERT C JACKSON",
+   "fact": "Steam-powered for 57 years — went diesel in winter 2015-16",
+   "built": 1959,
+   "lengthFt": 690,
+   "source": "en.wikipedia.org/wiki/SS_Alpena (documents the winter 2015-16 conversion of Herbert C. Jackson and John G. Munson to diesel); VesselFinder (built 1959). 'Interlake's last steamer' could not be confirmed and was dropped."
+  },
+  {
+   "name": "GARDNO",
+   "fact": "Built 2018 — 656 ft carrying 36,600 tons of cargo",
+   "built": 2018,
+   "lengthFt": 656,
+   "source": "VesselFinder IMO 9767704 (200 m LOA, 36,643 DWT, built 2018). Polsteam ownership and the '3 paying passengers' claim could NOT be verified — Polsteam's Wikipedia fleet list does not include Gardno and the flag is Bahamas; both dropped."
+  },
+  {
+   "name": "ALGOMA EQUINOX",
+   "fact": "Lead ship of the Equinox class — 740 ft, built 2013 in China",
+   "built": 2013,
+   "lengthFt": 740,
+   "source": "en.wikipedia.org/wiki/Algoma_Equinox — confirms lead ship of her class, 225.6 m (740 ft 2 in), completed 25 Sep 2013 at Nantong Mingde Heavy Industries, China"
+  },
+  {
+   "name": "ALGOMA COMPASS",
+   "fact": "First ship built in Toledo since 1959 — sailing since 1973",
+   "built": 1973,
+   "lengthFt": 680,
+   "source": "en.wikipedia.org/wiki/Algoma_Compass — explicitly states as Roger M. Kyes she 'marked the first ship to be constructed in Toledo since 1959'; launched 28 Mar 1973, completed 1 Aug 1973, 207.3 m"
+  },
+  {
+   "name": "LAKE EXPRESS",
+   "fact": "First high-speed car ferry on the Great Lakes — 192 ft, 2004",
+   "built": 2004,
+   "lengthFt": 192,
+   "source": "en.wikipedia.org/wiki/HSC_Lake_Express — CORRECTED: it was only 'one of the first' high-speed auto ferries built in the US, but 'the first high-speed auto ferry to see service on the Great Lakes'. 191 ft 7 in, Austal USA, service began 1 Jun 2004."
+  },
+  {
+   "name": "MANITOULIN",
+   "fact": "Lower Lakes self-unloader — 1991 hull, 663 ft, 27,550 tons",
+   "built": 1991,
+   "lengthFt": 663,
+   "source": "VesselFinder (self-discharging bulk carrier, built 1991, 202 m, 27,550 DWT); en.wikipedia.org/wiki/Lower_Lakes_Towing (fleet member). The 'new bow welded to an old tanker's stern in 2015' story could NOT be sourced from any reachable reference and was dropped."
+  },
+  {
+   "name": "ALGOMA INNOVATOR",
+   "fact": "Algoma River Class self-unloader, 2018 — 24,454 DWT",
+   "built": 2018,
+   "source": "algonet.com/fleet/algoma-innovator/ — CORRECTED build year to 2018 (Algoma lists built and delivered 2018, not 2017); River Class, 24,454 MT DWT, Canadian flag. Forward-mounted boom claim and 650 ft length could not be verified and were dropped."
+  },
+  {
+   "name": "USEPA LAKE GUARDIAN",
+   "fact": "Largest research vessel on the Great Lakes — 180 ft floating lab",
+   "lengthFt": 180,
+   "source": "epa.gov/great-lakes-monitoring/lake-guardian — EPA states it is 'the largest research vessel operating on the Great Lakes', 180 feet, 959 gross tons. Build year not stated on the page; left as unknown."
+  },
+  {
+   "name": "STRANDJA",
+   "fact": "Ex-Federal Yangtze — 610 ft saltie built in 2010",
+   "built": 2010,
+   "lengthFt": 610,
+   "source": "VesselFinder IMO 9564140 (bulk carrier, built 2010, 186 m, Malta flag, ex-FEDERAL YANGTZE, ex-EASTWIND YORK). Bulgarian operator and mountain-range naming could NOT be verified (Navibulgar site unreachable) and were dropped."
+  },
+  {
+   "name": "DIRK S. VANENKEVORT",
+   "fact": "Built from leftover steel of the Joseph H. Thompson conversion",
+   "source": "en.wikipedia.org/wiki/SS_Marine_Robin — CORRECTED: the tug was 'constructed from leftover steel from the barge conversion', NOT from the cut-off stern; renamed from Joseph H. Thompson Jr. during a Donjon (Erie, PA) refit. Build year 1990 and 125 ft length could not be confirmed and were zeroed."
+  },
+  {
+   "name": "SAM LAUD",
+   "fact": "Bay Shipbuilding 1975 — hauls 24,300 tons a trip",
+   "built": 1975,
+   "lengthFt": 635,
+   "source": "en.wikipedia.org/wiki/MV_Sam_Laud — CORRECTED: launched 1975 and in service April 1975, not 1974; the 'side-launched' detail is not stated by any source found. 634 ft 10 in, Bay Shipbuilding Sturgeon Bay, 24,300 tons at midsummer draft (confirmed)."
+  },
+  {
+   "name": "FEDERAL FRASER",
+   "fact": "Built 2021 — 656 ft, 34,492 tons deadweight",
+   "built": 2021,
+   "lengthFt": 656,
+   "source": "VesselFinder IMO 9866744 (bulk carrier, built 2021, 199.98 m, 34,492 DWT, Marshall Islands flag). Japanese shipyard (Oshima) could not be independently confirmed — fednav.com returned 403 — so that detail was dropped."
+  },
+  {
+   "name": "PATRICIAHOEY",
+   "fact": "Built 1949 · 2,000 hp tug still working the Detroit River",
+   "built": 1949,
+   "source": "tugboatinformation.com/tug.cfm?id=5909, gltugs.wordpress.com/patricia-hoey/"
+  },
+  {
+   "name": "STENHEIM",
+   "fact": "Portuguese-flagged chemical tanker, 472 ft, built 2003",
+   "built": 2003,
+   "lengthFt": 472,
+   "source": "vesselfinder.com/vessels/details/9261114 (flag Portugal/Madeira, 144 m, 2003)"
+  },
+  {
+   "name": "CITY OF ALGONAC",
+   "fact": "Crosses the US–Canada border in about 10 minutes",
+   "built": 1990,
+   "source": "en.wikipedia.org/wiki/Walpole–Algonac_Ferry (built 1990, 8-10 min crossing)"
+  },
+  {
+   "name": "GL OSTRANDER",
+   "fact": "Tug + barge Integrity = 544-ft cement-hauling combo",
+   "built": 1976,
+   "lengthFt": 140,
+   "source": "gltugs.wordpress.com/g-l-ostrander/, tugboatinformation.com/tug.cfm?id=1430"
+  },
+  {
+   "name": "RT HON PAUL J MARTIN",
+   "fact": "Built 1973 as H.M. Griffith · 740-ft self-unloader",
+   "built": 1973,
+   "lengthFt": 740,
+   "source": "cslships.com/vessel/rt-hon-paul-j-martin/ (225.50 m = 740 ft; 738 was wrong), greatlakesships.wordpress.com/h-m-griffith/"
+  },
+  {
+   "name": "MESABI MINER",
+   "fact": "1,004 ft — built in three pieces at two shipyards",
+   "built": 1977,
+   "lengthFt": 1004,
+   "source": "interlake-steamship.com, doorcountypulse.com (midbody Toledo, assembled Lorain, American Shipbuilding)"
+  },
+  {
+   "name": "EVANS SPIRIT",
+   "fact": "Dutch-built 2007 · designed for shallow-draft Lakes ports",
+   "built": 2007,
+   "lengthFt": 459,
+   "source": "mckeil.com/our-fleet/evans-spirit/ (bulk/breakbulk, shallow draft — aluminum-slab claim NOT verifiable, removed); built Niestern Sander, Delfzijl NL"
+  },
+  {
+   "name": "BAIE COMEAU",
+   "fact": "Built in China, 2013 — sailed across the Pacific to the Lakes",
+   "built": 2013,
+   "lengthFt": 740,
+   "source": "boatnerd.com/pictures/fleet/BaieComeau.htm (Chengxi Shipyard, delivered 20 Jun 2013, departed China 30 Jun)"
+  },
+  {
+   "name": "ALGOCANADA",
+   "fact": "Built 2008 · 426-ft tanker hauling petroleum on the Lakes",
+   "built": 2008,
+   "lengthFt": 426,
+   "source": "vesselfinder.com/vessels/details/9378591 (129.84 m = 426 ft, 2008, Canadian-flag chem/oil products tanker)"
+  },
+  {
+   "name": "WALTER J MCCARTHY",
+   "fact": "First 1,000-footer built at Bay Shipbuilding, 1977",
+   "built": 1977,
+   "lengthFt": 1000,
+   "source": "doorcountypulse.com (superlative explicitly confirmed), en.wikipedia.org/wiki/MV_Walter_J._McCarthy_Jr."
+  },
+  {
+   "name": "THUNDER BAY",
+   "fact": "CSL Trillium-class laker — built in China, delivered 2013",
+   "built": 2013,
+   "lengthFt": 740,
+   "source": "en.wikipedia.org/wiki/Trillium-class_freighter (Chengxi Shipyard, Jiangyin; delivered 16 May 2013), cslships.com/vessel/thunder-bay/ (225.50 m)"
+  },
+  {
+   "name": "MARK W. BARKER",
+   "fact": "First new US-built laker in nearly 40 years · 639 ft",
+   "built": 2022,
+   "lengthFt": 639,
+   "source": "en.wikipedia.org/wiki/MV_Mark_W._Barker; interlake-steamship.com — first US-flagged Great Lakes bulk carrier built since 1983"
+  },
+  {
+   "name": "KAYE E BARKER",
+   "fact": "1952 · first lake freighter built entirely in drydock",
+   "built": 1952,
+   "lengthFt": 767,
+   "source": "en.wikipedia.org/wiki/MV_Kaye_E._Barker — built as SS Edward B. Greene, first laker built from keel up in drydock (Toledo)"
+  },
+  {
+   "name": "G3 MARQUIS",
+   "fact": "740-ft Equinox-class grain hauler, built 2014",
+   "built": 2014,
+   "lengthFt": 740,
+   "source": "boatnerd.com/pictures/fleet/G3Marquis.htm; en.wikipedia.org/wiki/Equinox-class_freighter — launched 8 Jul 2014, 740x78"
+  },
+  {
+   "name": "JOSEPH L BLOCK",
+   "fact": "1976 · first diesel ship in the Inland Steel fleet",
+   "built": 1976,
+   "lengthFt": 728,
+   "source": "greatlakesvesselhistory.com; greatlakesships.wordpress.com/joseph-l-block — christened 29 Jun 1976, first diesel in Inland Steel fleet"
+  },
+  {
+   "name": "JOHN G MUNSON",
+   "fact": "World's largest self-unloader when built in 1952",
+   "built": 1952,
+   "lengthFt": 768,
+   "source": "greatlakesvesselhistory.com Munson John G. 2 — explicitly the largest self-unloader in the world when built; lengthened 1976"
+  },
+  {
+   "name": "EXEBORG",
+   "fact": "Dutch saltwater trader — built 2013 · 474 ft",
+   "built": 2013,
+   "lengthFt": 474,
+   "source": "vesselfinder.com IMO 9650482 — 144.56 m (474 ft), Netherlands flag, general cargo, built 2013. Length corrected from 476 to 474."
+  },
+  {
+   "name": "PETIT FORTE",
+   "fact": "Canadian pusher tug working the lakes since 1969",
+   "built": 1969,
+   "source": "vesselfinder.com IMO 6826119 — pusher tug, built 1969, Canada flag. CORRECTED: original claim that it pushes the barge 'St. Marys Cement' could NOT be verified and was removed."
+  },
+  {
+   "name": "ALPENA",
+   "fact": "Built 1942 — oldest active freighter on the Great Lakes",
+   "built": 1942,
+   "lengthFt": 519,
+   "source": "en.wikipedia.org/wiki/SS_Alpena_(1942); glc.org/dailynews/20250829-oldest-freighter — 519 ft after 1989 shortening"
+  },
+  {
+   "name": "CSL TADOUSSAC",
+   "fact": "Last CSL laker built with the classic bow bridge",
+   "built": 1969,
+   "lengthFt": 730,
+   "source": "en.wikipedia.org/wiki/CSL_Tadoussac — 'the last freighter built for CSL in the traditional two superstructure design, which puts her bridge up in the ship's bow'"
+  },
+  {
+   "name": "AMERICAN MARINER",
+   "fact": "1980 self-unloader with a 250-ft stern boom · 730 ft",
+   "built": 1980,
+   "lengthFt": 730,
+   "source": "greatlakesships.wordpress.com/american-mariner — 730 ft LOA, 1980, aft-mounted 250-ft boom. CORRECTED: the '6,000 tons an hour' rate is NOT published for this vessel (that figure belongs to Joseph L. Block) and was removed."
+  },
+  {
+   "name": "AMERICAN PATRIOT",
+   "fact": "New in 2025 — sails the first all-U.S. Great Lakes cruises",
+   "built": 2025,
+   "source": "americancruiselines.com press release; travelweekly.com — 'first all-U.S.' rests on operator's own claim, echoed by trade press; length not verified"
+  },
+  {
+   "name": "CSL ST-LAURENT",
+   "fact": "Trillium Class laker built in China — 740 ft long",
+   "built": 2014,
+   "lengthFt": 740,
+   "source": "Wikipedia Trillium-class freighter (225.5 m / 739 ft 10 in, Yangfan Shipyard, Zhoushan, China, 2014); cslships.com spec sheet"
+  },
+  {
+   "name": "CSL LAURENTIEN",
+   "fact": "Sailing since 1977 — rebuilt as a self-unloader in 2001",
+   "built": 1977,
+   "lengthFt": 740,
+   "source": "cslships.com/vessel/csl-laurentien — built 1977, converted to self-unloader 2001, LOA 225.48 m, ex-Louis R. Desmarais. NOTE: original 'whole new forebody' wording dropped — CSL documents a self-unloader conversion, not a forebody swap"
+  },
+  {
+   "name": "DOROTHY ANN",
+   "fact": "124-ft Z-drive tug — pushing barge Pathfinder since 1999",
+   "built": 1999,
+   "lengthFt": 124,
+   "source": "vesselfinder.com (pusher tug, 1999, 38 m = 124 ft); Wikipedia Interlake Steamship Company + J. L. Mauthe. CORRECTED: barge Pathfinder is 647 ft, not 700 ft, and the pair is an ARTICULATED tug-barge, not a rigid unit — both errors removed"
+  },
+  {
+   "name": "CALUMET",
+   "fact": "Built 1973 as William R. Roesch — still hauling at 630 ft",
+   "built": 1973,
+   "lengthFt": 630,
+   "source": "Wikipedia Calumet (1973 ship) — 630 ft, built 1973 by American Ship Building, Lorain OH, ex-William R. Roesch, still in service"
+  },
+  {
+   "name": "FEDERAL BISCAY",
+   "fact": "Ocean-going salty — 656 ft, 34,500 tons deadweight",
+   "built": 2015,
+   "lengthFt": 656,
+   "source": "vesselfinder.com IMO 9697856 — 2015, 199.98 m (656 ft), 34,564 DWT. NOTE: 'built in Japan' removed, could not be confirmed"
+  },
+  {
+   "name": "AMERICAN CENTURY",
+   "fact": "A 1,000-footer — carries 80,900 tons of ore or coal",
+   "built": 1981,
+   "lengthFt": 1000,
+   "source": "Wikipedia MV American Century — 1,000 ft, built 1981 Bay Shipbuilding, 80,900 tons at midsummer draft, ex-Columbia Star"
+  },
+  {
+   "name": "KAREN ANDRIE",
+   "fact": "Pusher tug working the Lakes since 1965 — 112 ft",
+   "built": 1965,
+   "lengthFt": 112,
+   "source": "vesselfinder.com — pusher tug, built 1965, 34 m (112 ft), 458 GT, in service. CORRECTED: 'Texas-built' and the barge Endeavour pairing could not be confirmed and were removed"
+  },
+  {
+   "name": "WILFRED SYKES",
+   "fact": "Queen of the Lakes 1949-52 — first streamlined laker",
+   "built": 1949,
+   "lengthFt": 678,
+   "source": "Wikipedia Queen of the Lakes — held title 28 Jun 1949 to Nov 1952, succeeded by Joseph H. Thompson, noted as first streamlined design. NOTE: 'still sailing after 75 years' removed — current operating status not confirmed"
+  },
+  {
+   "name": "BBC KOLDING",
+   "fact": "Brand-new general cargo ship — launched in 2026",
+   "built": 2026,
+   "lengthFt": 489,
+   "source": "vesselfinder.com IMO 9964479 — general cargo, built 2026, 149 m (489 ft). NOTE: 'one of the newest on the Lakes' was an unverifiable inference and was removed"
+  },
+  {
+   "name": "ALGOSOLIS",
+   "fact": "Product tanker that joined Algoma's Canadian fleet in 2024",
+   "built": 2009,
+   "lengthFt": 472,
+   "source": "algonet.com/ship/algosolis (built 2009, delivered to Algoma 2024, 16,544 DWT); vesselfinder.com IMO 9409261 = 144.1 m LOA, built 2009, Jiangnan Shipyard, Algoma Tankers Ltd"
+  },
+  {
+   "name": "CLYDE S. VANENKEVORT",
+   "fact": "Tug that pushes the 740-ft self-unloading barge Erie Trader",
+   "built": 2011,
+   "lengthFt": 135,
+   "source": "gltugs.wordpress.com/clyde-s-vanenkevort — built 2011 by DonJon Shipbuilding, Erie PA as KEN BOOTHE SR., 135 ft 4 in, renamed 2017; vtbarge.com fleet page + NTSB MAB1912 confirm Erie Trader 740 ft, 2012. CORRECTED: input said built 2008 / 130 ft"
+  },
+  {
+   "name": "VERILA",
+   "fact": "Handysize bulk carrier, Malta-flagged, brand new in 2022",
+   "built": 2022,
+   "lengthFt": 623,
+   "source": "vesselfinder.com vessel search VERILA — bulk carrier, built 2022, 32,165 DWT, 190 x 24 m; vesseltracker.com IMO 9905734, MMSI 229656000 / callsign 9HA5549 = Malta flag. CORRECTED: could NOT verify 'Bulgarian' flag (Malta-flagged) or the ice-class / 'built for winter Seaway runs' claim — Seaway closes in winter, so that claim was dropped"
+  },
+  {
+   "name": "PEARL MIST",
+   "fact": "Finished in 2010 — lawsuits delayed her debut until 2014",
+   "built": 2010,
+   "lengthFt": 325,
+   "source": "en.wikipedia.org/wiki/Pearl_Mist — completed June 2010 at Halifax Shipyards, 99.1 m (325 ft 2 in), 210 passengers, legal battles settled after 2013 appeals ruling, maiden voyage June 2014"
+  },
+  {
+   "name": "ALGOMA STRONGFIELD",
+   "fact": "740 ft — the biggest that fits the Welland Canal locks",
+   "built": 2017,
+   "lengthFt": 740,
+   "source": "algonet.com/ship/algoma-strongfield — built 2017, class listed as 'Seaway Max', 30,303 DWT; 740 ft is the maximum permitted Seaway/Welland lock length (225.5 m)"
+  },
+  {
+   "name": "SAMUEL DE CHAMPLAIN",
+   "fact": "Built 1976 as an ocean tug — now pushes cement on the Lakes",
+   "built": 1976,
+   "lengthFt": 140,
+   "source": "en.wikipedia.org/wiki/Samuel_de_Champlain_(tugboat) — built 1976 by Mangone Shipbuilding, Houston as MUSKETEER FURY for a Norwegian owner (ocean tug), 140 ft; bought by Lafarge 2006, paired with 460-ft cement barge INNOVATION"
+  },
+  {
+   "name": "ARTHUR M ANDERSON",
+   "fact": "Last ship to speak with the Edmund Fitzgerald, 1975",
+   "built": 1952,
+   "lengthFt": 767,
+   "source": "en.wikipedia.org/wiki/SS_Arthur_M._Anderson — launched 1952, originally 647 ft, lengthened to 767 ft winter 1974-75; explicitly 'the last ship to be in contact with SS Edmund Fitzgerald before she sank on November 10, 1975' and first rescue vessel on scene"
+  },
+  {
+   "name": "CASON J CALLAWAY",
+   "fact": "Built 1952 · stretched 120 ft longer in 1974",
+   "built": 1952,
+   "lengthFt": 767,
+   "source": "greatlakesships.wordpress.com/cason-j-callaway — built 1952, 'Lengthened by 120', Fraser Shipyards, Superior, Wisconsin, 1974', 647 ft to 767 ft"
+  },
+  {
+   "name": "PHILIP R CLARKE",
+   "fact": "First of the eight AAA-class lake freighters, built 1952",
+   "built": 1952,
+   "lengthFt": 767,
+   "source": "en.wikipedia.org/wiki/Great_Lakes_Fleet — 'First vessel of the AAA Class ore carriers'; en.wikipedia.org/wiki/SS_Arthur_M._Anderson calls Anderson 'second of eight of the AAA class', confirming the class size of 8. REWORDED: original said 'eight 1952 AAA class' but the class was built 1952-53, not all in 1952"
+  },
+  {
+   "name": "STEWART J CORT",
+   "fact": "First 1,000-footer on the Lakes — wears a big #1 aft",
+   "built": 1972,
+   "lengthFt": 1000,
+   "source": "interlake-steamship.com/our-fleet/m-v-stewart-j-cort — 'the first 1000-foot vessel on the Great Lakes when she entered service for Bethlehem Steel in 1972'; 1,000 x 105 ft; 'She has a #1 painted on her aft house, a nod to her legacy of being the first thousand footer on the Lakes'"
+  },
+  {
+   "name": "ROGER BLOUGH",
+   "fact": "858 ft — a construction fire delayed her 1972 debut a year",
+   "built": 1972,
+   "lengthFt": 858,
+   "source": "en.wikipedia.org/wiki/MV_Roger_Blough — 858 ft, American Ship Building, Lorain OH; June 24, 1971 engine room fire killed four, pushed the July 1971 launch to service entry June 1972. CAUTION for live use: laid up at Conneaut, OH since Oct 2022 — an AIS contact near the Straits under this name is likely spurious"
+  },
+  {
+   "name": "JAMES R BARKER",
+   "fact": "First 1,000-footer built entirely on the Great Lakes",
+   "built": 1976,
+   "lengthFt": 1004,
+   "source": "interlake-steamship.com (owner), duluth-ships wiki, Duluth News Tribune — superlative confirmed: first 1,000-ft class vessel built entirely on the Lakes, American Ship Building, Lorain OH, 1976"
+  },
+  {
+   "name": "MICHIPICOTEN",
+   "fact": "Built 1952 · survived a 13-ft hull crack in 2024",
+   "built": 1952,
+   "lengthFt": 683,
+   "source": "en.wikipedia.org/wiki/Michipicoten_(1952_ship), NOAA IncidentNews #10799, gcaptain.com — LOA corrected from 698 to 683 ft (Wikipedia, post-1957 lengthening); USCG press used a rounded 690 ft"
+  },
+  {
+   "name": "H LEE WHITE",
+   "fact": "Built 1974 · carries 35,400 tons at midsummer draft",
+   "built": 1974,
+   "lengthFt": 704,
+   "source": "en.wikipedia.org/wiki/MV_H._Lee_White, greatlakesships.wordpress.com — REPLACED prior fact: the '6,000 tons per hour' unload rate appears only on fan wikis, not in Wikipedia or Shipwatcher specs; could not confirm, so dropped"
+  },
+  {
+   "name": "BUFFALO",
+   "fact": "Built 1978 · sails today as the Algoma Buffalo",
+   "built": 1978,
+   "lengthFt": 635,
+   "source": "en.wikipedia.org/wiki/MV_Buffalo — built 1978 Bay Shipbuilding, 634 ft 10 in LOA, bought by Algoma late 2017 and renamed Algoma Buffalo in 2018; a live 'BUFFALO' AIS hit is likely stale"
+  },
+  {
+   "name": "ADAM E CORNELIUS",
+   "fact": "Built 1973 · renamed Algoma Compass in 2018",
+   "built": 1973,
+   "lengthFt": 680,
+   "source": "en.wikipedia.org/wiki/Algoma_Compass — built 1973, originally Roger M. Kyes, renamed Adam E. Cornelius 1989, Algoma Compass 2018; LOA 680 ft 1 in"
+  },
+  {
+   "name": "ALGOMA CONVEYOR",
+   "fact": "Its hull was bought at auction after the yard went bust",
+   "built": 2019,
+   "lengthFt": 740,
+   "source": "greatlakesships.wordpress.com/algoma-conveyor — hull started at Nantong Mingde (bankrupt), acquired by Algoma at auction, completed at Yangzijiang; 740 ft LOA"
+  },
+  {
+   "name": "ALGOMA SAULT",
+   "fact": "740 ft — the maximum length the Seaway locks allow",
+   "built": 2018,
+   "lengthFt": 740,
+   "source": "en.wikipedia.org/wiki/Algoma_Sault — 740 ft LOA, Equinox-class, seawaymax. REWORDED: original 'the longest that fits' implied uniqueness; many lakers share the 740 ft Seaway max, so the superlative was softened to the limit itself"
+  },
+  {
+   "name": "TIM S DOOL",
+   "fact": "Built 1967 · widened in 1996, re-engined in 2007",
+   "built": 1967,
+   "lengthFt": 730,
+   "source": "en.wikipedia.org/wiki/Tim_S._Dool — launched 1967 as Senneville, beam widened at Port Weller Dry Docks 1996, re-engined with MaK 8M43C in 2007; 730 ft LOA"
+  },
+  {
+   "name": "MANITOWOC",
+   "fact": "Built 1973 · sailed first as the Paul Thayer",
+   "built": 1973,
+   "lengthFt": 630,
+   "source": "en.wikipedia.org/wiki/American_Ship_Building_Company — CORRECTED: 'four different names' is wrong. Sources confirm only three: Paul Thayer (1973), Earl W. Oglebay (1994, Oglebay Norton), Manitowoc (2008, Lower Lakes). No source found for a separate 'Earl W.' name"
+  },
+  {
+   "name": "VICTORY I",
+   "fact": "Small-ship cruiser — visits all five Great Lakes, 202 guests",
+   "built": 2001,
+   "lengthFt": 300,
+   "source": "en.wikipedia.org/wiki/Victory_I; victorycruiselines.com/2026-voyage-calendar-2/"
+  },
+  {
+   "name": "ALGOMA BUFFALO",
+   "fact": "250-ft boom unloads 5,900 tons of cargo every hour",
+   "built": 1978,
+   "lengthFt": 635,
+   "source": "en.wikipedia.org/wiki/MV_Buffalo; algonet.com Algoma Buffalo marketing sheet"
+  },
+  {
+   "name": "ALGOMA BEAR",
+   "fact": "Built 2024 — 740 ft, the biggest the Seaway locks allow",
+   "built": 2024,
+   "lengthFt": 740,
+   "source": "algonet.com/ship/algoma-bear/; vesselfinder.com IMO 9619309"
+  },
+  {
+   "name": "EDWARD L RYERSON",
+   "fact": "Last steam-powered freighter ever built on the Lakes",
+   "built": 1960,
+   "lengthFt": 730,
+   "source": "en.wikipedia.org/wiki/SS_Edward_L._Ryerson; greatlakeships.org/3706345/data"
+  },
+  {
+   "name": "BADGER",
+   "fact": "Last coal-fired passenger steamship in the US, built 1953",
+   "built": 1953,
+   "lengthFt": 410,
+   "source": "ssbadger.com/history/; en.wikipedia.org/wiki/SS_Badger"
+  }
+ ]
 }
