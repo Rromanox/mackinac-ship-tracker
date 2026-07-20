@@ -77,6 +77,7 @@ app.get('/overlay/minimal',   (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/corner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-corner.html')));
 app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner.html')));
 app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner2.html')));
+app.get('/overlay/banner3',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner3.html')));
 // New high-visibility overlay options (design candidates)
 app.get('/overlay/hud/board',     (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-board.html')));
 app.get('/overlay/hud/spotlight', (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-spotlight.html')));
@@ -108,6 +109,17 @@ app.post('/api/local-ais', (req, res) => {
   lastLocalMessageAt = Date.now();
   localMessagesTotal += accepted;
   res.json({ ok: true, accepted });
+});
+
+// Curated vessel fun facts (shown in the banner notch). Re-read from disk on each
+// request so the list can be updated by editing vessel-facts.json + redeploying.
+app.get('/api/vessel-facts', (req, res) => {
+  try {
+    const raw = require('fs').readFileSync(path.join(__dirname, 'vessel-facts.json'), 'utf8');
+    res.type('application/json').send(raw);
+  } catch (err) {
+    res.json({ vessels: [] });
+  }
 });
 
 // Local antenna range diagnostics — how far out the receiver is hearing vessels.
@@ -545,6 +557,16 @@ function processAisMessage(message, source) {
     saveShipToDatabase(shipInfo).catch(err =>
       console.error('Database save error:', err.message)
     );
+  }
+
+  // Enrich position reports with the vessel's known size/type so overlays can
+  // build a fallback "fun fact" for vessels that aren't in the curated list.
+  if (message.MessageType === 'PositionReport' && meta && meta.MMSI) {
+    const si = staticInfo[meta.MMSI];
+    if (si) {
+      if (si.length) meta.VesselLengthM = si.length;
+      if (si.type) meta.VesselType = si.type;
+    }
   }
 
   // Forward all messages to connected clients (banners)

@@ -1,0 +1,4 @@
+{
+  "note": "Curated fun facts shown in the banner notch. Keyed by vessel name (matched case-insensitively). Vessels not listed here fall back to an auto-generated fact from AIS length/type.",
+  "vessels": []
+}
