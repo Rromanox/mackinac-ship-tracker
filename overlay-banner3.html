@@ -4,321 +4,420 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-<title>Mackinac — Fun Fact Banner</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<title>Mackinac — Unified Cycle Banner v3 (fun-fact notch)</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:"Roboto", Tahoma, sans-serif; }
-html, body { background: transparent; }
-body { overflow: hidden; position: relative; }
-/* Canvas is 2560x220: the bar occupies the bottom 120px, the notches rise
-   into the transparent 100px above it, over the video. */
-body { width: 2560px; height: 220px; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', Tahoma, sans-serif; }
+/* Canvas is 220px tall: the 120px bar still sits at the bottom exactly as in
+   banner2 — the extra 100px above is transparent room for the fun-fact notch. */
+body { background-color: transparent; overflow: hidden; width: 2560px; height: 220px; }
 
-#stage { position: fixed; left: 0; bottom: 0; width: 2560px; height: 220px; }
-
-.bar {
-  position: absolute; left: 0; bottom: 0; width: 2560px; height: 120px;
-  display: flex; align-items: center; padding: 0 22px; gap: 0;
-  background: var(--dynamic-background, linear-gradient(to bottom, skyblue, lightgrey));
-  color: var(--dynamic-text-color, black);
-  /* NOTE: no overflow:hidden — the notches must be able to rise above the bar */
+/* ══════════════════════════════════════════════════════════════
+   OUTER BANNER — the entire 120px bar slides up / down as one.
+   Starts off-screen below; JavaScript calls runCycle() on load.
+══════════════════════════════════════════════════════════════ */
+#banner-outer {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 2560px; height: 120px;
+    transform: translateY(100%);           /* hidden below screen on load */
+    transition: transform 3.5s ease-in-out;
+    background: var(--dynamic-background, linear-gradient(to bottom, skyblue, lightgrey));
+    color: var(--dynamic-text-color, black);
+    /* clip-path instead of overflow:hidden — still clips the sliding panels at
+       the left/right edges, but lets the fun-fact notch rise above the bar. */
+    clip-path: inset(-110px 0 0 0);
 }
 
-/* left branding */
-.brand {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-width: 210px; flex-shrink: 0;
-  border-right: 2px solid rgba(0,0,0,.15); padding-right: 16px; margin-right: 18px;
+/* ══════════════════════════════════════════════════════════════
+   PANELS — all three live inside #banner-outer.
+   Default: off-screen right.  Active: translateX(0).
+   Exiting: translateX(-100%).  Transition handled by JS.
+══════════════════════════════════════════════════════════════ */
+.panel {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    transform: translateX(100%);          /* start off-screen right */
 }
-.brand-title { font-size: 1.7rem; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
-.brand-sub   { font-size: 1.05rem; opacity: .62; white-space: nowrap; }
 
-/* chip row — no clipping, so notches show */
-.chips { flex: 1; display: flex; align-items: center; gap: 18px; min-width: 0; }
-
-.chip { position: relative; flex-shrink: 0; }
-
-/* THE NOTCH — the tab that rises above the bar with the fun fact */
-.notch {
-  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-  margin-bottom: -3px;                      /* tuck into the chip so they read as one piece */
-  max-width: 620px;
-  padding: 9px 20px 12px;
-  border-radius: 16px 16px 0 0;
-  background: rgba(17,22,32,.92);
-  color: #fff;
-  font-size: 1.08rem; font-weight: 700; letter-spacing: .2px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  box-shadow: 0 -3px 14px rgba(0,0,0,.28);
-  animation: notchIn .45s ease-out;
+/* ── TICKER PANELS ─────────────────────────────────────────── */
+.ticker-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 0;
+    overflow: hidden;
 }
-.notch span { display: block; overflow: hidden; text-overflow: ellipsis; }
-@keyframes notchIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-                     to   { opacity: 1; transform: translateX(-50%) translateY(0); } }
-
-/* status colours on the notch */
-.chip.inbound  .notch { background: rgba(12,58,32,.93); }
-.chip.outbound .notch { background: rgba(48,38,16,.92); }
-.chip.near     .notch { background: rgba(120,16,20,.94); animation: notchIn .45s ease-out, notchPulse 1.6s ease-in-out infinite .45s; }
-@keyframes notchPulse { 0%,100% { box-shadow: 0 -3px 14px rgba(0,0,0,.28); }
-                        50%     { box-shadow: 0 -3px 22px rgba(255,60,70,.75); } }
-
-/* the chip body itself */
-.chip-in {
-  display: flex; align-items: center; gap: 14px;
-  background: rgba(0,0,0,.1); border: 2px solid rgba(0,0,0,.2);
-  border-radius: 26px; padding: 11px 22px;
-  font-size: 1.55rem; font-weight: 700; color: inherit;
+.ticker-item {
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
+    white-space: nowrap;
+    font-size: 30px;
+    font-weight: bold;
+    color: inherit;
 }
-.chip.inbound  .chip-in { border-color: rgba(0,130,0,.5);   background: rgba(0,140,0,.12); }
-.chip.outbound .chip-in { border-color: rgba(160,80,0,.45); background: rgba(170,90,0,.1); }
-.chip.near     .chip-in { border-color: rgba(200,0,0,.6);   background: rgba(200,0,0,.12); }
-.chip.passed   .chip-in { border-color: rgba(0,0,0,.2);     background: rgba(0,0,0,.06); opacity: .75; }
+.ticker-item i { margin-right: 14px; color: red; }
+.ticker-item img { height: 50px; margin: 0 8px; }
 
-.c-arrow { font-size: 1.5rem; }
-.c-name  { font-weight: 700; max-width: 460px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.c-col   { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
-.c-dist  { opacity: .62; font-size: 1.35rem; }
-.c-course{ font-size: 1rem; font-weight: 700; opacity: .7; letter-spacing: 1px; }
-.c-speed { opacity: .5; font-size: 1.15rem; }
-.c-eta   { font-size: 1.2rem; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.85); }
-.c-arr   { font-size: .98rem; font-weight: 700; opacity: .85; }
-.c-tag   { font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
-           background: rgba(0,0,0,.1); padding: 3px 12px; border-radius: 12px; }
-.c-passtime { font-size: 1.1rem; font-weight: 700; opacity: .8; }
-.c-ago      { font-size: 1.05rem; opacity: .5; }
+/* ── QR code block (panel 2, left side) ───────────────────── */
+.qr-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    margin-right: 20px;
+}
+.qr-area img {
+    width: 88px; height: 88px;
+    border-radius: 6px;
+    border: 2px solid rgba(255,255,255,0.4);
+    display: block;
+}
+.qr-label {
+    font-size: 11px; font-weight: bold;
+    color: inherit; opacity: 0.7;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
 
-.idle { opacity: .45; font-size: 1.5rem; font-weight: 700; }
+/* ── VESSEL PANEL ──────────────────────────────────────────── */
+.ship-branding {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-width: 200px; flex-shrink: 0;
+    border-right: 2px solid rgba(0,0,0,0.15);
+    padding-right: 15px; margin-right: 15px;
+}
+.ship-branding-title {
+    font-size: 1.7rem; font-weight: bold; letter-spacing: 1px;
+    white-space: nowrap; color: inherit;
+}
+.ship-branding-sub { font-size: 1.1rem; opacity: 0.6; white-space: nowrap; }
 
-/* right side */
-.live-area { display: flex; align-items: center; gap: 9px; margin-left: auto;
-             padding-left: 18px; border-left: 2px solid rgba(0,0,0,.12); flex-shrink: 0; }
-.live-dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(180,0,0,.5); }
+/* same trick here: chips still clip horizontally for paging, notch escapes upward */
+.ships-row  { flex: 1; clip-path: inset(-110px 0 0 0); position: relative; }
+.ships-inner { display: flex; align-items: center; gap: 14px; width: max-content; }
+
+.ship-chip {
+    position: relative;              /* anchor for the fun-fact notch */
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(0,0,0,0.1);
+    border: 2px solid rgba(0,0,0,0.2);
+    border-radius: 28px;
+    padding: 12px 24px; flex-shrink: 0;
+    font-size: 1.6rem; font-weight: bold; color: inherit;
+    transition: border-color 0.3s, background 0.3s;
+}
+.ship-chip.approaching { border-color: rgba(0,130,0,0.5);  background: rgba(0,140,0,0.12); }
+.ship-chip.departing   { border-color: rgba(160,80,0,0.45); background: rgba(170,90,0,0.1); }
+.ship-chip.near-bridge { border-color: rgba(200,0,0,0.6);   background: rgba(200,0,0,0.12); animation: chipPulse 1s infinite; }
+.ship-chip.passed      { border-color: rgba(0,0,0,0.2);     background: rgba(0,0,0,0.06); opacity: 0.72; }
+@keyframes chipPulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
+
+/* ── FUN-FACT NOTCH — the tab that rises above the bar over the vessel name ── */
+.chip-notch {
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    margin-bottom: -4px;                 /* tuck under the chip so they read as one piece */
+    max-width: 640px;
+    padding: 9px 20px 13px;
+    border-radius: 16px 16px 0 0;
+    background: rgba(17,22,32,.92);
+    color: #fff;
+    font-size: 1.05rem; font-weight: bold; letter-spacing: .2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 -3px 14px rgba(0,0,0,.3);
+    pointer-events: none;
+}
+.ship-chip.approaching .chip-notch { background: rgba(12,58,32,.93); }
+.ship-chip.departing   .chip-notch { background: rgba(48,38,16,.92); }
+.ship-chip.near-bridge .chip-notch { background: rgba(120,16,20,.94); animation: notchPulse 1.6s ease-in-out infinite; }
+@keyframes notchPulse { 0%,100% { box-shadow: 0 -3px 14px rgba(0,0,0,.3); }
+                        50%     { box-shadow: 0 -3px 22px rgba(255,60,70,.7); } }
+
+.chip-arrow { font-size: 1.6rem; }
+.chip-name  { font-weight: bold; }
+.chip-dist-wrap { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.chip-dist  { opacity: 0.6; font-size: 1.4rem; }
+.chip-course { font-size: 1.0rem; font-weight: bold; opacity: 0.7; letter-spacing: 1px; white-space: nowrap; }
+.chip-speed { opacity: 0.5; font-size: 1.2rem; }
+.chip-eta-wrap { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.chip-eta   { font-size: 1.2rem; font-weight: bold; color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+.chip-arrival { font-size: 1.0rem; font-weight: bold; opacity: 0.85; white-space: nowrap; }
+.chip-passed-tag {
+    font-size: 1.05rem; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.5px; white-space: nowrap;
+    background: rgba(0,0,0,0.1); padding: 3px 12px; border-radius: 12px;
+}
+.chip-passtime { font-size: 1.15rem; font-weight: bold; opacity: 0.8; white-space: nowrap; }
+.chip-ago   { opacity: 0.5; font-size: 1.1rem; white-space: nowrap; }
+.no-ships-bar { opacity: 0.45; font-size: 1.6rem; font-weight: bold; }
+
+.live-area {
+    display: flex; align-items: center; gap: 8px;
+    margin-left: auto; padding-left: 18px;
+    border-left: 2px solid rgba(0,0,0,0.12);
+    flex-shrink: 0;
+}
+.live-dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(180,0,0,0.5); }
 .live-dot.on { background: #007700; animation: livePulse 2s infinite; }
-@keyframes livePulse { 0%,100% { opacity: 1 } 50% { opacity: .4 } }
-.live-label { font-size: .85rem; font-weight: 700; opacity: .5; text-transform: uppercase; letter-spacing: 1px; }
-#pager { font-size: .85rem; font-weight: 700; opacity: .45; margin-left: 10px; }
-
+@keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.live-label { font-size: 0.85rem; font-weight: bold; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
 </style>
 </head>
 <body>
-<div id="stage">
-  <div class="bar">
-    <div class="brand">
-      <span class="brand-title">Mackinac Straits</span>
-      <span class="brand-sub" id="brandSub">Live Ship Tracker</span>
+
+<div id="banner-outer">
+
+  <!-- ══ PANEL 1 — Live Stream / Weather ticker ══════════════ -->
+  <div class="panel" id="panel-ticker1">
+    <div class="ticker-body">
+      <div class="ticker-item">
+        <i class="fas fa-video"></i> Live Stream of the Mackinac Bridge from the Riviera Motel!
+      </div>
+      <div class="ticker-item">
+        <i class="fas fa-info-circle"></i> Subscribe to the channel for more updates!
+      </div>
+      <div class="ticker-item" id="id-weather">
+        <i class="fa-solid fa-cloud-sun"></i>
+      </div>
     </div>
-    <div class="chips" id="chips"><div class="idle">Connecting…</div></div>
+  </div>
+
+  <!-- ══ PANEL 2 — Reservations Open + QR code ══════════════ -->
+  <div class="panel" id="panel-ticker2">
+    <style>#panel-ticker2 .ticker-body { justify-content: flex-start; }</style>
+    <div class="qr-area">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&data=https://shadowofthebridge.com&bgcolor=ffffff&color=000000&margin=4" alt="Scan to book">
+      <span class="qr-label">Book Now</span>
+    </div>
+    <div class="ticker-body">
+      <div class="ticker-item">
+        <i class="fas fa-bed"></i> The Riviera Motel is NOW OPEN for reservations &nbsp;|&nbsp; Visit ShadowoftheBridge.com and book your room NOW!
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 3 — Vessel tracker ═══════════════════════════ -->
+  <div class="panel" id="panel-vessel">
+    <div class="ship-branding">
+      <span class="ship-branding-title">Mackinac Straits</span>
+      <span class="ship-branding-sub" id="brandingSub">Live Ship Tracker</span>
+    </div>
+    <div class="ships-row" id="shipsRow">
+      <div class="ships-inner" id="shipsInner">
+        <span class="no-ships-bar">No approaching vessels nearby</span>
+      </div>
+    </div>
     <div class="live-area">
       <div class="live-dot" id="liveDot"></div>
       <span class="live-label">Live</span>
-      <span id="pager"></span>
     </div>
   </div>
-</div>
+
+</div><!-- #banner-outer -->
+
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  MACKINAC OVERLAY CORE  — shared data pipeline for all overlays.
-//  Exposes a global `Tracker` API; designs only handle presentation.
-//
-//    Tracker.onUpdate(fn)  → fn(state) on every data change (+ once now)
-//    Tracker.getState()    → latest state snapshot
-//    Tracker.fmt           → { clock, ago, eta, arrival, courseToDir }
-//
-//  state = {
-//    live: bool,
-//    weather: { tempStr, temp, desc, isDay, iconUrl, background, textColor } | null,
-//    vessels: [ {                       // approaching nearest-first, then others
-//        mmsi, name,
-//        distanceMi, distanceStr,        // 2.8, "2.8 mi"
-//        speed, speedStr,               // 13.5, "13.5 kts"
-//        course, courseStr,             // 84, "W→E"
-//        direction,                     // "Approaching" | "Departing"
-//        near,                          // bool, within 8 mi of bridge
-//        etaStr, arrivalStr             // "11m", "3:34 PM"  (null unless approaching)
-//    } ],
-//    passed: [ { mmsi, name, passedTime, clockStr, agoStr } ]  // most recent first
-//  }
+//  WEATHER — fetch from OpenWeatherMap, update panel 1 + branding
 // ═══════════════════════════════════════════════════════════════
-(function () {
-  var RENDER_URL = 'mackinac-ship-tracker.onrender.com';
-  var isLocal    = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
-  var WS_URL     = isLocal ? 'ws://localhost:' + (location.port || 3000) : 'wss://' + RENDER_URL;
-  var HTTP_BASE  = isLocal ? 'http://localhost:' + (location.port || 3000) : 'https://' + RENDER_URL;
-  var BRIDGE_LAT = 45.8174, BRIDGE_LON = -84.7278, MAX_DIST_MI = 100;
-  var PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+var yourApiKey     = '8d6e0169a641adc002688e82b9ab8ec3';
+var yourCity       = 'Mackinaw City, MI';   // display label only
+var yourLat        = 45.7829;               // Mackinaw City exact coordinates
+var yourLon        = -84.7278;
+var yourUnits      = 'imperial';
+var time24hour     = false;
 
-  var shipData = {}, staticData = {}, passedShips = [], live = false, weather = null;
-  var ws, reconnectTimer, reconnectAttempts = 0, listeners = [];
+function refreshData() { weatherCheck(); setTimeout(refreshData, 60000); }
 
-  var BLOCKED_MMSI = {368165150:1,367031360:1,367139210:1,367349450:1,367721870:1,367721930:1,367721960:1,367782080:1,338158987:1,338926364:1,367721890:1,367783160:1};
-  var ALLOWED_MMSI = {311050300:1};
-  function shouldHide(mmsi) {
-    if (ALLOWED_MMSI[mmsi]) return false;
+function weatherCheck() {
+    var time = time24hour ? time24(new Date()) : currentTime(new Date());
+    fetch('https://api.openweathermap.org/data/2.5/weather?units=' + yourUnits +
+          '&lat=' + yourLat + '&lon=' + yourLon + '&appid=' + yourApiKey)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var desc    = toProperCase(d.weather[0].description);
+        var temp    = Math.round(d.main.temp);
+        var icon    = d.weather[0].icon;
+        var iconUrl = 'https://openweathermap.org/img/wn/' + icon + '@2x.png';
+        var isDay   = icon.slice(-1) === 'd';
+        document.documentElement.style.setProperty('--dynamic-background',
+            isDay ? 'linear-gradient(to bottom, skyblue, lightgrey)'
+                  : 'linear-gradient(to bottom, black, dimgrey)');
+        document.documentElement.style.setProperty('--dynamic-text-color',
+            isDay ? 'black' : 'white');
+        var el = document.getElementById('id-weather');
+        if (el) el.innerHTML =
+            yourCity + ': ' + temp + '&deg; ' +
+            '<img src="' + iconUrl + '"> ' +
+            desc + ' &ndash; ' + time;
+        var sub = document.getElementById('brandingSub');
+        if (sub) sub.textContent = temp + '°F · ' + desc;
+    })
+    .catch(function(e) { console.error('Weather error:', e); });
+}
+function currentTime(d) {
+    var h=d.getHours(), m=d.getMinutes(), ap=h>=12?'PM':'AM';
+    h=h%12; h=h?h:12; m=m<10?'0'+m:m;
+    return h+':'+m+' '+ap;
+}
+function time24(d) {
+    var h=d.getHours(), m=d.getMinutes();
+    return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+}
+function toProperCase(s) {
+    return s.replace(/\w\S*/g, function(t) {
+        return t.charAt(0).toUpperCase()+t.substr(1).toLowerCase();
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SHIP TRACKER — WebSocket + position processing
+// ═══════════════════════════════════════════════════════════════
+var RENDER_URL  = 'mackinac-ship-tracker.onrender.com';
+var isLocal     = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+var WS_URL      = isLocal ? 'ws://localhost:' + (location.port || 3000) : 'wss://' + RENDER_URL;
+var BRIDGE_LAT  = 45.8174, BRIDGE_LON = -84.7278;
+var MAX_DIST_MI = 100;
+
+var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
+
+// ── Passed vessel tracking ────────────────────────────────────
+// Passings are detected SERVER-SIDE (longitude crossing near the
+// bridge, stored in MongoDB). The banner just polls /api/ships/recent
+// so records survive page refreshes and OBS restarts.
+var passedShips     = [];  // [{ mmsi, name, passedTime }]  most-recent first
+var PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000; // don't show chips older than 6 hours
+var HTTP_BASE = isLocal ? 'http://localhost:' + (location.port || 3000) : 'https://' + RENDER_URL;
+
+function refreshPassedShips() {
+    fetch(HTTP_BASE + '/api/ships/recent?limit=5')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            passedShips = (d.ships || []).map(function(s) {
+                return { mmsi: s.mmsi, name: s.name, passedTime: new Date(s.passedTime).getTime() };
+            });
+            render();
+        })
+        .catch(function(e) { console.error('Passed-ships fetch failed:', e); });
+}
+setInterval(refreshPassedShips, 60000);
+
+// ── Ferry / passenger vessel blocklist ────────────────────────
+var BLOCKED_MMSI = {
+    368165150: 'WILLIAM RICHARD',         // Inland ferry, "Other" type
+    367031360: 'MARQUETTE II',            // Mackinac Island passenger ferry
+    367139210: 'EMERALD ISLE',            // Beaver Island ferry
+    367349450: 'DRUMMOND ISLANDER IV',    // Drummond Island ferry
+    367721870: 'WYANDOT',                 // Shepler's Mackinac Island ferry
+    367721930: 'CAPT. SHEPLER',           // Shepler's Mackinac Island ferry
+    367721960: 'THE HOPE',                // Shepler's Mackinac Island ferry
+    367782080: 'OTTAWA',                  // Mackinac Island ferry, "Other" type
+    338158987: 'UGLE DUCKLING',           // Dredger, local vessel
+    338926364: 'CUTTER BOAT LARGE',       // SAR rescue boat, 7m vessel
+    367721890: 'MISS MARGY',              // Shepler's Mackinac Island ferry
+    367783160: 'STRAITS OF MACKINAC II',  // Arnold Line tour/ferry, Class A "Other" type
+};
+
+// ── Whitelist — overrides the type 60-69 passenger filter ─────
+// Large cruise/passenger ships that actually pass the bridge and should be shown.
+var ALLOWED_MMSI = {
+    311050300: 'VICTORY II',              // Great Lakes passenger cruise ship, St. Ignace → Marquette
+};
+
+function shouldHide(mmsi) {
+    if (ALLOWED_MMSI[mmsi]) return false;  // always show whitelisted vessels
     if (BLOCKED_MMSI[mmsi]) return true;
     var t = staticData[mmsi] && staticData[mmsi].type;
     return t && t >= 60 && t <= 69;
-  }
+}
 
-  function haversine(la1, lo1, la2, lo2) {
+function haversine(la1, lo1, la2, lo2) {
     var R = 6371, dLa = (la2-la1)*Math.PI/180, dLo = (lo2-lo1)*Math.PI/180;
-    var a = Math.sin(dLa/2)*Math.sin(dLa/2) + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
+    var a = Math.sin(dLa/2)*Math.sin(dLa/2) +
+            Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  }
-  function toMiles(km) { return km * 0.621371; }
-  function getDirection(lat, lon, course) {
+}
+function toMiles(km) { return km * 0.621371; }
+function getDirection(lat, lon, course) {
     var dLat = lat - BRIDGE_LAT, dLon = lon - BRIDGE_LON;
     var tb = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
     return Math.abs(((course - tb) + 180 + 360) % 360 - 180) < 90 ? 'Approaching' : 'Departing';
-  }
-  function etaMin(distKm, spd) {
+}
+function formatETA(distKm, spd) {
     if (!spd || spd < 0.5) return null;
     var min = Math.round(distKm / (spd * 1.852) * 60);
-    return min > 600 ? null : min;
-  }
-  function fmtETA(min) {
-    if (min == null) return null;
+    if (min > 600) return null;
     return min < 60 ? min + 'm' : Math.floor(min/60) + 'h' + (min%60 ? min%60+'m' : '');
-  }
-  function fmtClock(ts) {
-    var d = new Date(ts), h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+}
+// Approximate wall-clock arrival time (now + ETA), so viewers can plan when to watch
+function formatArrival(distKm, spd) {
+    if (!spd || spd < 0.5) return null;
+    var min = Math.round(distKm / (spd * 1.852) * 60);
+    if (min > 600) return null;
+    var d = new Date(Date.now() + min * 60000);
+    var h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
     h = h % 12; h = h ? h : 12; m = m < 10 ? '0' + m : m;
     return h + ':' + m + ' ' + ap;
-  }
-  function fmtArrival(min) { return min == null ? null : fmtClock(Date.now() + min * 60000); }
-  function fmtAgo(ts) {
-    var min = Math.round((Date.now() - ts) / 60000);
-    if (min < 1) return 'just now';
-    if (min < 60) return min + ' min ago';
-    var h = Math.floor(min/60), m = min % 60;
-    return h + 'h' + (m ? ' ' + m + 'm' : '') + ' ago';
-  }
-  function courseToDir(cog) {
-    if (cog == null || isNaN(cog)) return null;
-    var dirs = ['N','NE','E','SE','S','SW','W','NW'];
-    var idx = Math.round((((cog % 360) + 360) % 360) / 45) % 8;
-    return dirs[(idx + 4) % 8] + '→' + dirs[idx];
-  }
+}
 
-  function buildState() {
-    var all = Object.keys(shipData).map(function (k) { return shipData[k]; })
-      .filter(function (s) { return s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI && !shouldHide(s.mmsi); });
-    var approaching = all.filter(function (s) { return s.direction === 'Approaching'; }).sort(function (a,b) { return a.distance - b.distance; });
-    var others      = all.filter(function (s) { return s.direction !== 'Approaching'; }).sort(function (a,b) { return a.distance - b.distance; });
-    var vessels = approaching.concat(others).map(function (s) {
-      var em = s.direction === 'Approaching' ? etaMin(s.distance, s.speed) : null;
-      return {
-        mmsi: s.mmsi, name: s.name,
-        distanceMi: toMiles(s.distance), distanceStr: toMiles(s.distance).toFixed(1) + ' mi',
-        speed: s.speed, speedStr: s.speed ? s.speed.toFixed(1) + ' kts' : '',
-        course: s.course, courseStr: courseToDir(s.course),
-        lengthM: s.lengthM || null, typeCode: s.typeCode || null,
-        direction: s.direction, near: s.distance < 8,
-        etaStr: fmtETA(em), arrivalStr: fmtArrival(em)
-      };
+// ── Ship chip paging ──────────────────────────────────────────
+var PAGE_HOLD_MS = 15000, pageOffsets = [0], currentPage = 0, pageTimer = null, lastShipKey = '';
+
+function buildPageOffsets() {
+    var inner = document.getElementById('shipsInner'), row = document.getElementById('shipsRow');
+    if (!inner || !row) return [0];
+    var avail = row.offsetWidth, chips = [].slice.call(inner.querySelectorAll('.ship-chip'));
+    if (!chips.length) return [0];
+    var offsets = [0], px = 0, pw = 0;
+    chips.forEach(function(c) {
+        var w = c.offsetWidth + 14;
+        if (pw > 0 && pw + w > avail) { px += pw; offsets.push(px); pw = w; }
+        else pw += w;
     });
-    passedShips = passedShips.filter(function (p) { return (Date.now() - p.passedTime) < PASSED_MAX_AGE_MS; });
-    var passed = passedShips.map(function (p) {
-      return { mmsi: p.mmsi, name: p.name, passedTime: p.passedTime, clockStr: fmtClock(p.passedTime), agoStr: fmtAgo(p.passedTime) };
-    });
-    return { live: live, weather: weather, vessels: vessels, passed: passed };
-  }
+    return offsets;
+}
+function showPage(idx) {
+    var inner = document.getElementById('shipsInner');
+    if (!inner) return;
+    inner.style.transition = 'transform 2s ease-in-out';
+    inner.style.transform  = 'translateX(-' + pageOffsets[idx % pageOffsets.length] + 'px)';
+}
+function startPaging() {
+    if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
+    currentPage = 0; showPage(0);
+    if (pageOffsets.length <= 1) return;
+    pageTimer = setInterval(function() {
+        currentPage = (currentPage + 1) % pageOffsets.length;
+        showPage(currentPage);
+    }, PAGE_HOLD_MS);
+}
+// ═══════════════════════════════════════════════════════════════
+//  FUN FACTS — curated list from /api/vessel-facts, with a fallback
+//  built from the vessel's own AIS length/type so a notch is never blank.
+// ═══════════════════════════════════════════════════════════════
+var FACTS = {};   // NAME (uppercase) -> fact
 
-  var emitScheduled = false;
-  function emit() {
-    if (emitScheduled) return;
-    emitScheduled = true;
-    setTimeout(function () {
-      emitScheduled = false;
-      var st = buildState();
-      for (var i = 0; i < listeners.length; i++) { try { listeners[i](st); } catch (e) {} }
-    }, 250);
-  }
+function loadFacts() {
+    fetch(HTTP_BASE + '/api/vessel-facts')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            (d && d.vessels ? d.vessels : []).forEach(function (v) {
+                if (v && v.name && v.fact) FACTS[v.name.trim().toUpperCase()] = v.fact;
+            });
+            lastShipKey = '';   // force a rebuild so notches appear immediately
+            render();
+        })
+        .catch(function (e) { console.error('Facts fetch failed:', e); });
+}
 
-  function processMessage(data) {
-    if (data.MessageType === 'ShipStaticData' && data.Message && data.Message.ShipStaticData) {
-      var mmsi = data.MetaData.MMSI;
-      staticData[mmsi] = { type: data.Message.ShipStaticData.Type || null, destination: (data.Message.ShipStaticData.Destination || '').trim() || null };
-      emit(); return;
-    }
-    if (data.MessageType === 'PositionReport' && data.Message && data.Message.PositionReport) {
-      var pos = data.Message.PositionReport, meta = data.MetaData;
-      var dist = haversine(BRIDGE_LAT, BRIDGE_LON, pos.Latitude, pos.Longitude);
-      shipData[meta.MMSI] = {
-        mmsi: meta.MMSI, name: (meta.ShipName || 'Unknown').trim(),
-        lat: pos.Latitude, lon: pos.Longitude, speed: pos.Sog || 0, course: pos.Cog || 0,
-        lengthM: meta.VesselLengthM || null, typeCode: meta.VesselType || null,
-        distance: dist, direction: getDirection(pos.Latitude, pos.Longitude, pos.Cog || 0), lastUpdate: Date.now()
-      };
-      var cut = Date.now() - 600000;
-      Object.keys(shipData).forEach(function (k) { if (shipData[k].lastUpdate < cut) delete shipData[k]; });
-      emit();
-    }
-  }
-
-  function refreshPassed() {
-    fetch(HTTP_BASE + '/api/ships/recent?limit=6')
-      .then(function (r) { return r.json(); })
-      .then(function (d) { passedShips = (d.ships || []).map(function (s) { return { mmsi: s.mmsi, name: s.name, passedTime: new Date(s.passedTime).getTime() }; }); emit(); })
-      .catch(function () {});
-  }
-
-  function connect() {
-    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
-    live = false;
-    ws = new WebSocket(WS_URL);
-    ws.onopen = function () { reconnectAttempts = 0; live = true; emit(); };
-    ws.onmessage = function (e) { try { var m = JSON.parse(e.data); if (m.type === 'ship_data') processMessage(m.data); else if (m.type === 'bridge_passing') refreshPassed(); } catch (ex) {} };
-    ws.onerror = function () { live = false; emit(); };
-    ws.onclose = function () { live = false; emit(); reconnectAttempts++; var delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000); reconnectTimer = setTimeout(connect, delay); };
-  }
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) connect(); });
-
-  var W_KEY = '8d6e0169a641adc002688e82b9ab8ec3', W_LAT = 45.7829, W_LON = -84.7278;
-  function weatherCheck() {
-    fetch('https://api.openweathermap.org/data/2.5/weather?units=imperial&lat=' + W_LAT + '&lon=' + W_LON + '&appid=' + W_KEY)
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        var desc = d.weather[0].description.replace(/\w\S*/g, function (t) { return t.charAt(0).toUpperCase() + t.substr(1).toLowerCase(); });
-        var temp = Math.round(d.main.temp), icon = d.weather[0].icon, isDay = icon.slice(-1) === 'd';
-        var bg = isDay ? 'linear-gradient(to bottom, skyblue, lightgrey)' : 'linear-gradient(to bottom, black, dimgrey)';
-        var tc = isDay ? 'black' : 'white';
-        document.documentElement.style.setProperty('--dynamic-background', bg);
-        document.documentElement.style.setProperty('--dynamic-text-color', tc);
-        weather = { tempStr: temp + '°F', temp: temp, desc: desc, isDay: isDay, iconUrl: 'https://openweathermap.org/img/wn/' + icon + '@2x.png', background: bg, textColor: tc };
-        emit();
-      }).catch(function () {});
-  }
-
-  window.Tracker = {
-    onUpdate: function (cb) { listeners.push(cb); cb(buildState()); },
-    getState: buildState,
-    fmt: { clock: fmtClock, ago: fmtAgo, eta: fmtETA, arrival: fmtArrival, courseToDir: courseToDir }
-  };
-
-  function start() {
-    weatherCheck(); setInterval(weatherCheck, 60000);
-    connect(); refreshPassed(); setInterval(refreshPassed, 60000);
-    setInterval(emit, 15000); // keep "ago"/arrival strings fresh even without new data
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
-})();
-
-</script>
-<script>
-// ── Fun-fact notch banner: presentation layer (runs after overlay-core) ──
-(function () {
-  var MAX_CHIPS   = 3;        // chips visible at once (notches need room)
-  var CYCLE_MS    = 14000;    // if more vessels than fit, rotate the set
-  var FACT_URL    = (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-                      ? 'http://localhost:' + (location.port || 3000)
-                      : 'https://mackinac-ship-tracker.onrender.com') + '/api/vessel-facts';
-
-  var FACTS = {};             // NAME(uppercase) -> fact string
-  var pageIdx = 0;
-
-  // AIS vessel-type code → readable label (for the fallback fact)
-  function typeName(t) {
+function typeName(t) {
     if (!t) return '';
     if (t >= 70 && t <= 79) return 'Cargo freighter';
     if (t >= 80 && t <= 89) return 'Tanker';
@@ -328,113 +427,390 @@ body { width: 2560px; height: 220px; }
     if (t === 33) return 'Dredger';
     if (t === 35) return 'Military';
     if (t === 51) return 'Search & rescue';
-    if (t >= 90 && t <= 99) return '';
     return '';
-  }
+}
 
-  // Build a fact when the vessel isn't in the curated list — uses real AIS data
-  function autoFact(v) {
+function factFor(ship) {
+    var key = (ship.name || '').trim().toUpperCase();
+    if (FACTS[key]) return FACTS[key];
     var bits = [];
-    if (v.lengthM && v.lengthM > 10) bits.push(Math.round(v.lengthM * 3.28084).toLocaleString() + ' ft');
-    var t = typeName(v.typeCode);
+    if (ship.lengthM && ship.lengthM > 10) bits.push(Math.round(ship.lengthM * 3.28084).toLocaleString() + ' ft');
+    var t = typeName(ship.typeCode);
     if (t) bits.push(t);
     return bits.join('  ·  ');
-  }
+}
 
-  function factFor(v) {
-    var key = (v.name || '').trim().toUpperCase();
-    if (FACTS[key]) return FACTS[key];
-    return autoFact(v);
-  }
-
-  function esc(s) {
+function escHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
-  }
+}
 
-  function chipHTML(v) {
-    var cls = v.near ? 'near' : (v.direction === 'Approaching' ? 'inbound' : 'outbound');
-    var arrow = v.near ? '&#9889;' : (v.direction === 'Approaching' ? '&#9650;' : '&#9660;');
-    var fact = factFor(v);
-    var eta = (v.direction === 'Approaching' && v.etaStr) ? v.etaStr : null;
+// Course over ground (0-360) → "from→to" compass direction, e.g. 270 → "E→W"
+function courseToDirection(cog) {
+    if (cog == null || isNaN(cog)) return null;
+    var dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    var idx = Math.round((((cog % 360) + 360) % 360) / 45) % 8;
+    return dirs[(idx + 4) % 8] + '→' + dirs[idx];
+}
+function buildChipHTML(ship) {
+    var mi  = toMiles(ship.distance).toFixed(1);
+    var spd = ship.speed ? ship.speed.toFixed(1) + ' kts' : '';
+    var course = courseToDirection(ship.course);
+    var eta = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
+    var arrival = ship.direction === 'Approaching' ? formatArrival(ship.distance, ship.speed) : null;
+    var near = ship.distance < 8;
+    var cls  = near ? 'near-bridge' : ship.direction === 'Approaching' ? 'approaching' : 'departing';
+    var arr  = near ? '&#9889;' : ship.direction === 'Approaching' ? '&#9650;' : '&#9660;';
+    var fact = factFor(ship);
+    return '<div class="ship-chip ' + cls + '" data-mmsi="' + ship.mmsi + '">' +
+        (fact ? '<div class="chip-notch">' + escHtml(fact) + '</div>' : '') +
+        '<span class="chip-arrow">' + arr + '</span>' +
+        '<span class="chip-name">'  + ship.name + '</span>' +
+        '<span class="chip-dist-wrap"><span class="chip-dist">' + mi + ' mi</span>' +
+            (course ? '<span class="chip-course">' + course + '</span>' : '') + '</span>' +
+        (spd ? '<span class="chip-speed">' + spd + '</span>' : '') +
+        (eta ? '<span class="chip-eta-wrap"><span class="chip-eta">ETA ' + eta + '</span>' +
+               (arrival ? '<span class="chip-arrival">~' + arrival + '</span>' : '') + '</span>' : '') +
+        '</div>';
+}
+function formatAgo(passedTime) {
+    var min = Math.round((Date.now() - passedTime) / 60000);
+    if (min < 1)  return 'just now';
+    if (min < 60) return min + ' min ago';
+    var h = Math.floor(min / 60), m = min % 60;
+    return h + 'h' + (m ? ' ' + m + 'm' : '') + ' ago';
+}
+// A timestamp → local clock time, e.g. "2:14 PM"
+function formatClockTime(ts) {
+    var d = new Date(ts);
+    var h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; h = h ? h : 12; m = m < 10 ? '0' + m : m;
+    return h + ':' + m + ' ' + ap;
+}
 
-    return '<div class="chip ' + cls + '">' +
-      (fact ? '<div class="notch"><span>' + esc(fact) + '</span></div>' : '') +
-      '<div class="chip-in">' +
-        '<span class="c-arrow">' + arrow + '</span>' +
-        '<span class="c-name">' + esc(v.name) + '</span>' +
-        '<span class="c-col"><span class="c-dist">' + esc(v.distanceStr) + '</span>' +
-          (v.courseStr ? '<span class="c-course">' + esc(v.courseStr) + '</span>' : '') + '</span>' +
-        (v.speedStr ? '<span class="c-speed">' + esc(v.speedStr) + '</span>' : '') +
-        (eta ? '<span class="c-col"><span class="c-eta">ETA ' + esc(eta) + '</span>' +
-          (v.arrivalStr ? '<span class="c-arr">~' + esc(v.arrivalStr) + '</span>' : '') + '</span>' : '') +
-      '</div>' +
-    '</div>';
-  }
+function buildPassedChipHTML(ship) {
+    var agoStr = formatAgo(ship.passedTime);
+    return '<div class="ship-chip passed" data-mmsi="' + ship.mmsi + '">' +
+        '<span class="chip-arrow">&#10003;</span>' +
+        '<span class="chip-name">' + ship.name + '</span>' +
+        '<span class="chip-passed-tag">Passed the Bridge</span>' +
+        '<span class="chip-passtime">' + formatClockTime(ship.passedTime) + '</span>' +
+        '<span class="chip-ago">' + agoStr + '</span>' +
+        '</div>';
+}
 
-  function passedHTML(p) {
-    return '<div class="chip passed">' +
-      '<div class="chip-in">' +
-        '<span class="c-arrow">&#10003;</span>' +
-        '<span class="c-name">' + esc(p.name) + '</span>' +
-        '<span class="c-tag">Passed the Bridge</span>' +
-        '<span class="c-passtime">' + esc(p.clockStr) + '</span>' +
-        '<span class="c-ago">' + esc(p.agoStr) + '</span>' +
-      '</div>' +
-    '</div>';
-  }
+function updateChipValues(ships) {
+    ships.forEach(function(ship) {
+        var chip = document.querySelector('.ship-chip[data-mmsi="' + ship.mmsi + '"]');
+        if (!chip) return;
+        var near = ship.distance < 8;
+        var eta  = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
+        var arrival = ship.direction === 'Approaching' ? formatArrival(ship.distance, ship.speed) : null;
+        chip.className = 'ship-chip ' + (near ? 'near-bridge' : ship.direction === 'Approaching' ? 'approaching' : 'departing');
+        chip.querySelector('.chip-arrow').innerHTML = near ? '&#9889;' : ship.direction === 'Approaching' ? '&#9650;' : '&#9660;';
+        chip.querySelector('.chip-dist').textContent = toMiles(ship.distance).toFixed(1) + ' mi';
+        var cEl = chip.querySelector('.chip-course'); if (cEl) cEl.textContent = courseToDirection(ship.course) || '';
+        var sEl = chip.querySelector('.chip-speed'); if (sEl) sEl.textContent = ship.speed ? ship.speed.toFixed(1) + ' kts' : '';
+        var eEl = chip.querySelector('.chip-eta');   if (eEl) eEl.textContent = eta ? 'ETA ' + eta : '';
+        var aEl = chip.querySelector('.chip-arrival'); if (aEl) aEl.textContent = arrival ? '~' + arrival : '';
+    });
+}
 
-  function render(state) {
-    // weather + live
-    var sub = document.getElementById('brandSub');
-    if (sub) sub.textContent = (state.weather && state.weather.tempStr)
-      ? state.weather.tempStr + ' · ' + state.weather.desc : 'Live Ship Tracker';
-    var dot = document.getElementById('liveDot');
-    if (dot) dot.className = 'live-dot' + (state.live ? ' on' : '');
+function getVisibleShips() {
+    return Object.keys(shipData).map(function(k) { return shipData[k]; })
+        .filter(function(s) { return s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI && !shouldHide(s.mmsi); });
+}
 
-    var vessels = state.vessels || [];
-    var chips = document.getElementById('chips');
-    if (!chips) return;
+function render() {
+    var all         = getVisibleShips();
+    var approaching = all.filter(function(s) { return s.direction === 'Approaching'; })
+                         .sort(function(a,b) { return a.distance - b.distance; });
+    var active      = approaching.length > 0
+        ? approaching
+        : all.sort(function(a,b) { return a.distance - b.distance; }).slice(0, 3);
 
-    if (!vessels.length) {
-      // fall back to recently-passed, else an idle message
-      var passed = (state.passed || []).slice(0, 2);
-      chips.innerHTML = passed.length
-        ? passed.map(passedHTML).join('')
-        : '<div class="idle">No vessels approaching the bridge</div>';
-      return;
+    // Pad with recently passed vessels if fewer than 3 active
+    var needed      = Math.max(0, 3 - active.length);
+    // Filter out any passed ships that are also still in the active list
+    var activeMmsis = active.map(function(s) { return s.mmsi; });
+    // Drop passed ships older than the max age so stale chips don't linger for days
+    passedShips = passedShips.filter(function(p) { return (Date.now() - p.passedTime) < PASSED_MAX_AGE_MS; });
+    var padWith     = passedShips
+        .filter(function(p) { return activeMmsis.indexOf(p.mmsi) === -1; })
+        .slice(0, needed);
+
+    var inner  = document.getElementById('shipsInner');
+    var newKey = active.map(function(s) { return s.mmsi; }).join(',') +
+                 '|' + padWith.map(function(p) { return p.mmsi; }).join(',');
+
+    if (!active.length && !padWith.length) {
+        if (lastShipKey !== 'empty') {
+            if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
+            inner.style.transition = 'none'; inner.style.transform = 'translateX(0)';
+            inner.innerHTML = '<span class="no-ships-bar">No approaching vessels nearby</span>';
+            lastShipKey = 'empty';
+        }
+    } else if (newKey !== lastShipKey) {
+        lastShipKey = newKey;
+        if (pageTimer) { clearInterval(pageTimer); pageTimer = null; }
+        inner.style.transition = 'none'; inner.style.transform = 'translateX(0)';
+        inner.innerHTML = active.map(buildChipHTML).join('') +
+                          padWith.map(buildPassedChipHTML).join('');
+        setTimeout(function() { pageOffsets = buildPageOffsets(); startPaging(); }, 80);
+    } else {
+        updateChipValues(active);
+        // Refresh "X min ago" on passed chips every render cycle
+        padWith.forEach(function(ship) {
+            var chip = document.querySelector('.ship-chip.passed[data-mmsi="' + ship.mmsi + '"]');
+            if (!chip) return;
+            var agoEl  = chip.querySelector('.chip-ago');
+            if (agoEl) agoEl.textContent = formatAgo(ship.passedTime);
+        });
     }
 
-    // page through if there are more vessels than fit
-    var pages = Math.max(1, Math.ceil(vessels.length / MAX_CHIPS));
-    if (pageIdx >= pages) pageIdx = 0;
-    var slice = vessels.slice(pageIdx * MAX_CHIPS, pageIdx * MAX_CHIPS + MAX_CHIPS);
-    chips.innerHTML = slice.map(chipHTML).join('');
+    // If a vessel appears while we're hiding, cut the hide short
+    checkNearbyDuringHide();
+}
 
-    var pager = document.getElementById('pager');
-    if (pager) pager.textContent = pages > 1 ? (pageIdx + 1) + '/' + pages : '';
-  }
+function processMessage(data) {
+    if (data.MessageType === 'ShipStaticData' && data.Message && data.Message.ShipStaticData) {
+        var mmsi = data.MetaData.MMSI;
+        staticData[mmsi] = {
+            type:        data.Message.ShipStaticData.Type || null,
+            destination: (data.Message.ShipStaticData.Destination || '').trim() || null
+        };
+        render(); return;
+    }
+    if (data.MessageType === 'PositionReport' && data.Message && data.Message.PositionReport) {
+        var pos  = data.Message.PositionReport, meta = data.MetaData;
+        var dist = haversine(BRIDGE_LAT, BRIDGE_LON, pos.Latitude, pos.Longitude);
+        shipData[meta.MMSI] = {
+            mmsi:      meta.MMSI,
+            name:      (meta.ShipName || 'Unknown').trim(),
+            lat:       pos.Latitude,  lon:    pos.Longitude,
+            speed:     pos.Sog || 0,  course: pos.Cog || 0,
+            lengthM:   meta.VesselLengthM || null,   // for the fallback fun fact
+            typeCode:  meta.VesselType   || null,
+            distance:  dist,
+            direction: getDirection(pos.Latitude, pos.Longitude, pos.Cog || 0),
+            lastUpdate: Date.now()
+        };
+        var cut = Date.now() - 600000;
+        Object.keys(shipData).forEach(function(k) { if (shipData[k].lastUpdate < cut) delete shipData[k]; });
+        render();
+    }
+}
 
-  // rotate pages when there are more vessels than fit
-  setInterval(function () {
-    var st = Tracker.getState();
-    var pages = Math.max(1, Math.ceil((st.vessels || []).length / MAX_CHIPS));
-    if (pages > 1) { pageIdx = (pageIdx + 1) % pages; render(st); }
-  }, CYCLE_MS);
+function setLive(on) { document.getElementById('liveDot').className = 'live-dot' + (on ? ' on' : ''); }
 
-  // load curated facts, then start rendering
-  fetch(FACT_URL)
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      (d && d.vessels ? d.vessels : []).forEach(function (v) {
-        if (v && v.name && v.fact) FACTS[v.name.trim().toUpperCase()] = v.fact;
-      });
-    })
-    .catch(function () { /* no curated facts — autoFact still works */ })
-    .then(function () { Tracker.onUpdate(render); });
-})();
+function connect() {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+    setLive(false);
+    ws = new WebSocket(WS_URL);
+    ws.onopen    = function() { reconnectAttempts = 0; setLive(true); render(); };
+    ws.onmessage = function(e) {
+        try {
+            var m = JSON.parse(e.data);
+            if (m.type === 'ship_data') processMessage(m.data);
+            else if (m.type === 'bridge_passing') refreshPassedShips(); // server detected a pass — update immediately
+        } catch(ex) {}
+    };
+    ws.onerror   = function() { setLive(false); };
+    ws.onclose   = function() {
+        setLive(false);
+        reconnectAttempts++;
+        var delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000);
+        reconnectTimer = setTimeout(connect, delay);
+    };
+}
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) connect();
+});
 
+// ═══════════════════════════════════════════════════════════════
+//  BANNER CYCLE ENGINE
+//
+//  Cycle sequence (all JS-timed, no CSS animation keyframes):
+//
+//    1. Banner slides UP
+//    2. Panel 1 (Ticker 1)  visible for 30 s  — slides in from right
+//    3. Panel 2 (Ticker 2)  visible for 30 s  — slides in from right
+//    4. Panel 3 (Vessel)    visible for 90 s  — slides in from right
+//         ↳ if vessel ETA ≤ 30 min at end → extend by 30 s, repeat
+//         ↳ when no vessel nearby → outro tickers
+//    5. Panel 1 (Ticker 1)  visible for 30 s  — outro
+//    6. Panel 2 (Ticker 2)  visible for 30 s  — outro
+//    7. Banner slides DOWN
+//    8. Hidden for 4 min
+//         ↳ if vessel ETA ≤ 30 min detected → cancel hide, restart cycle
+//    9. Go to step 1
+//
+// ═══════════════════════════════════════════════════════════════
+
+var TICKER1_MS    = 30000;    // 30 s
+var TICKER2_MS    = 30000;    // 30 s
+var VESSEL_MS     = 90000;    // 90 s base vessel view
+var VESSEL_EXT_MS = 30000;    // 30 s extension while vessel nearby
+var HIDE_MS       = 240000;   // 4 min hidden
+var SLIDE_MS      = 5000;     // panel-to-panel slide duration (ms)
+var ETA_NEAR_MIN  = 30;       // vessel within N minutes = "nearby"
+
+var PANEL_IDS   = ['panel-ticker1', 'panel-ticker2', 'panel-vessel'];
+var activePanel = -1;         // index of currently visible panel (-1 = none)
+var cycleTimer  = null;
+var inHidePhase = false;
+var hideTimer   = null;
+
+/* Return the ETA (minutes) of the closest approaching vessel, or null */
+function getClosestApproachingETA() {
+    var vessels = getVisibleShips()
+        .filter(function(s) { return s.direction === 'Approaching'; })
+        .sort(function(a,b) { return a.distance - b.distance; });
+    if (!vessels.length) return null;
+    var v   = vessels[0];
+    var min = Math.round(v.distance / (v.speed * 1.852) * 60);
+    return min > 600 ? null : min;
+}
+
+/*
+ * slideToPanel(newIdx, callback)
+ * Slide newIdx panel in from the right while current panel exits left.
+ * After the transition, old panel is reset off-screen right (ready for re-use).
+ */
+function slideToPanel(newIdx, callback) {
+    var newEl = document.getElementById(PANEL_IDS[newIdx]);
+    var oldEl = (activePanel >= 0) ? document.getElementById(PANEL_IDS[activePanel]) : null;
+
+    // Position new panel at right with no transition so it's invisible
+    newEl.style.transition = 'none';
+    newEl.style.transform  = 'translateX(100%)';
+    void newEl.offsetWidth; // force reflow before applying transition
+
+    // Now animate: new slides in, old slides out
+    var TRANS = 'transform ' + SLIDE_MS + 'ms ease-in-out';
+    newEl.style.transition = TRANS;
+    newEl.style.transform  = 'translateX(0)';
+    if (oldEl) {
+        oldEl.style.transition = TRANS;
+        oldEl.style.transform  = 'translateX(-100%)';
+    }
+    activePanel = newIdx;
+
+    // After transition: reset old panel off-screen right so it can re-enter later
+    setTimeout(function() {
+        if (oldEl) {
+            oldEl.style.transition = 'none';
+            oldEl.style.transform  = 'translateX(100%)';
+        }
+        if (callback) callback();
+    }, SLIDE_MS + 60);
+}
+
+function showBanner() {
+    document.getElementById('banner-outer').style.transform = 'translateY(0)';
+}
+function hideBanner() {
+    document.getElementById('banner-outer').style.transform = 'translateY(100%)';
+}
+
+/*
+ * vesselPhase(duration)
+ * Wait `duration` ms, then either extend (if vessel nearby) or run outro tickers.
+ */
+function vesselPhase(duration) {
+    clearTimeout(cycleTimer);
+    cycleTimer = setTimeout(function() {
+        var eta = getClosestApproachingETA();
+        if (eta !== null && eta <= ETA_NEAR_MIN) {
+            // Vessel close — stay on vessel view 30 more seconds then re-check
+            console.log('Vessel within ' + eta + ' min — extending vessel view by 30s');
+            vesselPhase(VESSEL_EXT_MS);
+        } else {
+            // No nearby vessel — play outro tickers then hide
+            runOutroTickers();
+        }
+    }, duration);
+}
+
+/*
+ * runOutroTickers()
+ * Play Ticker 1 → Ticker 2 again after the vessel panel, then hide.
+ */
+function runOutroTickers() {
+    slideToPanel(0, function() {                        // Ticker 1 outro
+        cycleTimer = setTimeout(function() {
+            slideToPanel(1, function() {                // Ticker 2 outro
+                cycleTimer = setTimeout(function() {
+                    // All done — slide banner down, enter hide phase
+                    hideBanner();
+                    inHidePhase = true;
+                    hideTimer = setTimeout(function() {
+                        inHidePhase = false;
+                        runCycle();
+                    }, HIDE_MS);
+                }, TICKER2_MS);
+            });
+        }, TICKER1_MS);
+    });
+}
+
+/*
+ * runCycle()
+ * Entry point: slide banner up, run all three panels in sequence.
+ */
+function runCycle() {
+    clearTimeout(cycleTimer);
+    clearTimeout(hideTimer);
+    inHidePhase = false;
+
+    showBanner();
+
+    // Panel 1 — Ticker 1
+    slideToPanel(0, function() {
+        cycleTimer = setTimeout(function() {
+
+            // Panel 2 — Ticker 2
+            slideToPanel(1, function() {
+                cycleTimer = setTimeout(function() {
+
+                    // Panel 3 — Vessel tracker
+                    slideToPanel(2, function() {
+                        vesselPhase(VESSEL_MS);
+                    });
+
+                }, TICKER2_MS);
+            });
+
+        }, TICKER1_MS);
+    });
+}
+
+/*
+ * checkNearbyDuringHide()
+ * Called from render() every time ship data updates.
+ * If a vessel pops up within 60 min while the banner is hidden → skip rest of hide.
+ */
+function checkNearbyDuringHide() {
+    if (!inHidePhase) return;
+    var eta = getClosestApproachingETA();
+    if (eta !== null && eta <= ETA_NEAR_MIN) {
+        console.log('Vessel within ' + eta + ' min detected during hide — restarting cycle early');
+        clearTimeout(hideTimer);
+        inHidePhase = false;
+        runCycle();
+    }
+}
+
+// ── Kick everything off ───────────────────────────────────────
+window.onload = function() {
+    refreshData();
+    connect();
+    refreshPassedShips();  // load passings recorded by the server
+    loadFacts();           // load curated vessel fun facts for the notch
+    runCycle();            // start the cycle immediately on load
+};
 </script>
 </body>
 </html>
