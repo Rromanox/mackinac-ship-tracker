@@ -124,14 +124,18 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 2
 
 /* ── FUN-FACT NOTCH — the tab that rises above the bar over the vessel name ── */
 .chip-notch {
-    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    /* Anchored to the chip's LEFT edge and grows rightward, so a leftmost chip's
+       notch never extends past the clipped container (which was cutting the text).
+       width:max-content lets it size to the text; max-width caps + ellipsis-clips
+       the genuinely long ones. */
+    position: absolute; bottom: 100%; left: 0;
     margin-bottom: 13px;                 /* floats above the chip, not attached to it */
-    max-width: 640px;
+    width: max-content; max-width: 600px;
     padding: 11px 24px;                  /* even padding all round */
-    border-radius: 20px;                 /* fully rounded — floating pill, no cut edge */
+    border-radius: 20px;                 /* fully rounded — floating pill */
     background: rgba(17,22,32,.93);
     color: #fff;
-    font-size: 1.05rem; font-weight: bold; letter-spacing: .2px;
+    font-size: 1.02rem; font-weight: bold; letter-spacing: .2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     box-shadow: 0 4px 18px rgba(0,0,0,.45);   /* even drop shadow so it lifts off the video */
     pointer-events: none;
@@ -139,18 +143,6 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 2
 .ship-chip.approaching .chip-notch { background: rgba(12,58,32,.94); }
 .ship-chip.departing   .chip-notch { background: rgba(48,38,16,.93); }
 .ship-chip.near-bridge .chip-notch { background: rgba(120,16,20,.95); }
-/* Passed vessels: same idea, deliberately quieter — neutral grey, smaller type
-   and a softer shadow, so incoming/near vessels stay the ones that draw the eye.
-   (The .passed chip is already at 0.72 opacity, which dims this further.) */
-.ship-chip.passed .chip-notch {
-    background: rgba(34,38,46,.80);
-    font-size: 0.92rem;
-    font-weight: normal;
-    padding: 8px 18px;
-    border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(0,0,0,.28);
-    opacity: .82;
-}
 
 .chip-arrow { font-size: 1.6rem; }
 .chip-name  { font-weight: bold; }
@@ -515,11 +507,8 @@ function formatClockTime(ts) {
 
 function buildPassedChipHTML(ship) {
     var agoStr = formatAgo(ship.passedTime);
-    // Passed vessels: curated facts only (no general-fact filler) so these chips
-    // stay quiet and don't compete with the incoming vessels.
-    var fact = factFor(ship, false);
+    // No notch on passed vessels — facts are for incoming/near boats only.
     return '<div class="ship-chip passed" data-mmsi="' + ship.mmsi + '">' +
-        (fact ? '<div class="chip-notch">' + escHtml(fact) + '</div>' : '') +
         '<span class="chip-arrow">&#10003;</span>' +
         '<span class="chip-name">' + ship.name + '</span>' +
         '<span class="chip-passed-tag">Passed the Bridge</span>' +
