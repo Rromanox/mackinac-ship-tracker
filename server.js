@@ -358,8 +358,10 @@ if (!API_KEY) {
 }
 
 // Mackinac Bridge center point
-const BRIDGE_LAT = 45.8174;
-const BRIDGE_LON = -84.7278;
+// Exact center of the Mackinac Bridge. The passing detector fires when a vessel's
+// longitude crosses BRIDGE_LON, so this longitude IS the "under the bridge" line.
+const BRIDGE_LAT = 45.81169175762412;
+const BRIDGE_LON = -84.72866535186769;
 
 // Large bounding box covering Lake Michigan + Lake Huron
 // ~400km north/south, ~600km east/west — maximizes AISStream coverage for diagnostics

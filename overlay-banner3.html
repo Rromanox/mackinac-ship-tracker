@@ -286,7 +286,7 @@ function toProperCase(s) {
 var RENDER_URL  = 'mackinac-ship-tracker.onrender.com';
 var isLocal     = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 var WS_URL      = isLocal ? 'ws://localhost:' + (location.port || 3000) : 'wss://' + RENDER_URL;
-var BRIDGE_LAT  = 45.8174, BRIDGE_LON = -84.7278;
+var BRIDGE_LAT  = 45.81169175762412, BRIDGE_LON = -84.72866535186769;  // exact bridge center
 var MAX_DIST_MI = 100;
 
 var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
@@ -469,12 +469,21 @@ function courseToDirection(cog) {
     var idx = Math.round((((cog % 360) + 360) % 360) / 45) % 8;
     return dirs[(idx + 4) % 8] + '→' + dirs[idx];
 }
+// When did this vessel cross under the bridge? (from the server's passing records)
+function passedTimeFor(mmsi) {
+    for (var i = 0; i < passedShips.length; i++) {
+        if (passedShips[i].mmsi === mmsi) return passedShips[i].passedTime;
+    }
+    return null;
+}
 function buildChipHTML(ship) {
     var mi  = toMiles(ship.distance).toFixed(1);
     var spd = ship.speed ? ship.speed.toFixed(1) + ' kts' : '';
     var course = courseToDirection(ship.course);
     var eta = ship.direction === 'Approaching' ? formatETA(ship.distance, ship.speed) : null;
     var arrival = ship.direction === 'Approaching' ? formatArrival(ship.distance, ship.speed) : null;
+    // A departing vessel that has a passing record shows WHEN it went under the bridge
+    var passedAt = ship.direction !== 'Approaching' ? passedTimeFor(ship.mmsi) : null;
     var near = ship.distance < 8;
     var cls  = near ? 'near-bridge' : ship.direction === 'Approaching' ? 'approaching' : 'departing';
     var arr  = near ? '&#9889;' : ship.direction === 'Approaching' ? '&#9650;' : '&#9660;';
@@ -487,7 +496,9 @@ function buildChipHTML(ship) {
             (course ? '<span class="chip-course">' + course + '</span>' : '') + '</span>' +
         (spd ? '<span class="chip-speed">' + spd + '</span>' : '') +
         (eta ? '<span class="chip-eta-wrap"><span class="chip-eta">ETA ' + eta + '</span>' +
-               (arrival ? '<span class="chip-arrival">~' + arrival + '</span>' : '') + '</span>' : '') +
+               (arrival ? '<span class="chip-arrival">~' + arrival + '</span>' : '') + '</span>'
+         : passedAt ? '<span class="chip-eta-wrap"><span class="chip-eta">Passed</span>' +
+               '<span class="chip-arrival">' + formatClockTime(passedAt) + '</span></span>' : '') +
         '</div>';
 }
 function formatAgo(passedTime) {
@@ -529,8 +540,11 @@ function updateChipValues(ships) {
         chip.querySelector('.chip-dist').textContent = toMiles(ship.distance).toFixed(1) + ' mi';
         var cEl = chip.querySelector('.chip-course'); if (cEl) cEl.textContent = courseToDirection(ship.course) || '';
         var sEl = chip.querySelector('.chip-speed'); if (sEl) sEl.textContent = ship.speed ? ship.speed.toFixed(1) + ' kts' : '';
-        var eEl = chip.querySelector('.chip-eta');   if (eEl) eEl.textContent = eta ? 'ETA ' + eta : '';
-        var aEl = chip.querySelector('.chip-arrival'); if (aEl) aEl.textContent = arrival ? '~' + arrival : '';
+        var passedAt = ship.direction !== 'Approaching' ? passedTimeFor(ship.mmsi) : null;
+        var eEl = chip.querySelector('.chip-eta');
+        if (eEl) eEl.textContent = eta ? 'ETA ' + eta : (passedAt ? 'Passed' : '');
+        var aEl = chip.querySelector('.chip-arrival');
+        if (aEl) aEl.textContent = eta ? (arrival ? '~' + arrival : '') : (passedAt ? formatClockTime(passedAt) : '');
     });
 }
 
@@ -558,7 +572,12 @@ function render() {
         .slice(0, needed);
 
     var inner  = document.getElementById('shipsInner');
-    var newKey = active.map(function(s) { return s.mmsi; }).join(',') +
+    // Key includes direction (A/D) and whether we have a pass record (P), so the
+    // chip rebuilds — and the "Passed 8:53 PM" appears — the moment a vessel flips
+    // to departing or its crossing is recorded.
+    var newKey = active.map(function(s) {
+                     return s.mmsi + (s.direction === 'Approaching' ? 'A' : 'D') + (passedTimeFor(s.mmsi) ? 'P' : '');
+                 }).join(',') +
                  '|' + padWith.map(function(p) { return p.mmsi; }).join(',');
 
     if (!active.length && !padWith.length) {
