@@ -264,6 +264,13 @@ const ALLOWED_MMSI_SERVER = new Set([311050300]); // VICTORY II — big cruise s
 const MIN_VESSEL_LEN = 50; // metres — below this, a vessel is not a Great Lakes freighter
 const staticInfo = {};     // mmsi -> { type, length }  (learned from static messages)
 
+// Tug (52) and towing (31/32) vessels are EXEMPT from the size filter: a tug
+// pushing a barge broadcasts only its OWN length (often 30-45 m) while the barge
+// it's moving is the actual cargo and can be hundreds of feet. Tug-barge units
+// are real freight traffic through the straits, so size must not hide them.
+// (Nuisance harbour tugs are still handled by the MMSI blocklist.)
+const TOW_TYPES = new Set([31, 32, 52]);
+
 function shouldHideVessel(mmsi) {
   if (ALLOWED_MMSI_SERVER.has(mmsi)) return false;
   if (BLOCKED_MMSI_SERVER.has(mmsi)) return true;
@@ -271,7 +278,7 @@ function shouldHideVessel(mmsi) {
   if (info) {
     const t = info.type;
     if (t === 30 || t === 36 || t === 37 || (t >= 60 && t <= 69)) return true; // fishing, sailing, pleasure, passenger/ferry
-    if (info.length && info.length < MIN_VESSEL_LEN) return true;               // too small to be a freighter
+    if (!TOW_TYPES.has(t) && info.length && info.length < MIN_VESSEL_LEN) return true; // too small to be a freighter
   }
   return false;
 }
