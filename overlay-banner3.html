@@ -24,9 +24,11 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 2
     transition: transform 3.5s ease-in-out;
     background: var(--dynamic-background, linear-gradient(to bottom, skyblue, lightgrey));
     color: var(--dynamic-text-color, black);
-    /* clip-path instead of overflow:hidden — still clips the sliding panels at
-       the left/right edges, but lets the fun-fact notch rise above the bar. */
-    clip-path: inset(-110px 0 0 0);
+    /* Clip the sliding panels at the left/right edges exactly like banner2's
+       overflow:hidden, but let the fun-fact notch rise ABOVE the bar.
+       overflow-x:clip + overflow-y:visible is the one combo CSS allows for
+       "clip one axis, overflow the other". */
+    overflow-x: clip; overflow-y: visible;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -102,7 +104,7 @@ body { background-color: transparent; overflow: hidden; width: 2560px; height: 2
 .ship-branding-sub { font-size: 1.1rem; opacity: 0.6; white-space: nowrap; }
 
 /* same trick here: chips still clip horizontally for paging, notch escapes upward */
-.ships-row  { flex: 1; clip-path: inset(-110px 0 0 0); position: relative; }
+.ships-row  { flex: 1; overflow-x: clip; overflow-y: visible; position: relative; }
 .ships-inner { display: flex; align-items: center; gap: 14px; width: max-content; }
 
 .ship-chip {
