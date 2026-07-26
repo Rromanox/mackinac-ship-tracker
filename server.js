@@ -86,6 +86,7 @@ app.get('/overlay/corner',    (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner.html')));
 app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner2.html')));
 app.get('/overlay/banner3',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner3.html')));
+app.get('/overlay/narration', (req, res) => res.sendFile(path.join(__dirname, 'overlay-narration.html'))); // audio-only vessel narration player
 // New high-visibility overlay options (design candidates)
 app.get('/overlay/hud/board',     (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-board.html')));
 app.get('/overlay/hud/spotlight', (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-spotlight.html')));
@@ -481,6 +482,25 @@ app.get('/api/narration/:mmsi', (req, res) => {
   if (!entry) return res.status(404).end();
   res.set('Cache-Control', 'no-store');
   res.type('audio/mpeg').send(entry.buffer);
+});
+
+// Manual test — fire a narration on demand so you can verify audio/ducking without
+// waiting for a real vessel. Gated by LOCAL_AIS_KEY (the key already set on Render).
+//   GET /api/narrate-test?name=MESABI%20MINER&direction=eastbound&speed=13&key=YOUR_KEY
+app.get('/api/narrate-test', async (req, res) => {
+  if (LOCAL_AIS_KEY && (req.query.key || req.headers['x-api-key']) !== LOCAL_AIS_KEY)
+    return res.status(403).json({ error: 'invalid key' });
+  if (!NARRATION_ON) return res.status(503).json({ error: 'narration off — set ELEVENLABS_API_KEY on Render' });
+  const name = String(req.query.name || 'MESABI MINER');
+  const mmsi = 'test-' + name.replace(/\s+/g, '').slice(0, 16);
+  const direction = String(req.query.direction || 'eastbound');
+  const speed = Number(req.query.speed) || 12;
+  // If the vessel has no curated fact, give it a length so it clears the size gate
+  if (!NARR_FACTS[name.trim().toUpperCase()]) staticInfo[mmsi] = { type: 70, length: 300 };
+  try {
+    await narrateVessel(mmsi, name, direction, speed);
+    res.json({ ok: true, name, played: '/api/narration/' + mmsi });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Keep the in-memory audio cache bounded — drop clips older than 30 minutes

@@ -657,30 +657,6 @@ function processMessage(data) {
 
 function setLive(on) { document.getElementById('liveDot').className = 'live-dot' + (on ? ' on' : ''); }
 
-// ── Vessel voice narration ────────────────────────────────────
-// Server sends a `narrate` event (audio URL) when a notable vessel passes the
-// bridge. Play it through THIS browser source so OBS captures it onto the
-// stream. Clips are queued so two narrations never overlap.
-var narrationQueue = [], narrationAudio = null, narrating = false;
-function enqueueNarration(d) {
-    if (!d || !d.url) return;
-    narrationQueue.push(d);
-    playNextNarration();
-}
-function playNextNarration() {
-    if (narrating || !narrationQueue.length) return;
-    var d = narrationQueue.shift();
-    narrating = true;
-    if (!narrationAudio) {
-        narrationAudio = new Audio();
-        narrationAudio.addEventListener('ended', function () { narrating = false; playNextNarration(); });
-        narrationAudio.addEventListener('error', function () { narrating = false; playNextNarration(); });
-    }
-    narrationAudio.src = HTTP_BASE + d.url;
-    var pr = narrationAudio.play();
-    if (pr && pr.catch) pr.catch(function () { narrating = false; playNextNarration(); });
-}
-
 function connect() {
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
     if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
@@ -692,7 +668,6 @@ function connect() {
             var m = JSON.parse(e.data);
             if (m.type === 'ship_data') processMessage(m.data);
             else if (m.type === 'bridge_passing') refreshPassedShips(); // server detected a pass — update immediately
-            else if (m.type === 'narrate') enqueueNarration(m.data);
         } catch(ex) {}
     };
     ws.onerror   = function() { setLive(false); };
