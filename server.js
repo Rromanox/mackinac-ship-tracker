@@ -29,6 +29,7 @@ const DB_NAME = 'shiptracker';
 let db = null;
 let shipsCollection = null;
 let passingsCollection = null;
+let narrationsCollection = null;
 
 // Connect to MongoDB
 async function connectToMongoDB() {
@@ -38,6 +39,7 @@ async function connectToMongoDB() {
     db = client.db(DB_NAME);
     shipsCollection = db.collection('ships');
     passingsCollection = db.collection('passings');
+    narrationsCollection = db.collection('narrations');
 
     // Create indexes for better performance
     await shipsCollection.createIndex({ mmsi: 1 });
@@ -45,6 +47,7 @@ async function connectToMongoDB() {
     await shipsCollection.createIndex({ passedBridge: 1 });
     await passingsCollection.createIndex({ passedTime: -1 });
     await passingsCollection.createIndex({ mmsi: 1 });
+    await narrationsCollection.createIndex({ at: -1 });
     
     console.log('✓ Connected to MongoDB');
     console.log('📊 Database:', DB_NAME);
@@ -450,7 +453,7 @@ async function narrationScriptLLM(v) {
   const j = await res.json();
   const text = (j.content || []).filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
   if (!text) throw new Error('empty script');
-  return text;
+  return { text: text, usage: j.usage || null };
 }
 
 async function synthesizeVoice(text) {
@@ -467,6 +470,65 @@ async function synthesizeVoice(text) {
 const narrationCache = {};        // mmsi -> { buffer, at }
 const narrationInFlight = new Set();
 
+// ── Narration cost logging ─────────────────────────────────────
+// ElevenLabs Multilingual v2 bills 1 credit / character (~$0.10 per 1,000 chars
+// at pay-as-you-go; within a monthly plan it draws from included credits).
+// Flash v2.5 is half that. Claude Haiku 4.5 writes the script at $1 / 1M input
+// tokens and $5 / 1M output tokens.
+const ELEVEN_USD_PER_1K   = /flash/i.test(ELEVEN_MODEL) ? 0.05 : 0.10;
+const HAIKU_USD_IN_PER_1M = 1.0;
+const HAIKU_USD_OUT_PER_1M = 5.0;
+const recentNarrationsMemory = []; // newest first — fallback if the DB is down
+
+async function recordNarration(ev) {
+  recentNarrationsMemory.unshift(ev);
+  if (recentNarrationsMemory.length > 1000) recentNarrationsMemory.pop();
+  if (narrationsCollection) {
+    try { await narrationsCollection.insertOne({ ...ev }); }
+    catch (e) { console.error('🎙️ Narration log write failed:', e.message); }
+  }
+}
+
+function narrationCost(r) {
+  const eleven = (r.chars || 0) / 1000 * ELEVEN_USD_PER_1K;
+  const llm = (r.inTok || 0) / 1e6 * HAIKU_USD_IN_PER_1M + (r.outTok || 0) / 1e6 * HAIKU_USD_OUT_PER_1M;
+  return { eleven: eleven, llm: llm, total: eleven + llm };
+}
+
+// Narration cost/usage dashboard data — which vessels were narrated and what it cost
+app.get('/api/narrations', async (req, res) => {
+  try {
+    let rows;
+    if (narrationsCollection) rows = await narrationsCollection.find({}).sort({ at: -1 }).limit(300).toArray();
+    else rows = recentNarrationsMemory.slice(0, 300);
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const totals = { today: { count: 0, usd: 0, chars: 0 }, month: { count: 0, usd: 0, chars: 0 }, all: { count: 0, usd: 0, chars: 0 } };
+    const add = (b, c, chars) => { b.count++; b.usd += c.total; b.chars += chars; };
+    const list = rows.map(r => {
+      const c = narrationCost(r);
+      const chars = r.chars || 0;
+      add(totals.all, c, chars);
+      if (r.at >= startMonth) add(totals.month, c, chars);
+      if (r.at >= startToday) add(totals.today, c, chars);
+      return {
+        mmsi: r.mmsi, name: r.name, direction: r.direction || null, at: r.at, chars: chars,
+        model: r.model || '?', hadFact: !!r.hadFact,
+        usd: +c.total.toFixed(4), elevenUsd: +c.eleven.toFixed(4), llmUsd: +c.llm.toFixed(5)
+      };
+    });
+    const round = o => ({ count: o.count, chars: o.chars, usd: +o.usd.toFixed(2), usdPrecise: +o.usd.toFixed(4) });
+    res.json({
+      rate: { elevenUsdPer1kChars: ELEVEN_USD_PER_1K, model: ELEVEN_MODEL,
+        note: 'ElevenLabs $ is an estimate at pay-as-you-go rates; inside your monthly plan it draws from included credits (1 character = 1 credit on Multilingual v2). Claude Haiku cost is billed as real dollars.' },
+      totals: { today: round(totals.today), month: round(totals.month), all: round(totals.all) },
+      narrations: list
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/narrations', (req, res) => res.sendFile(path.join(__dirname, 'narrations.html')));
+
 async function narrateVessel(mmsi, name, direction, speed) {
   if (!NARRATION_ON) return;
   const cleanName = (name || '').trim();
@@ -482,13 +544,22 @@ async function narrateVessel(mmsi, name, direction, speed) {
       name: name, direction: direction, speed: Math.round(speed || 0), fact: fact,
       lengthFt: info.length ? Math.round(info.length * 3.28084) : null
     };
-    let text;
-    try { text = ANTHROPIC_KEY ? await narrationScriptLLM(v) : narrationTemplate(v); }
+    let text, llmUsage = null, usedLLM = false;
+    try {
+      if (ANTHROPIC_KEY) { const r = await narrationScriptLLM(v); text = r.text; llmUsage = r.usage; usedLLM = true; }
+      else text = narrationTemplate(v);
+    }
     catch (e) { console.error('🎙️ Script gen failed (' + name + '), using template:', e.message); text = narrationTemplate(v); }
     text = applyPronunciation(text);
     const buffer = await synthesizeVoice(text);
     narrationCache[mmsi] = { buffer: buffer, at: Date.now() };
     console.log('🎙️ Narration ready: ' + name + '  "' + text.slice(0, 90) + '"');
+    recordNarration({
+      mmsi: mmsi, name: name, direction: direction || null, at: Date.now(),
+      chars: text.length, model: usedLLM ? 'llm' : 'template', hadFact: !!fact,
+      inTok: llmUsage ? (llmUsage.input_tokens || 0) : 0,
+      outTok: llmUsage ? (llmUsage.output_tokens || 0) : 0
+    }).catch(e => console.error('🎙️ recordNarration:', e.message));
     broadcastToClients({ type: 'narrate', data: { mmsi: mmsi, name: name, url: '/api/narration/' + mmsi + '?t=' + Date.now() } });
   } catch (e) {
     console.error('🎙️ Narration failed (' + name + '):', e.message);

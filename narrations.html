@@ -1,0 +1,105 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Narration Log & Cost — Mackinac Tracker</title>
+<style>
+  :root { --bg:#0f1622; --card:#18202e; --line:#26303f; --text:#e8eef6; --muted:#8aa0b8; --accent:#4ea3ff; --green:#3fbf79; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); padding:24px; }
+  h1 { font-size:1.5rem; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 20px; font-size:.95rem; max-width:760px; }
+  code { background:rgba(255,255,255,.08); padding:1px 5px; border-radius:4px; }
+  .bar { display:flex; gap:10px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
+  button { background:var(--accent); color:#04121f; border:0; border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; font-size:.9rem; }
+  .count { color:var(--muted); font-size:.9rem; }
+  .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+  @media (max-width:640px){ .cards{ grid-template-columns:1fr; } }
+  .metric { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .metric .label { color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.5px; margin:0 0 8px; }
+  .metric .usd { font-size:2rem; font-weight:800; margin:0; line-height:1; }
+  .metric .usd .cents { color:var(--muted); font-size:1.2rem; font-weight:700; }
+  .metric .detail { color:var(--muted); font-size:.82rem; margin:8px 0 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:4px 0; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  th,td { text-align:left; padding:9px 14px; }
+  th { color:var(--muted); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid var(--line); }
+  tbody tr:nth-child(odd){ background:rgba(255,255,255,.025); }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .name { font-weight:600; }
+  .badge { font-size:.68rem; padding:1px 6px; border-radius:5px; background:rgba(255,255,255,.09); color:var(--muted); margin-left:6px; }
+  .badge.llm { background:rgba(78,163,255,.16); color:var(--accent); }
+  .empty { color:var(--muted); font-style:italic; padding:18px 14px; }
+  .note { color:var(--muted); font-size:.78rem; margin-top:14px; max-width:760px; line-height:1.5; }
+</style>
+</head>
+<body>
+  <h1>🎙️ Narration log & cost</h1>
+  <p class="sub">Every vessel the AI voice narrated as it crossed the bridge, and what it cost. Newest first.</p>
+  <div class="bar">
+    <button id="refresh">&#8635; Refresh</button>
+    <span class="count" id="count">loading…</span>
+  </div>
+  <div class="cards">
+    <div class="metric"><p class="label">Today</p><p class="usd" id="tUsd">—</p><p class="detail" id="tDet"></p></div>
+    <div class="metric"><p class="label">This month</p><p class="usd" id="mUsd">—</p><p class="detail" id="mDet"></p></div>
+    <div class="metric"><p class="label">All time</p><p class="usd" id="aUsd">—</p><p class="detail" id="aDet"></p></div>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>When</th><th>Vessel</th><th>Dir</th><th class="num">Chars</th><th class="num">Cost</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="5" class="empty">loading…</td></tr></tbody>
+    </table>
+  </div>
+  <p class="note" id="rateNote"></p>
+<script>
+var RENDER_URL = 'mackinac-ship-tracker.onrender.com';
+var isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+var HTTP_BASE = isLocal ? 'http://localhost:' + (location.port || 3000) : 'https://' + RENDER_URL;
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function usd(n){ var v=(n||0).toFixed(2); return '<span>$'+v.split('.')[0]+'</span>.<span class="cents">'+v.split('.')[1]+'</span>'; }
+function fmtWhen(ms){ try{ return new Date(ms).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+function dirArrow(d){ return d==='eastbound'?'→ E':d==='westbound'?'← W':'·'; }
+function money(n){ return n>=0.01 ? ('$'+n.toFixed(2)) : ('$'+n.toFixed(4)); }
+function render(d){
+  var t=d.totals||{};
+  function fill(pfx, o){
+    document.getElementById(pfx+'Usd').innerHTML = usd(o.usd);
+    document.getElementById(pfx+'Det').textContent = o.count + ' narration' + (o.count===1?'':'s') + '  ·  ' + o.chars.toLocaleString() + ' chars';
+  }
+  fill('t', t.today||{usd:0,count:0,chars:0});
+  fill('m', t.month||{usd:0,count:0,chars:0});
+  fill('a', t.all||{usd:0,count:0,chars:0});
+  var list = d.narrations || [];
+  document.getElementById('count').textContent = list.length + ' recent narrations';
+  document.getElementById('rows').innerHTML = list.length
+    ? list.map(function(r){
+        return '<tr><td>'+esc(fmtWhen(r.at))+'</td>'+
+          '<td><span class="name">'+esc(r.name)+'</span>'+
+             '<span class="badge'+(r.model==='llm'?' llm':'')+'">'+esc(r.model)+'</span></td>'+
+          '<td>'+dirArrow(r.direction)+'</td>'+
+          '<td class="num">'+(r.chars||0).toLocaleString()+'</td>'+
+          '<td class="num">'+money(r.usd)+'</td></tr>';
+      }).join('')
+    : '<tr><td colspan="5" class="empty">No narrations yet — they log here the moment a vessel is voiced.</td></tr>';
+  if (d.rate) document.getElementById('rateNote').textContent =
+    'Cost basis: ElevenLabs ' + d.rate.model + ' at $' + d.rate.elevenUsdPer1kChars + ' / 1,000 characters. ' + (d.rate.note||'');
+}
+function load(){
+  fetch(HTTP_BASE + '/api/narrations')
+    .then(function(r){ return r.json(); })
+    .then(render)
+    .catch(function(e){ document.getElementById('count').textContent = 'Error loading: ' + e.message; });
+}
+document.getElementById('refresh').onclick = load;
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
