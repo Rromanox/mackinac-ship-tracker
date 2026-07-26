@@ -87,6 +87,7 @@ app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner2.html')));
 app.get('/overlay/banner3',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner3.html')));
 app.get('/overlay/narration', (req, res) => res.sendFile(path.join(__dirname, 'overlay-narration.html'))); // audio-only vessel narration player
+app.get('/missing-facts',     (req, res) => res.sendFile(path.join(__dirname, 'missing-facts.html'))); // human-readable fact-gap list
 // New high-visibility overlay options (design candidates)
 app.get('/overlay/hud/board',     (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-board.html')));
 app.get('/overlay/hud/spotlight', (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-spotlight.html')));
@@ -147,7 +148,7 @@ app.get('/api/missing-facts', async (req, res) => {
       const seen = new Set();
       rows.forEach(r => {
         const n = (r.name || '').trim();
-        if (skip(n) || seen.has(n.toUpperCase()) || have.has(n.toUpperCase())) return;
+        if (skip(n) || shouldHideVessel(r.mmsi) || seen.has(n.toUpperCase()) || have.has(n.toUpperCase())) return;
         seen.add(n.toUpperCase());
         crossed.push({ name: n, lastPassed: r.passedTime });
       });
@@ -160,7 +161,7 @@ app.get('/api/missing-facts', async (req, res) => {
       .sort((a, b) => b.at - a.at)
       .forEach(v => {
         const n = (v.name || '').trim();
-        if (skip(n) || seenH.has(n.toUpperCase()) || have.has(n.toUpperCase())) return;
+        if (skip(n) || shouldHideVessel(v.mmsi) || seenH.has(n.toUpperCase()) || have.has(n.toUpperCase())) return;
         seenH.add(n.toUpperCase());
         heard.push({ name: n, milesFromBridge: +v.distanceMi.toFixed(1) });
       });
