@@ -236,6 +236,28 @@ app.get('/api/status', async (req, res) => {
   });
 });
 
+// ── PTZ camera cue ─────────────────────────────────────────────
+// Which preset should the PTZ camera hold right now? Home Assistant polls this
+// every ~15s and calls ptz_goto_preset for the returned zone. POSITION-driven
+// (not a timer), so vessel speed doesn't matter — the closest in-range moving
+// vessel wins, and the camera follows it through west → bridge → east zones.
+const PTZ_BRIDGE_MI = 1.5;        // within this of the bridge (either side) → "bridge" preset
+const PTZ_FRESH_MS  = 90 * 1000;  // ignore a vessel not heard from in 90 s
+app.get('/api/ptz-cue', (req, res) => {
+  const now = Date.now();
+  let best = null;
+  Object.keys(nearBridge).forEach(k => {
+    const v = nearBridge[k];
+    if (now - v.at > PTZ_FRESH_MS) { delete nearBridge[k]; return; }
+    if (!best || v.distKm < best.distKm) best = Object.assign({ mmsi: +k }, v);
+  });
+  if (!best) return res.json({ active: false, zone: 'home' });
+  const distMi = +(best.distKm * 0.621371).toFixed(2);
+  const zone = distMi <= PTZ_BRIDGE_MI ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
+  res.json({ active: true, zone: zone, mmsi: best.mmsi, name: best.name,
+             side: best.side, distanceMi: distMi, speedKn: +(best.speed || 0).toFixed(1) });
+});
+
 // Recent ships that passed the bridge (server-detected longitude crossings)
 app.get('/api/ships/recent', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 10, 50);
@@ -318,6 +340,7 @@ const PASS_STALE_MS     = 30 * 60 * 1000;     // forget a side observation older
 const PASS_COOLDOWN_MS  = 60 * 60 * 1000;     // record at most one pass per vessel per hour
 
 const vesselSides         = {}; // mmsi → { side, at }
+const nearBridge          = {}; // mmsi → { name, distKm, side, speed, lat, lon, at } — live PTZ-cue feed
 const lastPassRecordedAt  = {}; // mmsi → timestamp
 const recentPassingsMemory = []; // newest first — fallback + fast reads if DB is down
 
@@ -333,12 +356,14 @@ function checkBridgePassing(mmsi, name, lat, lon, speed) {
   if (BLOCKED_MMSI_SERVER.has(mmsi) && !ALLOWED_MMSI_SERVER.has(mmsi)) return;
 
   const distKm = haversineKm(lat, lon, BRIDGE_LAT, BRIDGE_LON);
-  if (distKm > PASS_TRACK_KM) { delete vesselSides[mmsi]; return; }
+  if (distKm > PASS_TRACK_KM) { delete vesselSides[mmsi]; delete nearBridge[mmsi]; return; }
   if (!speed || speed < 0.5) return; // ignore drifting/moored vessels
 
   const side = lon < BRIDGE_LON ? 'west' : 'east';
   const prev = vesselSides[mmsi];
   vesselSides[mmsi] = { side, at: Date.now() };
+  // Live camera-cue feed: closest in-range moving vessel drives the PTZ preset (see /api/ptz-cue)
+  nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, lat: lat, lon: lon, at: Date.now() };
 
   if (!prev) {
     console.log(`🌉 Near bridge: ${name} (${mmsi}) on ${side} side, ${(distKm * 0.621371).toFixed(1)} mi out`);
