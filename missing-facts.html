@@ -24,6 +24,7 @@
   li { display:flex; justify-content:space-between; gap:12px; padding:8px 10px; border-radius:7px; }
   li:nth-child(odd){ background:rgba(255,255,255,.03); }
   .name { font-weight:600; }
+  .mmsi { color:var(--muted); font-size:.74rem; font-weight:400; margin-left:7px; letter-spacing:.3px; }
   .meta { color:var(--muted); font-size:.82rem; white-space:nowrap; }
   .empty { color:var(--muted); font-style:italic; padding:8px 10px; }
 </style>
@@ -59,11 +60,15 @@ function render(d){
   document.getElementById('count').textContent = (d.curatedFactCount||0) + ' facts on file';
   var c = d.crossedBridgeNeedingFacts || [], h = d.heardRecentlyNeedingFacts || [];
   crossedNames = c.map(function(x){ return x.name; });
+  function row(x, right){
+    var mmsi = x.mmsi ? '<span class="mmsi">'+esc(x.mmsi)+'</span>' : '';
+    return '<li><span class="name">'+esc(x.name)+mmsi+'</span><span class="meta">'+right+'</span></li>';
+  }
   document.getElementById('crossed').innerHTML = c.length
-    ? c.map(function(x){ return '<li><span class="name">'+esc(x.name)+'</span><span class="meta">'+fmtDate(x.lastPassed)+'</span></li>'; }).join('')
+    ? c.map(function(x){ return row(x, fmtDate(x.lastPassed)); }).join('')
     : '<div class="empty">All caught up &#127881;</div>';
   document.getElementById('heard').innerHTML = h.length
-    ? h.map(function(x){ return '<li><span class="name">'+esc(x.name)+'</span><span class="meta">'+x.milesFromBridge+' mi</span></li>'; }).join('')
+    ? h.map(function(x){ return row(x, esc(x.milesFromBridge)+' mi'); }).join('')
     : '<div class="empty">Nothing right now</div>';
 }
 function load(){

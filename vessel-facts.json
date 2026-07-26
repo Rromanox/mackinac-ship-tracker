@@ -1002,6 +1002,13 @@
    "source": "https://en.wikipedia.org/wiki/USCGC_Bristol_Bay"
   },
   {
+   "name": "PRIME",
+   "fact": "A Norwegian ocean tanker — one of the 'salties' that reach the Lakes from the Atlantic through the St. Lawrence Seaway, rarer here than the home-fleet lakers",
+   "built": 2004,
+   "lengthFt": 459,
+   "source": "vesselfinder.com IMO 9267558 — chemical/oil products tanker, Norway flag, 140 m LOA, 14,750 DWT, mgr OSM Ship Management"
+  },
+  {
    "name": "VIKING POLARIS",
    "fact": "Carries two six-passenger submarines — built 2022 for polar ice",
    "built": 2022,

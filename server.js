@@ -269,6 +269,10 @@ const BLOCKED_MMSI_SERVER = new Set([
   // Unnamed local craft — never broadcast a name we could catch, but loiter in the
   // ferry zone all day at ferry speeds (not freighter behaviour). Unblock if identified.
   367706323, 368162611,
+  // Named pleasure craft / charters (US 338-series recreational MMSIs) that crossed
+  // the bridge but aren't Great Lakes freight — off the banners and the fact-gap list.
+  338441735, // MISTY MAIDEN
+  338095227, // TRANQUILLITY
 ]);
 const ALLOWED_MMSI_SERVER = new Set([311050300]); // VICTORY II — big cruise ship, overrides size/type filters
 const MIN_VESSEL_LEN = 50; // metres — below this, a vessel is not a Great Lakes freighter
