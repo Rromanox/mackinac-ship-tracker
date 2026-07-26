@@ -315,6 +315,17 @@ function refreshPassedShips() {
 }
 setInterval(refreshPassedShips, 60000);
 
+// Age out vessels we haven't heard from in 10 min even when NO new PositionReports
+// arrive (e.g. a lone vessel stops transmitting) — otherwise its chip freezes on screen.
+function pruneStaleShips() {
+    var cut = Date.now() - 600000, changed = false;
+    Object.keys(shipData).forEach(function(k) {
+        if (shipData[k].lastUpdate < cut) { delete shipData[k]; delete staticData[k]; changed = true; }
+    });
+    if (changed) render();
+}
+setInterval(pruneStaleShips, 30000);
+
 // ── Ferry / passenger vessel blocklist ────────────────────────
 var BLOCKED_MMSI = {
     368165150: 'WILLIAM RICHARD',         // Inland ferry, "Other" type
@@ -352,7 +363,9 @@ function haversine(la1, lo1, la2, lo2) {
 }
 function toMiles(km) { return km * 0.621371; }
 function getDirection(lat, lon, course) {
-    var dLat = lat - BRIDGE_LAT, dLon = lon - BRIDGE_LON;
+    // Scale the longitude delta by cos(latitude) so the bearing isn't skewed by
+    // longitude compression at 45.8°N (otherwise ~10° error near the E/W boundary).
+    var dLat = lat - BRIDGE_LAT, dLon = (lon - BRIDGE_LON) * Math.cos(BRIDGE_LAT * Math.PI / 180);
     var tb = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
     return Math.abs(((course - tb) + 180 + 360) % 360 - 180) < 90 ? 'Approaching' : 'Departing';
 }
@@ -494,7 +507,7 @@ function buildChipHTML(ship) {
     return '<div class="ship-chip ' + cls + '" data-mmsi="' + ship.mmsi + '">' +
         (fact ? '<div class="chip-notch">' + escHtml(fact) + '</div>' : '') +
         '<span class="chip-arrow">' + arr + '</span>' +
-        '<span class="chip-name">'  + ship.name + '</span>' +
+        '<span class="chip-name">'  + escHtml(ship.name) + '</span>' +
         '<span class="chip-dist-wrap"><span class="chip-dist">' + mi + ' mi</span>' +
             (course ? '<span class="chip-course">' + course + '</span>' : '') + '</span>' +
         (spd ? '<span class="chip-speed">' + spd + '</span>' : '') +
@@ -524,7 +537,7 @@ function buildPassedChipHTML(ship) {
     // No notch on passed vessels — facts are for incoming/near boats only.
     return '<div class="ship-chip passed" data-mmsi="' + ship.mmsi + '">' +
         '<span class="chip-arrow">&#10003;</span>' +
-        '<span class="chip-name">' + ship.name + '</span>' +
+        '<span class="chip-name">' + escHtml(ship.name) + '</span>' +
         '<span class="chip-passed-tag">Passed the Bridge</span>' +
         '<span class="chip-passtime">' + formatClockTime(ship.passedTime) + '</span>' +
         '<span class="chip-ago">' + agoStr + '</span>' +
@@ -580,7 +593,7 @@ function render() {
     // chip rebuilds — and the "Passed 8:53 PM" appears — the moment a vessel flips
     // to departing or its crossing is recorded.
     var newKey = active.map(function(s) {
-                     return s.mmsi + (s.direction === 'Approaching' ? 'A' : 'D') + (passedTimeFor(s.mmsi) ? 'P' : '');
+                     return s.mmsi + (s.direction === 'Approaching' ? 'A' : 'D') + (passedTimeFor(s.mmsi) ? 'P' : '') + (formatETA(s.distance, s.speed) ? 'E' : '');
                  }).join(',') +
                  '|' + padWith.map(function(p) { return p.mmsi; }).join(',');
 
@@ -830,7 +843,7 @@ function runCycle() {
 /*
  * checkNearbyDuringHide()
  * Called from render() every time ship data updates.
- * If a vessel pops up within 60 min while the banner is hidden → skip rest of hide.
+ * If a vessel pops up within ETA_NEAR_MIN (30 min) while the banner is hidden → skip rest of hide.
  */
 function checkNearbyDuringHide() {
     if (!inHidePhase) return;

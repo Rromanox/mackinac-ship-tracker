@@ -11,9 +11,9 @@
   },
   {
    "name": "VIKING OCTANTIS",
-   "fact": "Largest cruise ship sailing the Great Lakes — 665 ft",
+   "fact": "Largest cruise ship sailing the Great Lakes — 673 ft",
    "built": 2021,
-   "lengthFt": 665,
+   "lengthFt": 673,
    "source": "seatrade-cruise.com / urbanmilwaukee.com 2025 (polar-rating claim dropped, unverified; sources vary 665-673 ft)"
   },
   {
@@ -117,7 +117,7 @@
   },
   {
    "name": "OAKGLEN",
-   "fact": "730 ft Seaway-max bulker in CSL's 'glen' fleet since 1980",
+   "fact": "730 ft Seaway-max bulker, built 1980 — a CSL 'glen' ship",
    "built": 1980,
    "lengthFt": 730,
    "source": "cslships.com/vessel/oakglen"
@@ -437,7 +437,7 @@
   },
   {
    "name": "AMERICAN PATRIOT",
-   "fact": "New in 2025 — sails the first all-U.S. Great Lakes cruises",
+   "fact": "Sails all-American cruises across the Great Lakes",
    "built": 2025,
    "source": "americancruiselines.com press release; travelweekly.com — 'first all-U.S.' rests on operator's own claim, echoed by trade press; length not verified"
   },
@@ -714,9 +714,9 @@
   },
   {
    "name": "CSL ASSINIBOINE",
-   "fact": "Built 1977 — a 728-ft self-unloader still working the Lakes",
+   "fact": "Built 1977, lengthened to 740 ft — still working the Lakes",
    "built": 1977,
-   "lengthFt": 728,
+   "lengthFt": 740,
    "source": "vesselfinder.com IMO 7413218 (1977, 222m = 728ft, self-discharging bulk carrier). Original cited URLs were dead; 2005 forebody-splice claim unverifiable, removed"
   },
   {
@@ -849,7 +849,7 @@
   },
   {
    "name": "ALGOMA INTEGRITY",
-   "fact": "2009 handysize bulk carrier — 46,293 tonnes deadweight",
+   "fact": "2009 handysize bulk carrier — 47,556 tonnes deadweight",
    "built": 2009,
    "lengthFt": 647,
    "source": "Algoma Central official fleet page"
@@ -1045,7 +1045,7 @@
   },
   {
    "name": "JOHN J CARRICK",
-   "fact": "Heated asphalt barge — 70,000 barrels, built in China in 2009",
+   "fact": "Chinese-built heated asphalt barge — hauls 70,000 barrels",
    "built": 2009,
    "lengthFt": 410,
    "source": "https://professionalmariner.com/another-new-atb-for-great-lakes-service-tug-victorious-is-second-unit-for-mcasphalt/ — BUILD YEAR CORRECTED 2008 -> 2009 (Penglai Bohai Shipyard). Length filled in at ~410ft LOA. 70,000 bbl and heated asphalt (to 350F) confirmed."

@@ -284,6 +284,17 @@ function refreshPassedShips() {
 }
 setInterval(refreshPassedShips, 60000);
 
+// Age out vessels we haven't heard from in 10 min even when NO new PositionReports
+// arrive (e.g. a lone vessel stops transmitting) — otherwise its chip freezes on screen.
+function pruneStaleShips() {
+    var cut = Date.now() - 600000, changed = false;
+    Object.keys(shipData).forEach(function(k) {
+        if (shipData[k].lastUpdate < cut) { delete shipData[k]; delete staticData[k]; changed = true; }
+    });
+    if (changed) render();
+}
+setInterval(pruneStaleShips, 30000);
+
 // ── Ferry / passenger vessel blocklist ────────────────────────
 var BLOCKED_MMSI = {
     368165150: 'WILLIAM RICHARD',         // Inland ferry, "Other" type
@@ -321,7 +332,9 @@ function haversine(la1, lo1, la2, lo2) {
 }
 function toMiles(km) { return km * 0.621371; }
 function getDirection(lat, lon, course) {
-    var dLat = lat - BRIDGE_LAT, dLon = lon - BRIDGE_LON;
+    // Scale the longitude delta by cos(latitude) so the bearing isn't skewed by
+    // longitude compression at 45.8°N (otherwise ~10° error near the E/W boundary).
+    var dLat = lat - BRIDGE_LAT, dLon = (lon - BRIDGE_LON) * Math.cos(BRIDGE_LAT * Math.PI / 180);
     var tb = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
     return Math.abs(((course - tb) + 180 + 360) % 360 - 180) < 90 ? 'Approaching' : 'Departing';
 }
@@ -380,6 +393,11 @@ function courseToDirection(cog) {
     var idx = Math.round((((cog % 360) + 360) % 360) / 45) % 8;
     return dirs[(idx + 4) % 8] + '→' + dirs[idx];
 }
+function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+}
 function passedTimeFor(mmsi) {
     for (var i = 0; i < passedShips.length; i++) {
         if (passedShips[i].mmsi === mmsi) return passedShips[i].passedTime;
@@ -399,7 +417,7 @@ function buildChipHTML(ship) {
     var arr  = near ? '&#9889;' : ship.direction === 'Approaching' ? '&#9650;' : '&#9660;';
     return '<div class="ship-chip ' + cls + '" data-mmsi="' + ship.mmsi + '">' +
         '<span class="chip-arrow">' + arr + '</span>' +
-        '<span class="chip-name">'  + ship.name + '</span>' +
+        '<span class="chip-name">'  + escHtml(ship.name) + '</span>' +
         '<span class="chip-dist-wrap"><span class="chip-dist">' + mi + ' mi</span>' +
             (course ? '<span class="chip-course">' + course + '</span>' : '') + '</span>' +
         (spd ? '<span class="chip-speed">' + spd + '</span>' : '') +
@@ -428,7 +446,7 @@ function buildPassedChipHTML(ship) {
     var agoStr = formatAgo(ship.passedTime);
     return '<div class="ship-chip passed" data-mmsi="' + ship.mmsi + '">' +
         '<span class="chip-arrow">&#10003;</span>' +
-        '<span class="chip-name">' + ship.name + '</span>' +
+        '<span class="chip-name">' + escHtml(ship.name) + '</span>' +
         '<span class="chip-passed-tag">Passed the Bridge</span>' +
         '<span class="chip-passtime">' + formatClockTime(ship.passedTime) + '</span>' +
         '<span class="chip-ago">' + agoStr + '</span>' +
