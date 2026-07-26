@@ -439,7 +439,7 @@ async function synthesizeVoice(text) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-    body: JSON.stringify({ text, model_id: ELEVEN_MODEL, voice_settings: { stability: 0.5, similarity_boost: 0.8, use_speaker_boost: true } })
+    body: JSON.stringify({ text, model_id: ELEVEN_MODEL, voice_settings: { stability: 0.5, similarity_boost: 0.8, use_speaker_boost: true, speed: 1.1 } })
   });
   if (!res.ok) throw new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 200));
   return Buffer.from(await res.arrayBuffer());
