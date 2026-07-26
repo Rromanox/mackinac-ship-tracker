@@ -241,7 +241,7 @@ app.get('/api/status', async (req, res) => {
 // every ~15s and calls ptz_goto_preset for the returned zone. POSITION-driven
 // (not a timer), so vessel speed doesn't matter — the closest in-range moving
 // vessel wins, and the camera follows it through west → bridge → east zones.
-const PTZ_BRIDGE_MI = 1.5;        // within this of the bridge (either side) → "bridge" preset
+const PTZ_BRIDGE_MI = 0.5;        // within this of the bridge (either side) → "bridge" preset
 const PTZ_FRESH_MS  = 90 * 1000;  // ignore a vessel not heard from in 90 s
 app.get('/api/ptz-cue', (req, res) => {
   const now = Date.now();
