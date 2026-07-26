@@ -424,12 +424,18 @@ function startPaging() {
 var FACTS = {};    // NAME (uppercase) -> vessel-specific fact
 var GENERAL = [];  // Straits of Mackinac facts, used only as a last resort
 
+// Canonical fact key — collapse Coast-Guard prefixes so a live "CG NEAH BAY"
+// matches a curated "CGC NEAH BAY" / "USCGC NEAH BAY".
+function factKey(name) {
+    return String(name == null ? '' : name).trim().toUpperCase().replace(/^(?:USCGC|USCG|CGC|CG)\s+/, 'CG ');
+}
+
 function loadFacts() {
     fetch(HTTP_BASE + '/api/vessel-facts')
         .then(function (r) { return r.json(); })
         .then(function (d) {
             (d && d.vessels ? d.vessels : []).forEach(function (v) {
-                if (v && v.name && v.fact) FACTS[v.name.trim().toUpperCase()] = v.fact;
+                if (v && v.name && v.fact) FACTS[factKey(v.name)] = v.fact;
             });
             GENERAL = (d && d.general) ? d.general : [];
             lastShipKey = '';   // force a rebuild so notches appear immediately
@@ -455,7 +461,7 @@ function typeName(t) {
 //                           ->  a general straits fact (live vessels only).
 // allowGeneral is false for passed chips so they stay quiet and uncluttered.
 function factFor(ship, allowGeneral) {
-    var key = (ship.name || '').trim().toUpperCase();
+    var key = factKey(ship.name);
     if (FACTS[key]) return FACTS[key];
 
     var bits = [];

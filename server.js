@@ -138,7 +138,7 @@ app.get('/api/vessel-facts', (req, res) => {
 app.get('/api/missing-facts', async (req, res) => {
   try {
     const facts = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'vessel-facts.json'), 'utf8'));
-    const have = new Set((facts.vessels || []).map(v => String(v.name).trim().toUpperCase()));
+    const have = new Set((facts.vessels || []).map(v => factKey(v.name)));
     const skip = n => !n || n === 'Unknown' || /^CG\d/i.test(n) || /^DIVE BOAT/i.test(n);
 
     // 1) vessels that actually crossed the bridge (highest value)
@@ -148,9 +148,9 @@ app.get('/api/missing-facts', async (req, res) => {
       const seen = new Set();
       rows.forEach(r => {
         const n = (r.name || '').trim();
-        if (skip(n) || shouldHideVessel(r.mmsi) || seen.has(n.toUpperCase()) || have.has(n.toUpperCase())) return;
-        seen.add(n.toUpperCase());
-        crossed.push({ name: n, lastPassed: r.passedTime });
+        if (skip(n) || shouldHideVessel(r.mmsi) || seen.has(factKey(n)) || have.has(factKey(n))) return;
+        seen.add(factKey(n));
+        crossed.push({ name: n, mmsi: r.mmsi, lastPassed: r.passedTime });
       });
     }
 
@@ -161,9 +161,9 @@ app.get('/api/missing-facts', async (req, res) => {
       .sort((a, b) => b.at - a.at)
       .forEach(v => {
         const n = (v.name || '').trim();
-        if (skip(n) || shouldHideVessel(v.mmsi) || seenH.has(n.toUpperCase()) || have.has(n.toUpperCase())) return;
-        seenH.add(n.toUpperCase());
-        heard.push({ name: n, milesFromBridge: +v.distanceMi.toFixed(1) });
+        if (skip(n) || shouldHideVessel(v.mmsi) || seenH.has(factKey(n)) || have.has(factKey(n))) return;
+        seenH.add(factKey(n));
+        heard.push({ name: n, mmsi: v.mmsi, milesFromBridge: +v.distanceMi.toFixed(1) });
       });
 
     res.json({
@@ -388,12 +388,20 @@ if (!ELEVEN_KEY) console.log('🎙️ Vessel narration OFF (set ELEVENLABS_API_K
 else if (typeof fetch !== 'function') console.error('🎙️ Vessel narration needs Node 18+ (global fetch). Disabled.');
 else console.log('🎙️ Vessel narration ENABLED — ' + (ANTHROPIC_KEY ? 'Claude Haiku scripts' : 'template scripts (set ANTHROPIC_API_KEY for LLM-written)'));
 
+// Canonical key for matching a live AIS name to a curated fact.
+// US Coast Guard cutters broadcast their AIS name as "CG NEAH BAY", but references
+// (and our curated facts) key them as "CGC NEAH BAY" / "USCGC NEAH BAY". Collapse
+// every Coast-Guard prefix to one form so those facts actually match the live name.
+function factKey(name) {
+  return String(name || '').trim().toUpperCase().replace(/^(?:USCGC|USCG|CGC|CG)\s+/, 'CG ');
+}
+
 // Curated facts for the narrator (NAME -> fact), loaded once at startup
 let NARR_FACTS = {};
 (function loadNarrationFacts() {
   try {
     const f = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'vessel-facts.json'), 'utf8'));
-    (f.vessels || []).forEach(v => { if (v.name && v.fact) NARR_FACTS[v.name.trim().toUpperCase()] = v.fact; });
+    (f.vessels || []).forEach(v => { if (v.name && v.fact) NARR_FACTS[factKey(v.name)] = v.fact; });
     console.log('🎙️ Narrator loaded ' + Object.keys(NARR_FACTS).length + ' vessel facts');
   } catch (e) { console.error('🎙️ Narration facts load failed:', e.message); }
 })();
@@ -453,7 +461,7 @@ async function narrateVessel(mmsi, name, direction, speed) {
   if (!NARRATION_ON) return;
   const cleanName = (name || '').trim();
   if (!cleanName || cleanName.toUpperCase() === 'UNKNOWN') return; // never narrate an un-named vessel
-  const fact = NARR_FACTS[cleanName.toUpperCase()] || null;
+  const fact = NARR_FACTS[factKey(cleanName)] || null;
   const info = staticInfo[mmsi] || {};
   const bigEnough = info.length && info.length >= NARRATE_MIN_LEN_M;
   if (!fact && !bigEnough) return;                 // only notable / big vessels get narrated
@@ -499,7 +507,7 @@ app.get('/api/narrate-test', async (req, res) => {
   const direction = String(req.query.direction || 'eastbound');
   const speed = Number(req.query.speed) || 12;
   // If the vessel has no curated fact, give it a length so it clears the size gate
-  if (!NARR_FACTS[name.trim().toUpperCase()]) staticInfo[mmsi] = { type: 70, length: 300 };
+  if (!NARR_FACTS[factKey(name)]) staticInfo[mmsi] = { type: 70, length: 300 };
   try {
     await narrateVessel(mmsi, name, direction, speed);
     res.json({ ok: true, name, played: '/api/narration/' + mmsi });
