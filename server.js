@@ -450,7 +450,9 @@ const narrationInFlight = new Set();
 
 async function narrateVessel(mmsi, name, direction, speed) {
   if (!NARRATION_ON) return;
-  const fact = NARR_FACTS[(name || '').trim().toUpperCase()] || null;
+  const cleanName = (name || '').trim();
+  if (!cleanName || cleanName.toUpperCase() === 'UNKNOWN') return; // never narrate an un-named vessel
+  const fact = NARR_FACTS[cleanName.toUpperCase()] || null;
   const info = staticInfo[mmsi] || {};
   const bigEnough = info.length && info.length >= NARRATE_MIN_LEN_M;
   if (!fact && !bigEnough) return;                 // only notable / big vessels get narrated
