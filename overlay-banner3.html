@@ -289,7 +289,8 @@ var RENDER_URL  = 'mackinac-ship-tracker.onrender.com';
 var isLocal     = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 var WS_URL      = isLocal ? 'ws://localhost:' + (location.port || 3000) : 'wss://' + RENDER_URL;
 var BRIDGE_LAT  = 45.81169175762412, BRIDGE_LON = -84.72866535186769;  // exact bridge center
-var MAX_DIST_MI = 100;
+var MAX_DIST_MI   = 100;  // approaching vessels shown out to here
+var DEPART_MAX_MI = 15;   // departing / idle vessels only shown within this range of the bridge
 
 var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
 
@@ -561,7 +562,8 @@ function render() {
                          .sort(function(a,b) { return a.distance - b.distance; });
     var active      = approaching.length > 0
         ? approaching
-        : all.sort(function(a,b) { return a.distance - b.distance; }).slice(0, 3);
+        : all.filter(function(s) { return toMiles(s.distance) <= DEPART_MAX_MI; })
+             .sort(function(a,b) { return a.distance - b.distance; }).slice(0, 3);
 
     // Pad with recently passed vessels if fewer than 3 active
     var needed      = Math.max(0, 3 - active.length);
