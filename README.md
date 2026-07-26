@@ -62,3 +62,15 @@ Open `index.html` in your browser — it auto-detects localhost and connects to 
    - `AISSTREAM_API_KEY`
    - `MONGODB_URI`
 4. Deploy — the frontend auto-connects to the correct hostname
+
+## Copyright & Ownership
+
+Copyright © 2026 **Kevin Salazar Fernandes**. All rights reserved.
+
+This project — including the server, the browser overlays (banners, HUD, alert,
+and narration), the curated **vessel-facts database**, and the **AI vessel-narration
+pipeline** — was designed and built by Kevin Salazar Fernandes as an independent
+personal project. It is **proprietary**; see [LICENSE](LICENSE). No part may be
+used, copied, modified, or distributed without the author's written permission.
+
+Third-party open-source dependencies remain under their own licenses.

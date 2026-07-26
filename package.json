@@ -2,6 +2,9 @@
   "name": "mackinac-ship-tracker-proxy",
   "version": "1.0.0",
   "description": "Proxy server for AISStream ship tracking data with MongoDB storage",
+  "author": "Kevin Salazar Fernandes",
+  "license": "UNLICENSED",
+  "private": true,
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

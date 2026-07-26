@@ -1,6 +1,7 @@
 {
  "note": "Curated vessel fun facts for the banner notch, researched + adversarially fact-checked. `vessels` keyed by name (case-insensitive). `general` = Straits of Mackinac shipping facts used as a last-resort fallback when a vessel has no fact and no AIS size/type.",
  "generated": "2026-07-20",
+ "_copyright": "Curated vessel-facts database (c) 2026 Kevin Salazar Fernandes. All rights reserved. Proprietary -- see LICENSE.",
  "vessels": [
   {
    "name": "PAUL R TREGURTHA",

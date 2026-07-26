@@ -1,3 +1,9 @@
+/*!
+ * Mackinac Bridge Ship Tracker
+ * Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+ * Proprietary and confidential -- see LICENSE. Unauthorized copying,
+ * modification, or distribution is prohibited.
+ */
 // server.js - Ship Tracker Backend with MongoDB
 const express = require('express');
 const WebSocket = require('ws');

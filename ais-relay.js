@@ -1,3 +1,8 @@
+/*!
+ * Mackinac Bridge Ship Tracker
+ * Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+ * Proprietary and confidential -- see LICENSE.
+ */
 // ais-relay.js — tiny helper for the motel streaming PC.
 //
 // Some AIS-catcher builds can only POST to plain http:// addresses.
