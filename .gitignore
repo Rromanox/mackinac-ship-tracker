@@ -1,0 +1,10 @@
+# Secrets — NEVER commit (this repo is public)
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Local generated audio
+narration-cache/

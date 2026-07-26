@@ -5,6 +5,14 @@ const http = require('http');
 const path = require('path');
 const { MongoClient } = require('mongodb');
 
+// Load .env for local dev (Render injects env vars via its dashboard — there is no .env there)
+try {
+  require('fs').readFileSync(path.join(__dirname, '.env'), 'utf8').split(/\r?\n/).forEach((line) => {
+    const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*)$/);
+    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
+  });
+} catch (e) { /* no .env file — expected on Render */ }
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -332,6 +340,8 @@ function checkBridgePassing(mmsi, name, lat, lon, speed) {
   const direction = side === 'east' ? 'eastbound' : 'westbound';
   recordPassing(mmsi, name, direction).catch(err =>
     console.error('❌ Error recording passing:', err.message));
+  narrateVessel(mmsi, name, direction, speed).catch(err =>
+    console.error('🎙️ narrateVessel error:', err.message));
 }
 
 async function recordPassing(mmsi, name, direction) {
@@ -356,6 +366,128 @@ async function getRecentPassings(limit = 10) {
     return recentPassingsMemory.slice(0, limit);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  VESSEL VOICE NARRATION  (Claude Haiku script → ElevenLabs TTS)
+//  When a notable vessel passes the bridge, generate a short spoken
+//  narration and broadcast a `narrate` event with an audio URL. The
+//  overlay plays it, and OBS captures that browser-source audio onto
+//  the stream. Falls back to a template script if ANTHROPIC_API_KEY
+//  isn't set; a no-op entirely if ELEVENLABS_API_KEY is missing.
+// ═══════════════════════════════════════════════════════════════
+const ELEVEN_KEY    = process.env.ELEVENLABS_API_KEY || null;
+const ELEVEN_VOICE  = process.env.ELEVENLABS_VOICE_ID || 'Dslrhjl3ZpzrctukrQSN';
+const ELEVEN_MODEL  = 'eleven_multilingual_v2';
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || null;
+const NARRATE_MIN_LEN_M = 120;   // ~400 ft — narrate only big vessels (unless they have a curated fact)
+const NARRATION_ON  = !!ELEVEN_KEY && typeof fetch === 'function';
+
+if (!ELEVEN_KEY) console.log('🎙️ Vessel narration OFF (set ELEVENLABS_API_KEY to enable)');
+else if (typeof fetch !== 'function') console.error('🎙️ Vessel narration needs Node 18+ (global fetch). Disabled.');
+else console.log('🎙️ Vessel narration ENABLED — ' + (ANTHROPIC_KEY ? 'Claude Haiku scripts' : 'template scripts (set ANTHROPIC_API_KEY for LLM-written)'));
+
+// Curated facts for the narrator (NAME -> fact), loaded once at startup
+let NARR_FACTS = {};
+(function loadNarrationFacts() {
+  try {
+    const f = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'vessel-facts.json'), 'utf8'));
+    (f.vessels || []).forEach(v => { if (v.name && v.fact) NARR_FACTS[v.name.trim().toUpperCase()] = v.fact; });
+    console.log('🎙️ Narrator loaded ' + Object.keys(NARR_FACTS).length + ' vessel facts');
+  } catch (e) { console.error('🎙️ Narration facts load failed:', e.message); }
+})();
+
+// Say-it-right map — applied to the SPOKEN text only (the banner keeps correct spelling)
+const PRONUNCIATION = [ [/Mackinac/gi, 'Mackinaw'] ];
+function applyPronunciation(t) { PRONUNCIATION.forEach(p => { t = t.replace(p[0], p[1]); }); return t; }
+
+function narrationTemplate(v) {
+  const dir = v.direction === 'eastbound' ? 'heading east toward Lake Huron'
+            : v.direction === 'westbound' ? 'heading west toward Lake Michigan'
+            : 'transiting the straits';
+  const fact = v.fact ? ' ' + v.fact.replace(/[.\s]+$/, '') + '.' : '';
+  const spd  = v.speed ? ` She's ${dir} at about ${v.speed} knots.` : ` She's ${dir}.`;
+  return `Now passing beneath the Mackinac Bridge — the ${v.name}.${fact}${spd}`;
+}
+
+async function narrationScriptLLM(v) {
+  const system =
+    'You narrate a live webcam of ships passing under the Mackinac Bridge in the Straits of Mackinac. ' +
+    'Write 2 to 3 sentences (about 45 to 60 words, ~20 seconds spoken) introducing this Great Lakes vessel as it passes beneath the bridge. ' +
+    'Warm, documentary tone, like a knowledgeable local. Weave the fun fact in naturally; you may note its direction and speed. ' +
+    'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text.';
+  const user =
+    'Vessel name: ' + v.name + '\n' +
+    'Fun fact: ' + (v.fact || '(none provided)') + '\n' +
+    'Length: ' + (v.lengthFt ? v.lengthFt + ' feet' : 'unknown') + '\n' +
+    'Direction: ' + (v.direction || 'unknown') + '\n' +
+    'Speed: ' + (v.speed || '?') + ' knots';
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 300, system, messages: [{ role: 'user', content: user }] })
+  });
+  if (!res.ok) throw new Error('Anthropic ' + res.status + ': ' + (await res.text()).slice(0, 200));
+  const j = await res.json();
+  const text = (j.content || []).filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+  if (!text) throw new Error('empty script');
+  return text;
+}
+
+async function synthesizeVoice(text) {
+  const url = 'https://api.elevenlabs.io/v1/text-to-speech/' + ELEVEN_VOICE + '?output_format=mp3_44100_128';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+    body: JSON.stringify({ text, model_id: ELEVEN_MODEL, voice_settings: { stability: 0.5, similarity_boost: 0.8, use_speaker_boost: true } })
+  });
+  if (!res.ok) throw new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 200));
+  return Buffer.from(await res.arrayBuffer());
+}
+
+const narrationCache = {};        // mmsi -> { buffer, at }
+const narrationInFlight = new Set();
+
+async function narrateVessel(mmsi, name, direction, speed) {
+  if (!NARRATION_ON) return;
+  const fact = NARR_FACTS[(name || '').trim().toUpperCase()] || null;
+  const info = staticInfo[mmsi] || {};
+  const bigEnough = info.length && info.length >= NARRATE_MIN_LEN_M;
+  if (!fact && !bigEnough) return;                 // only notable / big vessels get narrated
+  if (narrationInFlight.has(mmsi)) return;
+  narrationInFlight.add(mmsi);
+  try {
+    const v = {
+      name: name, direction: direction, speed: Math.round(speed || 0), fact: fact,
+      lengthFt: info.length ? Math.round(info.length * 3.28084) : null
+    };
+    let text;
+    try { text = ANTHROPIC_KEY ? await narrationScriptLLM(v) : narrationTemplate(v); }
+    catch (e) { console.error('🎙️ Script gen failed (' + name + '), using template:', e.message); text = narrationTemplate(v); }
+    text = applyPronunciation(text);
+    const buffer = await synthesizeVoice(text);
+    narrationCache[mmsi] = { buffer: buffer, at: Date.now() };
+    console.log('🎙️ Narration ready: ' + name + '  "' + text.slice(0, 90) + '"');
+    broadcastToClients({ type: 'narrate', data: { mmsi: mmsi, name: name, url: '/api/narration/' + mmsi + '?t=' + Date.now() } });
+  } catch (e) {
+    console.error('🎙️ Narration failed (' + name + '):', e.message);
+  } finally {
+    narrationInFlight.delete(mmsi);
+  }
+}
+
+// Serve a generated vessel narration clip (kept in memory ~30 min)
+app.get('/api/narration/:mmsi', (req, res) => {
+  const entry = narrationCache[req.params.mmsi];
+  if (!entry) return res.status(404).end();
+  res.set('Cache-Control', 'no-store');
+  res.type('audio/mpeg').send(entry.buffer);
+});
+
+// Keep the in-memory audio cache bounded — drop clips older than 30 minutes
+setInterval(() => {
+  const cut = Date.now() - 30 * 60 * 1000;
+  Object.keys(narrationCache).forEach((k) => { if (narrationCache[k].at < cut) delete narrationCache[k]; });
+}, 5 * 60 * 1000);
 
 // AISStream configuration
 const API_KEY = process.env.AISSTREAM_API_KEY;
