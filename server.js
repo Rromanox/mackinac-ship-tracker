@@ -241,7 +241,7 @@ app.get('/api/status', async (req, res) => {
 // every ~15s and calls ptz_goto_preset for the returned zone. POSITION-driven
 // (not a timer), so vessel speed doesn't matter — the closest in-range moving
 // vessel wins, and the camera follows it through west → bridge → east zones.
-const PTZ_BRIDGE_MI = 0.5;        // within this of the bridge (either side) → "bridge" preset
+const PTZ_BRIDGE_MI = 0.25;       // within this of the bridge (either side) → "bridge" preset
 const PTZ_FRESH_MS  = 90 * 1000;  // ignore a vessel not heard from in 90 s
 app.get('/api/ptz-cue', (req, res) => {
   const now = Date.now();
@@ -338,10 +338,13 @@ function shouldHideVessel(mmsi) {
 const PASS_TRACK_KM     = 16;                 // only watch vessels within ~10 mi of the bridge
 const PASS_STALE_MS     = 30 * 60 * 1000;     // forget a side observation older than 30 min
 const PASS_COOLDOWN_MS  = 60 * 60 * 1000;     // record at most one pass per vessel per hour
+const NARRATE_TRIGGER_KM  = 0.35;             // ~0.22 mi — fire narration as an APPROACHING vessel reaches the bridge, so the ~5-10s of script + voice generation lands as it arrives (not after the pass)
+const NARRATE_COOLDOWN_MS = 60 * 60 * 1000;   // one narration per vessel per hour
 
 const vesselSides         = {}; // mmsi → { side, at }
 const nearBridge          = {}; // mmsi → { name, distKm, side, speed, lat, lon, at } — live PTZ-cue feed
 const lastPassRecordedAt  = {}; // mmsi → timestamp
+const lastNarratedAt      = {}; // mmsi → timestamp (narration cooldown; shared by approach + pass triggers)
 const recentPassingsMemory = []; // newest first — fallback + fast reads if DB is down
 
 function haversineKm(lat1, lon1, lat2, lon2) {
@@ -363,7 +366,16 @@ function checkBridgePassing(mmsi, name, lat, lon, speed) {
   const prev = vesselSides[mmsi];
   vesselSides[mmsi] = { side, at: Date.now() };
   // Live camera-cue feed: closest in-range moving vessel drives the PTZ preset (see /api/ptz-cue)
+  const prevNear = nearBridge[mmsi];
   nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, lat: lat, lon: lon, at: Date.now() };
+
+  // Narrate as an APPROACHING vessel reaches the bridge (not on the pass), so the
+  // ~5-10s of script + voice generation lands while it's on camera. narrateVessel()
+  // dedupes via its own cooldown, so calling it on each nearing update is safe.
+  if (prevNear && distKm < prevNear.distKm && distKm <= NARRATE_TRIGGER_KM) {
+    narrateVessel(mmsi, name, side === 'west' ? 'eastbound' : 'westbound', speed)
+      .catch(err => console.error('🎙️ narrateVessel(approach) error:', err.message));
+  }
 
   if (!prev) {
     console.log(`🌉 Near bridge: ${name} (${mmsi}) on ${side} side, ${(distKm * 0.621371).toFixed(1)} mi out`);
@@ -448,6 +460,19 @@ let NARR_FACTS = {};
 const PRONUNCIATION = [ [/Mackinac/gi, 'Mackinaw'] ];
 function applyPronunciation(t) { PRONUNCIATION.forEach(p => { t = t.replace(p[0], p[1]); }); return t; }
 
+// Current time of day in the Straits (US Eastern) so the narrator never guesses wrong
+// (e.g. says "this morning" at night). Render runs on UTC, so convert explicitly.
+function localTimeOfDay() {
+  try {
+    const h = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Detroit', hour: '2-digit', hourCycle: 'h23' }).format(new Date()), 10);
+    if (h < 5)  return 'overnight';
+    if (h < 12) return 'this morning';
+    if (h < 17) return 'this afternoon';
+    if (h < 21) return 'this evening';
+    return 'tonight';
+  } catch (e) { return 'today'; }
+}
+
 function narrationTemplate(v) {
   const dir = v.direction === 'eastbound' ? 'heading east toward Lake Huron'
             : v.direction === 'westbound' ? 'heading west toward Lake Michigan'
@@ -462,13 +487,15 @@ async function narrationScriptLLM(v) {
     'You narrate a live webcam of ships passing under the Mackinac Bridge in the Straits of Mackinac. ' +
     'Write 2 to 3 sentences (about 45 to 60 words, ~20 seconds spoken) introducing this Great Lakes vessel as it passes beneath the bridge. ' +
     'Warm, documentary tone, like a knowledgeable local. Weave the fun fact in naturally; you may note its direction and speed. ' +
+    'If you refer to the time of day, use EXACTLY the "Time of day" value provided below — never guess it (it may be evening or night, not morning). ' +
     'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text.';
   const user =
     'Vessel name: ' + v.name + '\n' +
     'Fun fact: ' + (v.fact || '(none provided)') + '\n' +
     'Length: ' + (v.lengthFt ? v.lengthFt + ' feet' : 'unknown') + '\n' +
     'Direction: ' + (v.direction || 'unknown') + '\n' +
-    'Speed: ' + (v.speed || '?') + ' knots';
+    'Speed: ' + (v.speed || '?') + ' knots\n' +
+    'Time of day: ' + localTimeOfDay();
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -563,7 +590,9 @@ async function narrateVessel(mmsi, name, direction, speed) {
   const bigEnough = info.length && info.length >= NARRATE_MIN_LEN_M;
   if (!fact && !bigEnough) return;                 // only notable / big vessels get narrated
   if (narrationInFlight.has(mmsi)) return;
+  if (lastNarratedAt[mmsi] && Date.now() - lastNarratedAt[mmsi] < NARRATE_COOLDOWN_MS) return;
   narrationInFlight.add(mmsi);
+  lastNarratedAt[mmsi] = Date.now();
   try {
     const v = {
       name: name, direction: direction, speed: Math.round(speed || 0), fact: fact,
