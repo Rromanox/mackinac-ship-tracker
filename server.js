@@ -241,7 +241,8 @@ app.get('/api/status', async (req, res) => {
 // every ~15s and calls ptz_goto_preset for the returned zone. POSITION-driven
 // (not a timer), so vessel speed doesn't matter — the closest in-range moving
 // vessel wins, and the camera follows it through west → bridge → east zones.
-const PTZ_BRIDGE_MI = 0.25;       // within this of the bridge (either side) → "bridge" preset
+const PTZ_BRIDGE_IN_MI  = 0.5;    // zoom IN when an APPROACHING vessel is within this of the bridge (perfect entry timing)
+const PTZ_BRIDGE_OUT_MI = 0.15;   // zoom back to Home once a DEPARTING vessel passes this — asymmetric, so it releases ~40 s after the pass instead of lingering ~2.5 min
 const PTZ_FRESH_MS  = 90 * 1000;  // ignore a vessel not heard from in 90 s
 app.get('/api/ptz-cue', (req, res) => {
   const now = Date.now();
@@ -253,9 +254,12 @@ app.get('/api/ptz-cue', (req, res) => {
   });
   if (!best) return res.json({ active: false, zone: 'home' });
   const distMi = +(best.distKm * 0.621371).toFixed(2);
-  const zone = distMi <= PTZ_BRIDGE_MI ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
-  res.json({ active: true, zone: zone, mmsi: best.mmsi, name: best.name,
-             side: best.side, distanceMi: distMi, speedKn: +(best.speed || 0).toFixed(1) });
+  // Asymmetric: hold the close-up out to 0.5 mi while approaching, but release at just
+  // 0.15 mi once departing — so the camera doesn't linger on empty water after the pass.
+  const threshold = best.closing === false ? PTZ_BRIDGE_OUT_MI : PTZ_BRIDGE_IN_MI;
+  const zone = distMi <= threshold ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
+  res.json({ active: true, zone: zone, mmsi: best.mmsi, name: best.name, side: best.side,
+             distanceMi: distMi, speedKn: +(best.speed || 0).toFixed(1), closing: best.closing !== false });
 });
 
 // Recent ships that passed the bridge (server-detected longitude crossings)
@@ -367,7 +371,8 @@ function checkBridgePassing(mmsi, name, lat, lon, speed) {
   vesselSides[mmsi] = { side, at: Date.now() };
   // Live camera-cue feed: closest in-range moving vessel drives the PTZ preset (see /api/ptz-cue)
   const prevNear = nearBridge[mmsi];
-  nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, lat: lat, lon: lon, at: Date.now() };
+  const closing = prevNear ? (distKm <= prevNear.distKm + 0.02) : true; // approaching vs receding (20 m noise margin)
+  nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, lat: lat, lon: lon, at: Date.now(), closing: closing };
 
   // Narrate as an APPROACHING vessel reaches the bridge (not on the pass), so the
   // ~5-10s of script + voice generation lands while it's on camera. narrateVessel()
