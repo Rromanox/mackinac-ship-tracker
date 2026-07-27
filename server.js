@@ -342,7 +342,7 @@ function shouldHideVessel(mmsi) {
 const PASS_TRACK_KM     = 16;                 // only watch vessels within ~10 mi of the bridge
 const PASS_STALE_MS     = 30 * 60 * 1000;     // forget a side observation older than 30 min
 const PASS_COOLDOWN_MS  = 60 * 60 * 1000;     // record at most one pass per vessel per hour
-const NARRATE_TRIGGER_KM  = 0.35;             // ~0.22 mi — fire narration as an APPROACHING vessel reaches the bridge, so the ~5-10s of script + voice generation lands as it arrives (not after the pass)
+const NARRATE_TRIGGER_KM  = 0.55;             // ~0.34 mi — fire narration as an APPROACHING vessel nears the bridge, ~30 s earlier than the old 0.35 km (a ~13-kt freighter covers ~0.2 km in 30 s). Distance-based, so slower boats get a touch more lead, faster a touch less.
 const NARRATE_COOLDOWN_MS = 60 * 60 * 1000;   // one narration per vessel per hour
 
 const vesselSides         = {}; // mmsi → { side, at }
