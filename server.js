@@ -434,7 +434,7 @@ async function getRecentPassings(limit = 10) {
 // ═══════════════════════════════════════════════════════════════
 const ELEVEN_KEY    = process.env.ELEVENLABS_API_KEY || null;
 const ELEVEN_VOICE  = process.env.ELEVENLABS_VOICE_ID || 'Dslrhjl3ZpzrctukrQSN';
-const ELEVEN_MODEL  = 'eleven_multilingual_v2';
+const ELEVEN_MODEL  = process.env.ELEVENLABS_MODEL || 'eleven_v3';   // expressive model w/ audio tags (was eleven_multilingual_v2)
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || null;
 const NARRATE_MIN_LEN_M = 120;   // ~400 ft — narrate only big vessels (unless they have a curated fact)
 const NARRATION_ON  = !!ELEVEN_KEY && typeof fetch === 'function';
@@ -574,8 +574,10 @@ async function narrationScriptLLM(v) {
     'IMPORTANT — vary yourself every single time: do NOT follow a fixed formula and do NOT reuse the same opening. Change the order, the rhythm, and which detail you lead with from one ship to the next. ' +
     'You are given several details below. Choose only the 2 to 4 most interesting for THIS ship and weave them in naturally — never list them all, and never sound like a data readout. ' +
     'Details you may draw on: where she is bound and her ETA (only if a real place/time); whether she rides low and loaded or high and light (from her draft); her flag, especially if she is a foreign ocean visitor; whether she is a straits regular or a first sighting; her size, and the fun fact. ' +
+    'When you share the fun fact, sometimes build a beat of intrigue first to hook viewers — natural teasers like "now, get this...", "here is something you might not know...", or "you will not believe this..." — but VARY them, keep them genuine and family-friendly, and use one only when the fact is genuinely surprising (never force one onto every ship). ' +
+    'This voice is expressive: weave in two or three audio tags in square brackets to shape the delivery — for example [warmly], [excited], [chuckles], [curious], [with a smile] — placed where the emotion fits and VARIED from one ship to the next. Tags are performance cues, never words to be spoken aloud. ' +
     'Ignore anything blank, unclear, or a code. Use only the dates and times provided — never invent them (it may be evening or night, not morning). ' +
-    'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text. ' +
+    'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text (including the bracketed tags). ' +
     'Style nudge for this one: ' + NARRATION_STYLES[Math.floor(Math.random() * NARRATION_STYLES.length)];
   const user =
     'Vessel: ' + v.name + '\n' +
@@ -608,7 +610,7 @@ async function synthesizeVoice(text) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-    body: JSON.stringify({ text, model_id: ELEVEN_MODEL, voice_settings: { stability: 0.4, similarity_boost: 0.85, style: 0.2, use_speaker_boost: true, speed: 1.1 } })
+    body: JSON.stringify({ text, model_id: ELEVEN_MODEL, voice_settings: { stability: 0.4, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true } })
   });
   if (!res.ok) throw new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 200));
   return Buffer.from(await res.arrayBuffer());
