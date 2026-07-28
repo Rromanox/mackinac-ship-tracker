@@ -309,7 +309,7 @@ const BLOCKED_MMSI_SERVER = new Set([
   338441735, // MISTY MAIDEN
   338095227, // TRANQUILLITY
 ]);
-const ALLOWED_MMSI_SERVER = new Set([311050300]); // VICTORY II — big cruise ship, overrides size/type filters
+const ALLOWED_MMSI_SERVER = new Set([311050300, 368413570]); // VICTORY II + AMERICAN PATRIOT — cruise ships, override size/type filters
 const MIN_VESSEL_LEN = 50; // metres — below this, a vessel is not a Great Lakes freighter
 const staticInfo = {};     // mmsi -> { type, length }  (learned from static messages)
 
