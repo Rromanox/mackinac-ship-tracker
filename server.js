@@ -456,8 +456,12 @@ let NARR_FACTS = {};
 (function loadNarrationFacts() {
   try {
     const f = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'vessel-facts.json'), 'utf8'));
-    (f.vessels || []).forEach(v => { if (v.name && v.fact) NARR_FACTS[factKey(v.name)] = v.fact; });
-    console.log('🎙️ Narrator loaded ' + Object.keys(NARR_FACTS).length + ' vessel facts');
+    let factCount = 0;
+    (f.vessels || []).forEach(v => {
+      const pool = (Array.isArray(v.facts) && v.facts.length) ? v.facts : (v.fact ? [v.fact] : []);
+      if (v.name && pool.length) { NARR_FACTS[factKey(v.name)] = pool; factCount += pool.length; }
+    });
+    console.log('🎙️ Narrator loaded ' + Object.keys(NARR_FACTS).length + ' vessels / ' + factCount + ' facts');
   } catch (e) { console.error('🎙️ Narration facts load failed:', e.message); }
 })();
 
@@ -682,7 +686,8 @@ async function narrateVessel(mmsi, name, direction, speed) {
   if (!NARRATION_ON) return;
   const cleanName = (name || '').trim();
   if (!cleanName || cleanName.toUpperCase() === 'UNKNOWN') return; // never narrate an un-named vessel
-  const fact = NARR_FACTS[factKey(cleanName)] || null;
+  const factPool = NARR_FACTS[factKey(cleanName)];
+  const fact = (factPool && factPool.length) ? factPool[Math.floor(Math.random() * factPool.length)] : null;   // rotate for variety
   const info = staticInfo[mmsi] || {};
   const bigEnough = info.length && info.length >= NARRATE_MIN_LEN_M;
   if (!fact && !bigEnough) return;                 // only notable / big vessels get narrated

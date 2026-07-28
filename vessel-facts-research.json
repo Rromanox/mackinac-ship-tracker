@@ -1,0 +1,2904 @@
+{
+ "note": "Provenance for the researched extra facts merged into vessel-facts.json (workflow wf_3bcd0d53-78f, 2026-07-28). Each fact was web-researched then adversarially fact-checked.",
+ "vessels": [
+  {
+   "name": "PAUL R TREGURTHA",
+   "facts": [
+    {
+     "fact": "She originally sailed as the William J. DeLancey and was renamed Paul R. Tregurtha in 1990.",
+     "source": "https://en.wikipedia.org/wiki/MV_Paul_R._Tregurtha"
+    },
+    {
+     "fact": "She was the last ship ever built at the American Ship Building yard in Lorain, Ohio.",
+     "source": "https://en.wikipedia.org/wiki/MV_Paul_R._Tregurtha"
+    },
+    {
+     "fact": "She was the last of the Great Lakes' thirteen thousand-footers to enter service.",
+     "source": "https://en.wikipedia.org/wiki/MV_Paul_R._Tregurtha"
+    },
+    {
+     "fact": "Her plush owner's quarters and onboard elevator earned her the nickname Fancy DeLancey.",
+     "source": "https://en.wikipedia.org/wiki/MV_Paul_R._Tregurtha"
+    }
+   ]
+  },
+  {
+   "name": "VIKING OCTANTIS",
+   "facts": [
+    {
+     "fact": "She is named for Sigma Octantis, the faint star that marks the South Pole.",
+     "source": "https://en.wikipedia.org/wiki/Viking_Octantis"
+    },
+    {
+     "fact": "Her sister ship, Viking Polaris, takes her name from Polaris, the North Star.",
+     "source": "https://www.seatrade-cruise.com/expedition-cruising/viking-ocean-river-ships-on-hand-for-polaris-octantis-expedition-namings"
+    },
+    {
+     "fact": "She carries two bright yellow submersibles that take guests diving beneath the surface.",
+     "source": "https://en.wikipedia.org/wiki/Viking_Octantis"
+    },
+    {
+     "fact": "She was built in Romania at a VARD shipyard owned by Italy's Fincantieri.",
+     "source": "https://en.wikipedia.org/wiki/Viking_Octantis"
+    }
+   ]
+  },
+  {
+   "name": "LEO A.MCARTHUR",
+   "facts": [
+    {
+     "fact": "She first sailed as the Victorious before being renamed Leo A. McArthur in 2017.",
+     "source": "https://gltugs.wordpress.com/leo-a-mcarthur/"
+    },
+    {
+     "fact": "She locks to her barge, the John J. Carrick, with a hinged Articouple coupling system.",
+     "source": "https://gltugs.wordpress.com/leo-a-mcarthur/"
+    }
+   ]
+  },
+  {
+   "name": "FLORENCE SPIRIT",
+   "facts": [
+    {
+     "fact": "She was built in 2004 in Shimonoseki, Japan.",
+     "source": "http://carlzboats.blogspot.com/2016/08/gearless-bulk-carrier-florence-spirit.html"
+    },
+    {
+     "fact": "She first sailed as the Irish-owned Arklow Willow before coming to Canada.",
+     "source": "http://carlzboats.blogspot.com/2016/08/gearless-bulk-carrier-florence-spirit.html"
+    },
+    {
+     "fact": "She is named for Florence, the wife of McKeil Marine's founder Evans McKeil.",
+     "source": "http://carlzboats.blogspot.com/2016/08/gearless-bulk-carrier-florence-spirit.html"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA NIAGARA",
+   "facts": [
+    {
+     "fact": "She was built in Jingjiang, China, at the Yangzijiang shipyard.",
+     "source": "https://greatlakesships.wordpress.com/algoma-niagara/"
+    },
+    {
+     "fact": "She sailed roughly two months from China to Canada via the Panama Canal.",
+     "source": "https://green-marine.org/stayinformed/news/newest-equinox-class-vessel-is-route-to-algoma-in-canada/"
+    },
+    {
+     "fact": "Her near-identical sister self-unloader is the Algoma Sault.",
+     "source": "https://www.drybulkmagazine.com/shipping/06112017/algoma-central-corp-adds-first-equinox-class-unloader-to-its-fleet/"
+    },
+    {
+     "fact": "She was designed to be about 45 percent more fuel-efficient than the older ships in her fleet.",
+     "source": "https://green-marine.org/stayinformed/news/newest-equinox-class-vessel-is-route-to-algoma-in-canada/"
+    }
+   ]
+  },
+  {
+   "name": "OLIVE L. MOORE",
+   "facts": [
+    {
+     "fact": "She was built as the John F. Cushing for a Chicago dredging company.",
+     "source": "https://gltugs.wordpress.com/olive-l-moore/"
+    },
+    {
+     "fact": "She was rebuilt as an articulated tug in 1991 to push the barge McKee Sons.",
+     "source": "https://gltugs.wordpress.com/olive-l-moore/"
+    }
+   ]
+  },
+  {
+   "name": "HON JAMES L OBERSTAR",
+   "facts": [
+    {
+     "fact": "She first sailed as the Shenango II, built for the Shenango Furnace Company.",
+     "source": "https://greatlakesships.wordpress.com/shenango-ii/"
+    },
+    {
+     "fact": "She honors a Minnesota congressman who long chaired the House Transportation Committee.",
+     "source": "https://professionalmariner.com/interlake-steamship-announces-christening-of-m-v-hon-james-l-oberstar/"
+    },
+    {
+     "fact": "At his own request, her renaming was held off until her 2011 christening, after he had left Congress.",
+     "source": "https://greatlakesships.wordpress.com/shenango-ii/"
+    },
+    {
+     "fact": "She was rebuilt into a self-unloader in 1981.",
+     "source": "https://greatlakesships.wordpress.com/shenango-ii/"
+    }
+   ]
+  },
+  {
+   "name": "STERLING ENERGY",
+   "facts": [
+    {
+     "fact": "She was built in 2002 and first sailed under the Turkish flag as the Melisa-D.",
+     "source": "https://www.vesselfinder.com/vessels/details/9277058"
+    },
+    {
+     "fact": "At about 210 feet, she's a small oil-products tanker beside the freighters around her.",
+     "source": "https://www.vesselfinder.com/vessels/details/9277058"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA DISCOVERY",
+   "facts": [
+    {
+     "fact": "She was launched in Croatia as the Malinska, at Rijeka's 3 Maj shipyard.",
+     "source": "https://greatlakesships.wordpress.com/malinska/"
+    },
+    {
+     "fact": "She sailed as Norway's Daviken before Algoma purchased her in 2008.",
+     "source": "https://greatlakesships.wordpress.com/malinska/"
+    },
+    {
+     "fact": "She ranks among the largest saltwater-built ships ever to sail the Great Lakes.",
+     "source": "https://greatlakesships.wordpress.com/malinska/"
+    }
+   ]
+  },
+  {
+   "name": "EEMSBORG",
+   "facts": [
+    {
+     "fact": "She was built in Delfzijl, Netherlands, at the Royal Niestern Sander shipyard.",
+     "source": "https://markprummel.nl/ship/eemsborg-pbmd-9423748/"
+    },
+    {
+     "fact": "She was christened during Delfsail, a huge Dutch maritime festival, in 2009.",
+     "source": "https://markprummel.nl/ship/eemsborg-pbmd-9423748/"
+    },
+    {
+     "fact": "In 2013 she lost power and ran aground in the St. Lawrence River.",
+     "source": "https://markprummel.nl/ship/eemsborg-pbmd-9423748/"
+    }
+   ]
+  },
+  {
+   "name": "EDWIN H. GOTT",
+   "facts": [
+    {
+     "fact": "She's named for Edwin H. Gott, a former chairman and chief executive of United States Steel.",
+     "source": "Wikipedia, MV Edwin H. Gott — https://en.wikipedia.org/wiki/MV_Edwin_H._Gott"
+    },
+    {
+     "fact": "She was built in 1979 at Bay Shipbuilding in Sturgeon Bay, Wisconsin.",
+     "source": "Wikipedia, MV Edwin H. Gott — https://en.wikipedia.org/wiki/MV_Edwin_H._Gott"
+    },
+    {
+     "fact": "In the winter of 2010 to 2011 her original Enterprise diesels were replaced with modern MaK engines.",
+     "source": "Wikipedia, MV Edwin H. Gott — https://en.wikipedia.org/wiki/MV_Edwin_H._Gott"
+    }
+   ]
+  },
+  {
+   "name": "FRONTENAC",
+   "facts": [
+    {
+     "fact": "She was built in 1968 by Davie Shipbuilding at Lauzon, Quebec.",
+     "source": "Shipwatcher News, Great Lakes Ships — https://greatlakesships.wordpress.com/frontenac/"
+    },
+    {
+     "fact": "She was the last traditional-styled lake freighter ever built for Canada Steamship Lines.",
+     "source": "Shipwatcher News, Great Lakes Ships — https://greatlakesships.wordpress.com/frontenac/"
+    },
+    {
+     "fact": "After about five years hauling ore, she was rebuilt as a self-unloader at Collingwood.",
+     "source": "Shipwatcher News, Great Lakes Ships — https://greatlakesships.wordpress.com/frontenac/"
+    }
+   ]
+  },
+  {
+   "name": "LEE A. TREGURTHA",
+   "facts": [
+    {
+     "fact": "The name Chiwawa came from a river in Washington State.",
+     "source": "Wikipedia, USS Chiwawa — https://en.wikipedia.org/wiki/USS_Chiwawa"
+    },
+    {
+     "fact": "Over her long career she has sailed under four different names.",
+     "source": "Interlake Steamship — https://www.interlake-steamship.com/our-fleet/m-v-lee-a-tregurtha/"
+    },
+    {
+     "fact": "In 2006 her old steam plant was replaced with a modern diesel plant.",
+     "source": "Interlake Steamship — https://www.interlake-steamship.com/our-fleet/m-v-lee-a-tregurtha/"
+    },
+    {
+     "fact": "Her current name honors Lee Tregurtha, wife of Interlake's vice chairman.",
+     "source": "Wisconsin Marine Historical Society — https://wmhs.org/wearing-her-battle-ribbons-world-war-ii-veteran-still-sails-the-great-lakes/"
+    }
+   ]
+  },
+  {
+   "name": "PERELIK",
+   "facts": [
+    {
+     "fact": "Though Bulgarian-owned by Navibulgar, she sails under the flag of Malta.",
+     "source": "VesselFinder (Malta flag) — https://www.vesselfinder.com/vessels/details/9905722 ; Wikipedia, Navibulgar (Bulgarian company) — https://en.wikipedia.org/wiki/Navibulgar"
+    }
+   ]
+  },
+  {
+   "name": "SEA EAGLE II",
+   "facts": [
+    {
+     "fact": "She was built in 1979 in Houma, Louisiana, and first named simply Sea Eagle.",
+     "source": "Great Lakes Tugs & Workboats — https://gltugs.wordpress.com/sea-eagle-ii/"
+    },
+    {
+     "fact": "In 1981 she was sold to Canadian Marine Drilling of Calgary and renamed Canmar Sea Eagle.",
+     "source": "Great Lakes Tugs & Workboats — https://gltugs.wordpress.com/sea-eagle-ii/"
+    },
+    {
+     "fact": "St. Marys Cement bought her in 1991 and renamed her Sea Eagle II.",
+     "source": "Great Lakes Tugs & Workboats — https://gltugs.wordpress.com/sea-eagle-ii/"
+    }
+   ]
+  },
+  {
+   "name": "STORMONT",
+   "facts": [
+    {
+     "fact": "She was built in 1953 by the Canadian Dredge and Dock Company for Ontario's government.",
+     "source": "Great Lakes Tugs & Workboats — https://gltugs.wordpress.com/stormont/"
+    },
+    {
+     "fact": "She joined the St. Lawrence Seaway Authority fleet in 1964.",
+     "source": "Great Lakes Tugs & Workboats — https://gltugs.wordpress.com/stormont/"
+    },
+    {
+     "fact": "For decades she powered the Detroit-to-Windsor truck ferry across the river, until the service ended in 2023.",
+     "source": "Great Lakes Tugs & Workboats — https://gltugs.wordpress.com/stormont/"
+    }
+   ]
+  },
+  {
+   "name": "MACCOA",
+   "facts": [
+    {
+     "fact": "The maccoa she's named for is a stiff-tailed diving duck from Africa.",
+     "source": "Wikipedia, Maccoa duck — https://en.wikipedia.org/wiki/Maccoa_duck"
+    }
+   ]
+  },
+  {
+   "name": "OAKGLEN",
+   "facts": [
+    {
+     "fact": "She was built in 1980 by Cockerill Yards in Hoboken, Belgium.",
+     "source": "Shipwatcher News, Great Lakes Ships — https://greatlakesships.wordpress.com/federal-danube/"
+    },
+    {
+     "fact": "She began life as an ocean-going saltie named Federal Danube.",
+     "source": "Shipwatcher News, Great Lakes Ships — https://greatlakesships.wordpress.com/federal-danube/"
+    },
+    {
+     "fact": "She sailed as Lake Ontario before Canada Steamship Lines renamed her Oakglen in 2009.",
+     "source": "Shipwatcher News, Great Lakes Ships — https://greatlakesships.wordpress.com/federal-danube/"
+    }
+   ]
+  },
+  {
+   "name": "SAMUEL RISLEY",
+   "facts": [
+    {
+     "fact": "She's named for Samuel Risley, Upper Canada's first chief steamship inspector.",
+     "source": "Wikipedia, CCGS Samuel Risley — https://en.wikipedia.org/wiki/CCGS_Samuel_Risley"
+    },
+    {
+     "fact": "She was built in 1985 on the west coast, in Delta, British Columbia.",
+     "source": "Wikipedia, CCGS Samuel Risley — https://en.wikipedia.org/wiki/CCGS_Samuel_Risley"
+    },
+    {
+     "fact": "Besides breaking ice, she also services and replaces navigation buoys.",
+     "source": "Wikipedia, CCGS Samuel Risley — https://en.wikipedia.org/wiki/CCGS_Samuel_Risley"
+    },
+    {
+     "fact": "She keeps an ice-free channel open between Port Colborne and Thunder Bay.",
+     "source": "Wikipedia, CCGS Samuel Risley — https://en.wikipedia.org/wiki/CCGS_Samuel_Risley"
+    }
+   ]
+  },
+  {
+   "name": "IVER BRIGHT",
+   "facts": [
+    {
+     "fact": "She was built in 2012 at the Hyundai Mipo shipyard in Ulsan, South Korea.",
+     "source": "Offshore Energy — https://www.offshore-energy.biz/south-korea-new-bitumenasphalt-tanker-iver-bright-enters-vroon-fleet/"
+    },
+    {
+     "fact": "She was built to ice-class standards so she can work cold-weather routes.",
+     "source": "Offshore Energy — https://www.offshore-energy.biz/south-korea-new-bitumenasphalt-tanker-iver-bright-enters-vroon-fleet/"
+    },
+    {
+     "fact": "She has a sister tanker named Iver Brilliant, built at the same Korean yard.",
+     "source": "Offshore Energy — https://www.offshore-energy.biz/south-korea-new-bitumenasphalt-tanker-iver-bright-enters-vroon-fleet/"
+    }
+   ]
+  },
+  {
+   "name": "MCASPHALT ADVANTAGE",
+   "facts": [
+    {
+     "fact": "She was designed in Sweden by FKAB and built at China's Wuhu Shipyard.",
+     "source": "fkab.com (McAsphalt Advantage Delivered)"
+    },
+    {
+     "fact": "Her twin dual-fuel engines can run on cleaner liquefied natural gas to cut emissions.",
+     "source": "fkab.com (McAsphalt Advantage Delivered) — 'twin skeg with 2 x four stroke DF main engine ... using LNG/LBG as main fuels'"
+    },
+    {
+     "fact": "Separate onboard tanks let her carry both bitumen and asphalt at once.",
+     "source": "fkab.com — 'independent cargo tanks for bitumen and asphalt'"
+    },
+    {
+     "fact": "A full battery and UPS system keeps her powered to prevent sudden blackouts.",
+     "source": "fkab.com — 'designed with full battery / UPS power, preventing from black outs'"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA ENDEAVOUR",
+   "facts": [
+    {
+     "fact": "She was built at the 3. Maj shipyard in Rijeka, Croatia.",
+     "source": "algonet.com (Algoma takes delivery of three vessels within one week)"
+    },
+    {
+     "fact": "She is the twelfth and final ship in Algoma's Equinox class.",
+     "source": "ibj-online.com / algonet.com — final Equinox Class vessel, twelfth since 2013"
+    },
+    {
+     "fact": "Her Equinox design burns less fuel, cutting carbon intensity about forty percent versus older ships.",
+     "source": "algonet.com/sustainability/environment — '40% reduction in carbon intensity, on average, compared to their predecessors'"
+    }
+   ]
+  },
+  {
+   "name": "FEDERAL SAKURA",
+   "facts": [
+    {
+     "fact": "Her name, Sakura, is the Japanese word for cherry blossom.",
+     "source": "Japanese language (common knowledge)"
+    },
+    {
+     "fact": "She was built by the Shin Kurushima shipyard in Onishi, Japan.",
+     "source": "shipsio.com — 'Built 2005 at SHIN KURUSHIMA ONISHI'"
+    },
+    {
+     "fact": "A Fednav fleetmate built the same year at the same Japanese yard carries the matching name Federal Katsura.",
+     "source": "marinetraffic.com / duluth-shipsplaces.fandom.com — Federal Katsura, Fednav, built 2005 at Shin Kurushima"
+    },
+    {
+     "fact": "She can carry roughly thirty-two thousand tonnes of cargo.",
+     "source": "marinepublic.com — DWT 32,583 (IMO 9288291)"
+    }
+   ]
+  },
+  {
+   "name": "JAMES J. VERSLUIS",
+   "facts": [
+    {
+     "fact": "She is named for a Chicago water-works engineer who served the city four decades.",
+     "source": "DNAinfo Chicago — 'Chicago's engineer of water works for 25 years and a city employee for four decades'"
+    },
+    {
+     "fact": "She was built in 1957 at Sturgeon Bay Shipbuilding in Wisconsin.",
+     "source": "St. Joseph & Benton Harbor Shipping News — 'built in 1957 by Sturgeon Bay Shipbuilding'"
+    },
+    {
+     "fact": "Her main job is clearing ice around Chicago's offshore water-intake cribs.",
+     "source": "Chicago Sun-Times (pressreader.com) — clears ice around the city's water intake 'cribs'"
+    }
+   ]
+  },
+  {
+   "name": "MUNTGRACHT",
+   "facts": [
+    {
+     "fact": "Spliethoff names all its ships after Dutch canals, called grachten.",
+     "source": "spliethoff.com/about-us — 'the vessels have borne the names of canals (Gracht)'"
+    },
+    {
+     "fact": "She was built for Spliethoff at a shipyard in Zhoushan, China.",
+     "source": "scheepvaartwest.be — 'Builder: Zhoushan Shipyard, Zhoushan, China'"
+    },
+    {
+     "fact": "Fourteen removable steel deck pontoons let her reshape her holds for odd-shaped cargo.",
+     "source": "scheepvaartwest.be — '14 steel pontoons' tween decks"
+    },
+    {
+     "fact": "She can also carry over three hundred refrigerated shipping containers.",
+     "source": "scheepvaartwest.be — 'Reefer capacity: 325'"
+    }
+   ]
+  },
+  {
+   "name": "DETROIT PRINCESS",
+   "facts": [
+    {
+     "fact": "She started life as the Players Riverboat Casino Two.",
+     "source": "detroitprincess.com (About) — 'originally named the Players Riverboat Casino II'"
+    },
+    {
+     "fact": "Too big for the Mississippi, she was towed around Florida to reach Detroit.",
+     "source": "detroitprincess.com (About) — 'too large ... had to be towed around Florida'"
+    },
+    {
+     "fact": "At 222 feet, she is billed as America's second-largest riverboat.",
+     "source": "detroitprincess.com (About) — 'Overall Length: 222 feet'; '2nd Largest in the Country!'"
+    },
+    {
+     "fact": "She holds thirty thousand square feet of dining and event space.",
+     "source": "detroitprincess.com / visitdetroit.com — '30,000 square feet of dining and event space'"
+    }
+   ]
+  },
+  {
+   "name": "J.S.ST.JOHN",
+   "facts": [
+    {
+     "fact": "She was built far from the lakes, down in Pensacola, Florida.",
+     "source": "navsource.net (YO-178) — 'Built by Smith Shipyards, Pensacola, FL ... 1944'"
+    },
+    {
+     "fact": "Before the Great Lakes she sailed as a tanker named Lake Edward.",
+     "source": "navsource.net — 'Lake Tankers Corp ... as Lake Edward, 1953'"
+    },
+    {
+     "fact": "She is the last of the old sandsuckers still working the Great Lakes.",
+     "source": "Marine Historical Society of Detroit — 'the last sandsucker (hydraulic sand dredge) in regular operation on the Lakes'"
+    },
+    {
+     "fact": "She was rebuilt from a Navy fuel tanker into a sand dredge at Erie.",
+     "source": "navsource.net — 'Converted to sand dredge at Erie, winter 1967-1968'"
+    }
+   ]
+  },
+  {
+   "name": "BURNS HARBOR",
+   "facts": [
+    {
+     "fact": "She is named for Bethlehem Steel's steel-making complex at Burns Harbor, Indiana.",
+     "source": "doorcountypulse.com — 'The name came from Bethlehem Steel's new Burns Harbor plant'"
+    },
+    {
+     "fact": "Her 250-foot boom can unload cargo at ten thousand tons an hour.",
+     "source": "Maritime Reporter (marinelink.com) — '250-foot unloading boom ... 10,000 gross tons an hour'"
+    },
+    {
+     "fact": "She was the tenth thousand-footer ever to sail the Great Lakes.",
+     "source": "duluth-ships.fandom.com / boatnerd.fandom.com — 'the tenth 1,000-footer to enter service'"
+    },
+    {
+     "fact": "She was Bethlehem Steel's third and last thousand-foot freighter.",
+     "source": "greatlakesships.wordpress.com — 'Bethlehem Steel's third and final 1,000-Footer'"
+    }
+   ]
+  },
+  {
+   "name": "INDIANA HARBOR",
+   "facts": [
+    {
+     "fact": "In 1982 she became the first U.S. laker with satellite communications.",
+     "source": "boatnerd.com — 'first U.S. lake freighter to be equipped with satellite communication in August 1982'"
+    },
+    {
+     "fact": "Her unloading boom swings ninety-two degrees to discharge on either side.",
+     "source": "boatnerd.com — 'discharge boom that can be swung 92 degrees to port or starboard'"
+    },
+    {
+     "fact": "She was the ninth thousand-footer built for the Great Lakes.",
+     "source": "boatnerd.com / duluth-ships.fandom.com — 'the ninth 1,000-Footer to be constructed'"
+    },
+    {
+     "fact": "Her thirty-seven hatches feed seven holds carrying nearly seventy-nine thousand tons.",
+     "source": "boatnerd.com — '37 hatches feed into 7 holds ... 78,850 tons'"
+    }
+   ]
+  },
+  {
+   "name": "JOHN J. BOLAND",
+   "facts": [
+    {
+     "fact": "She was the first of ten ships American Steamship ordered from Bay Shipbuilding.",
+     "source": "greatlakesships.wordpress.com (Charles E. Wilson) — 'first of ten vessels constructed for the American Steamship Company'"
+    },
+    {
+     "fact": "She was built in 1973 at Bay Shipbuilding in Sturgeon Bay, Wisconsin.",
+     "source": "en.wikipedia.org (MV John J. Boland) — 'built in 1973 at Bay Shipbuilding Company, Sturgeon Bay, Wisconsin'"
+    },
+    {
+     "fact": "Her 250-foot boom lets her unload without any help from shore.",
+     "source": "en.wikipedia.org (MV John J. Boland) — '250-foot boom ... swung to port or starboard' (self-unloader)"
+    }
+   ]
+  },
+  {
+   "name": "ROBERT S. PIERSON",
+   "facts": [
+    {
+     "fact": "She was the first ship in the Lower Lakes fleet ever named for a person.",
+     "source": "https://sanduskyregister.com/news/161088/its-name-is-robert-pierson/"
+    },
+    {
+     "fact": "Robert Scott Pierson founded his own shipping firm, the Soo River Company, in 1975.",
+     "source": "https://sanduskyregister.com/news/161088/its-name-is-robert-pierson/"
+    },
+    {
+     "fact": "She was built by American Ship Building in Lorain, Ohio, for about fourteen million dollars.",
+     "source": "https://greatlakesships.wordpress.com/wolverine-2/"
+    },
+    {
+     "fact": "She's a compact river-class laker, built small enough to work up Cleveland's Cuyahoga River.",
+     "source": "https://greatlakesships.wordpress.com/wolverine-2/"
+    }
+   ]
+  },
+  {
+   "name": "HERBERT C JACKSON",
+   "facts": [
+    {
+     "fact": "She was the first laker to place her steam turbines forward of her boilers.",
+     "source": "https://greatlakesships.wordpress.com/herbert-c-jackson/"
+    },
+    {
+     "fact": "She's named for Herbert Cooper Jackson, an executive at Interlake's former parent company.",
+     "source": "https://www.interlake-steamship.com/our-fleet/m-v-herbert-c.-jackson/"
+    },
+    {
+     "fact": "Converted to a self-unloader in 1975, she now discharges through a 250-foot boom.",
+     "source": "https://greatlakesships.wordpress.com/herbert-c-jackson/"
+    }
+   ]
+  },
+  {
+   "name": "GARDNO",
+   "facts": [
+    {
+     "fact": "She's named after Lake Gardno, a coastal lake in northern Poland.",
+     "source": "https://thecruisepeople.wordpress.com/2019/12/24/polsteams-seventeen-passenger-carrying-lakers/"
+    },
+    {
+     "fact": "She arrived in 2018 with sisters Jamno and Narie, also named for Polish lakes.",
+     "source": "https://thecruisepeople.wordpress.com/2019/12/24/polsteams-seventeen-passenger-carrying-lakers/"
+    },
+    {
+     "fact": "Like her Polsteam fleetmates, she carries a handful of passengers across the ocean.",
+     "source": "https://thecruisepeople.wordpress.com/2019/12/24/polsteams-seventeen-passenger-carrying-lakers/"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA EQUINOX",
+   "facts": [
+    {
+     "fact": "She was built by Nantong Mingde Heavy Industries in Nantong, China.",
+     "source": "https://greatlakesships.wordpress.com/algoma-equinox/"
+    },
+    {
+     "fact": "She's far more fuel-efficient than her older fleetmates, and her scrubbers strip out 97 percent of her sulfur emissions.",
+     "source": "https://greatlakesships.wordpress.com/algoma-equinox/"
+    },
+    {
+     "fact": "This gearless carrier relies on shore-side equipment to unload her cargo.",
+     "source": "https://en.wikipedia.org/wiki/Equinox-class_freighter"
+    },
+    {
+     "fact": "She was launched on Christmas Eve, 2012, before crossing the Atlantic to Canada.",
+     "source": "https://greatlakesships.wordpress.com/algoma-equinox/"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA COMPASS",
+   "facts": [
+    {
+     "fact": "She first sailed as Roger M. Kyes, then Adam E. Cornelius, before becoming Algoma Compass.",
+     "source": "https://en.wikipedia.org/wiki/Algoma_Compass"
+    },
+    {
+     "fact": "Her 260-foot boom can unload cargo at nearly 6,000 tons an hour.",
+     "source": "https://en.wikipedia.org/wiki/Algoma_Compass"
+    },
+    {
+     "fact": "Her first namesake, Roger M. Kyes, was a General Motors executive and former U.S. Deputy Secretary of Defense who ran the American Steamship Company.",
+     "source": "https://en.wikipedia.org/wiki/Roger_M._Kyes"
+    }
+   ]
+  },
+  {
+   "name": "LAKE EXPRESS",
+   "facts": [
+    {
+     "fact": "She was built by Austal USA in Mobile, Alabama.",
+     "source": "https://en.wikipedia.org/wiki/HSC_Lake_Express"
+    },
+    {
+     "fact": "Four waterjets drive her across the lake at up to 34 knots, about 39 miles per hour.",
+     "source": "https://en.wikipedia.org/wiki/HSC_Lake_Express"
+    },
+    {
+     "fact": "She crosses Lake Michigan between Milwaukee and Muskegon in about two and a half hours.",
+     "source": "https://en.wikipedia.org/wiki/HSC_Lake_Express"
+    },
+    {
+     "fact": "She carries up to 248 passengers along with 44 cars and a dozen motorcycles.",
+     "source": "https://en.wikipedia.org/wiki/HSC_Lake_Express"
+    }
+   ]
+  },
+  {
+   "name": "MANITOULIN",
+   "facts": [
+    {
+     "fact": "She began life in 1991 as the oil tanker Trelsi, built in Croatia.",
+     "source": "https://greatlakesships.wordpress.com/manitoulin/"
+    },
+    {
+     "fact": "In 2015 her tanker bow was replaced with a new self-unloading forebody in China.",
+     "source": "https://doorcountypulse.com/whats-in-port-the-manitoulin-built-in-china-for-a-canadian-company/"
+    },
+    {
+     "fact": "Before her rebuild she also sailed as Euro Swan and Lalandia Swan.",
+     "source": "https://greatlakesships.wordpress.com/manitoulin/"
+    },
+    {
+     "fact": "She's named for Manitoulin Island, the largest freshwater island in the world.",
+     "source": "https://www.britannica.com/place/Manitoulin-Islands"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA INNOVATOR",
+   "facts": [
+    {
+     "fact": "She was built in Croatia by the Uljanik shipbuilding group.",
+     "source": "https://www.offshore-energy.biz/algoma-takes-delivery-of-croatian-built-self-unloading-bulker/"
+    },
+    {
+     "fact": "Her unloading boom is mounted forward, letting her reach tighter, harder-to-serve docks.",
+     "source": "https://www.offshore-energy.biz/algoma-takes-delivery-of-croatian-built-self-unloading-bulker/"
+    },
+    {
+     "fact": "She was hailed as the most efficient river-class laker in nearly 40 years.",
+     "source": "https://www.offshore-energy.biz/algoma-takes-delivery-of-croatian-built-self-unloading-bulker/"
+    },
+    {
+     "fact": "In 2018 she made her maiden trans-Atlantic voyage from Croatia to Canada.",
+     "source": "https://www.offshore-energy.biz/algoma-takes-delivery-of-croatian-built-self-unloading-bulker/"
+    }
+   ]
+  },
+  {
+   "name": "USEPA LAKE GUARDIAN",
+   "facts": [
+    {
+     "fact": "She carries three onboard labs for wet work, chemistry, and biology.",
+     "source": "https://en.wikipedia.org/wiki/Lake_Guardian"
+    },
+    {
+     "fact": "She can host 27 scientists working alongside her crew of 14.",
+     "source": "https://en.wikipedia.org/wiki/Lake_Guardian"
+    }
+   ]
+  },
+  {
+   "name": "DIRK S. VANENKEVORT",
+   "facts": [
+    {
+     "fact": "She began her career back in 1990 as the tug Joseph H. Thompson Jr.",
+     "source": "https://gltugs.wordpress.com/joseph-h-thompson-jr/"
+    },
+    {
+     "fact": "A major 2020 rebuild by DonJon in Erie, Pennsylvania gave her this new name.",
+     "source": "https://gltugs.wordpress.com/joseph-h-thompson-jr/"
+    },
+    {
+     "fact": "Her engines push the 740-foot self-unloading barge Michigan Trader.",
+     "source": "https://greatlakesships.wordpress.com/michigan-trader/"
+    },
+    {
+     "fact": "She was the very first ship through the Soo Locks to open the 2026 season.",
+     "source": "https://seawayreview.com/dirk-s-vanekevort-michigan-trader-is-first-vessel-to-transit-soo-locks-for-2026-season/"
+    }
+   ]
+  },
+  {
+   "name": "FEDERAL FRASER",
+   "facts": [
+    {
+     "fact": "She sails under the Marshall Islands flag for Montreal-based Fednav.",
+     "source": "https://www.vesselfinder.com/vessels/details/9866744"
+    },
+    {
+     "fact": "Her owner Fednav boasts the world's largest fleet of ice-class bulk carriers.",
+     "source": "https://www.fednav.com/about-us"
+    }
+   ]
+  },
+  {
+   "name": "PATRICIAHOEY",
+   "facts": [
+    {
+     "fact": "She was launched way back in 1949 in New Orleans under the name Propeller.",
+     "source": "https://gltugs.wordpress.com/patricia-hoey/"
+    },
+    {
+     "fact": "For decades she towed along the Texas Gulf coast before heading north.",
+     "source": "https://gltugs.wordpress.com/patricia-hoey/"
+    },
+    {
+     "fact": "Detroit's Gaelic Tugboat Company rebuilt her and renamed her Bantry Bay in 1982.",
+     "source": "https://gltugs.wordpress.com/patricia-hoey/"
+    },
+    {
+     "fact": "Today she refuels other ships as a hardworking bunkering tug.",
+     "source": "https://gltugs.wordpress.com/patricia-hoey/"
+    }
+   ]
+  },
+  {
+   "name": "STENHEIM",
+   "facts": [
+    {
+     "fact": "Norway's Stenersen line manages her, and every Stenersen ship carries a 'Sten' name.",
+     "source": "https://www.stenersen.com/"
+    },
+    {
+     "fact": "Her epoxy-coated tanks let her carry many different chemical cargoes.",
+     "source": "https://maritimeoptima.com/public/vessels/pages/imo:9261114/mmsi:255915987/STENHEIM.html"
+    },
+    {
+     "fact": "She can carry roughly 16,600 tonnes of liquid cargo.",
+     "source": "https://www.vesselfinder.com/vessels/details/9261114"
+    }
+   ]
+  },
+  {
+   "name": "CITY OF ALGONAC",
+   "facts": [
+    {
+     "fact": "She links Algonac, Michigan with Walpole Island, Ontario across the St. Clair River.",
+     "source": "https://en.wikipedia.org/wiki/Walpole%E2%80%93Algonac_Ferry"
+    },
+    {
+     "fact": "The little ferry carries up to twelve cars on each short crossing.",
+     "source": "https://en.wikipedia.org/wiki/Walpole%E2%80%93Algonac_Ferry"
+    },
+    {
+     "fact": "Today she is the only ferry still operating between Michigan and Ontario.",
+     "source": "https://en.wikipedia.org/wiki/Walpole%E2%80%93Algonac_Ferry"
+    },
+    {
+     "fact": "Ferry service on this crossing dates back at least to 1922.",
+     "source": "https://en.wikipedia.org/wiki/Walpole%E2%80%93Algonac_Ferry"
+    }
+   ]
+  },
+  {
+   "name": "GL OSTRANDER",
+   "facts": [
+    {
+     "fact": "Before her current name she also sailed as Robert L. Torres and Jacklyn M.",
+     "source": "https://gltugs.wordpress.com/g-l-ostrander/"
+    },
+    {
+     "fact": "She has been repowered twice and now makes 7,200 horsepower.",
+     "source": "https://gltugs.wordpress.com/g-l-ostrander/"
+    },
+    {
+     "fact": "She pushes the cement barge Integrity as an articulated tug, managed by Andrie Incorporated.",
+     "source": "https://gltugs.wordpress.com/g-l-ostrander/"
+    }
+   ]
+  },
+  {
+   "name": "RT HON PAUL J MARTIN",
+   "facts": [
+    {
+     "fact": "She's named for Paul Martin Senior, a cabinet minister and father of a prime minister.",
+     "source": "https://en.wikipedia.org/wiki/Paul_Martin_Sr."
+    },
+    {
+     "fact": "She was built at the Collingwood shipyard in Ontario.",
+     "source": "https://greatlakesships.wordpress.com/h-m-griffith/"
+    },
+    {
+     "fact": "A 2000 rebuild gave her a new bow built to the maximum Seaway dimensions.",
+     "source": "https://greatlakesships.wordpress.com/h-m-griffith/"
+    }
+   ]
+  },
+  {
+   "name": "MESABI MINER",
+   "facts": [
+    {
+     "fact": "She's too big for the Welland Canal, so she stays on the upper lakes.",
+     "source": "https://en.wikipedia.org/wiki/Mesabi_Miner"
+    },
+    {
+     "fact": "Even at a thousand feet, she can maneuver in harbor without tugboat help.",
+     "source": "https://en.wikipedia.org/wiki/Mesabi_Miner"
+    },
+    {
+     "fact": "Her fleetmates include the giants James R. Barker and Paul R. Tregurtha.",
+     "source": "https://en.wikipedia.org/wiki/Mesabi_Miner"
+    }
+   ]
+  },
+  {
+   "name": "EVANS SPIRIT",
+   "facts": [
+    {
+     "fact": "She first sailed in 2007 as the Italian cargo ship Spavalda.",
+     "source": "https://carlzboats.blogspot.com/2023/04/general-cargo-vessel-evans-spirit.html"
+    },
+    {
+     "fact": "Canada's McKeil Marine bought her in 2017 and gave her this name.",
+     "source": "https://carlzboats.blogspot.com/2023/04/general-cargo-vessel-evans-spirit.html"
+    },
+    {
+     "fact": "She's now Canadian-flagged and sails for Hamilton-based McKeil Marine.",
+     "source": "https://www.vesselfinder.com/vessels/details/9327774"
+    },
+    {
+     "fact": "Two roomy holds let her carry about 15,000 tonnes of cargo.",
+     "source": "https://mckeil.com/our-fleet/evans-spirit/"
+    }
+   ]
+  },
+  {
+   "name": "BAIE COMEAU",
+   "facts": [
+    {
+     "fact": "She was the fourth and last Trillium-class self-unloader built for Canada Steamship Lines.",
+     "source": "Wikipedia, Baie Comeau (2012 ship) - https://en.wikipedia.org/wiki/Baie_Comeau_(2012_ship)"
+    },
+    {
+     "fact": "She's named for Baie-Comeau, Quebec, whose mayor was presented with a nearly eight-foot scale model of the ship.",
+     "source": "Wikipedia, Baie Comeau (2012 ship) - https://en.wikipedia.org/wiki/Baie_Comeau_(2012_ship)"
+    },
+    {
+     "fact": "Her self-unloading gear can pour out cargo at about 5,450 tonnes every hour.",
+     "source": "Wikipedia, Baie Comeau (2012 ship) - https://en.wikipedia.org/wiki/Baie_Comeau_(2012_ship)"
+    }
+   ]
+  },
+  {
+   "name": "ALGOCANADA",
+   "facts": [
+    {
+     "fact": "She's a double-hulled tanker, built after new rules banned single-hulled tankers from the Great Lakes and the St. Lawrence Seaway.",
+     "source": "Wikipedia, Algonova (2008) - https://en.wikipedia.org/wiki/Algonova_(2008)"
+    }
+   ]
+  },
+  {
+   "name": "WALTER J MCCARTHY",
+   "facts": [
+    {
+     "fact": "She first sailed as the Belle River, renamed in 1990 for a retired chairman of Detroit Edison.",
+     "source": "Great Lakes Ships (Shipwatcher News), Belle River - https://greatlakesships.wordpress.com/belle-river/"
+    },
+    {
+     "fact": "Her hull was built in two sections, then welded together in the shipyard's drydock.",
+     "source": "Great Lakes Ships (Shipwatcher News), Belle River - https://greatlakesships.wordpress.com/belle-river/"
+    },
+    {
+     "fact": "She entered service in 1977, hauling coal to a Detroit Edison power plant.",
+     "source": "Great Lakes Ships (Shipwatcher News), Belle River - https://greatlakesships.wordpress.com/belle-river/"
+    }
+   ]
+  },
+  {
+   "name": "THUNDER BAY",
+   "facts": [
+    {
+     "fact": "Named for the Port of Thunder Bay, she paid a call on her namesake city in 2013.",
+     "source": "Wikipedia, Thunder Bay (ship) - https://en.wikipedia.org/wiki/Thunder_Bay_(ship)"
+    },
+    {
+     "fact": "Her unloading conveyor rides a long boom that can swing out over either side.",
+     "source": "Wikipedia, Thunder Bay (ship) - https://en.wikipedia.org/wiki/Thunder_Bay_(ship)"
+    },
+    {
+     "fact": "She revived the name of an earlier CSL 'Bay'-series freighter built back in 1952.",
+     "source": "Wikipedia, Thunder Bay (ship) - https://en.wikipedia.org/wiki/Thunder_Bay_(ship)"
+    }
+   ]
+  },
+  {
+   "name": "MARK W. BARKER",
+   "facts": [
+    {
+     "fact": "She's named after Interlake Steamship's own president, Mark W. Barker.",
+     "source": "https://en.wikipedia.org/wiki/MV_Mark_W._Barker"
+    },
+    {
+     "fact": "She's the first ship on the Great Lakes powered by cleaner EPA Tier 4 engines.",
+     "source": "https://en.wikipedia.org/wiki/MV_Mark_W._Barker"
+    },
+    {
+     "fact": "Her unloading boom was salvaged from the scrapped steamer American Victory.",
+     "source": "https://en.wikipedia.org/wiki/MV_Mark_W._Barker"
+    },
+    {
+     "fact": "She's built to carry unusual cargo like wind-turbine blades on deck.",
+     "source": "https://en.wikipedia.org/wiki/MV_Mark_W._Barker"
+    }
+   ]
+  },
+  {
+   "name": "KAYE E BARKER",
+   "facts": [
+    {
+     "fact": "She was launched as the Edward B. Greene and later renamed Benson Ford.",
+     "source": "Wikipedia, MV Kaye E. Barker - https://en.wikipedia.org/wiki/MV_Kaye_E._Barker"
+    },
+    {
+     "fact": "Her current name honors Kaye Barker, wife of an Interlake Steamship president.",
+     "source": "Wikipedia, MV Kaye E. Barker - https://en.wikipedia.org/wiki/MV_Kaye_E._Barker"
+    },
+    {
+     "fact": "In the mid-1970s she was lengthened by 120 feet to carry more ore.",
+     "source": "Wikipedia, MV Kaye E. Barker - https://en.wikipedia.org/wiki/MV_Kaye_E._Barker"
+    },
+    {
+     "fact": "She was converted in 1981 to unload herself with a 250-foot deck boom.",
+     "source": "Wikipedia, MV Kaye E. Barker - https://en.wikipedia.org/wiki/MV_Kaye_E._Barker"
+    }
+   ]
+  },
+  {
+   "name": "G3 MARQUIS",
+   "facts": [
+    {
+     "fact": "She first sailed as CWB Marquis for the Canadian Wheat Board.",
+     "source": "Great Lakes Ships (Shipwatcher News), CWB Marquis - https://greatlakesships.wordpress.com/cwb-marquis/"
+    },
+    {
+     "fact": "She was built at the Nantong Mingde shipyard in China.",
+     "source": "Great Lakes Ships (Shipwatcher News), CWB Marquis - https://greatlakesships.wordpress.com/cwb-marquis/"
+    },
+    {
+     "fact": "Exhaust scrubbers strip about 97 percent of the sulphur out of her emissions.",
+     "source": "Great Lakes Ships (Shipwatcher News), CWB Marquis - https://greatlakesships.wordpress.com/cwb-marquis/"
+    },
+    {
+     "fact": "She's named after Marquis wheat, a Canadian variety so successful that 20 million acres were planted within a decade of its release.",
+     "source": "CWBA Facts, Marquis wheat and Marquis lakers - https://www.cwbafacts.ca/2014/11/marquis-wheat-and-marquis-lakers/"
+    }
+   ]
+  },
+  {
+   "name": "JOSEPH L BLOCK",
+   "facts": [
+    {
+     "fact": "Launched at Sturgeon Bay in 1976, she spent decades hauling iron ore out of Escanaba.",
+     "source": "Great Lakes Ships (Shipwatcher News), Joseph L. Block - https://greatlakesships.wordpress.com/joseph-l-block/"
+    }
+   ]
+  },
+  {
+   "name": "JOHN G MUNSON",
+   "facts": [
+    {
+     "fact": "Built at Manitowoc, Wisconsin, she became flagship of the Bradley Transportation fleet.",
+     "source": "Great Lakes Ships (Shipwatcher News), John G. Munson {2} - https://greatlakesships.wordpress.com/john-g-munson-2/"
+    },
+    {
+     "fact": "She's named for John G. Munson, a limestone-company president who became a vice president of U.S. Steel.",
+     "source": "National Museum of the Great Lakes, The Bradley Transportation Line - https://nmgl.org/the-bradley-transportation-line-spring-1979/"
+    },
+    {
+     "fact": "She was lengthened by 102 feet in 1976 to carry even more cargo.",
+     "source": "Great Lakes Ships (Shipwatcher News), John G. Munson {2} - https://greatlakesships.wordpress.com/john-g-munson-2/"
+    },
+    {
+     "fact": "Her original steam power gave way to a modern diesel engine in 2016.",
+     "source": "Great Lakes Ships (Shipwatcher News), John G. Munson {2} - https://greatlakesships.wordpress.com/john-g-munson-2/"
+    }
+   ]
+  },
+  {
+   "name": "EXEBORG",
+   "facts": [
+    {
+     "fact": "She was built at the Royal Niestern Sander yard in Delfzijl, the Netherlands.",
+     "source": "Scheepvaartwest, Exeborg IMO 9650482 - https://www.scheepvaartwest.be/CMS/index.php/general-cargo/8041-exeborg-imo-9650482"
+    },
+    {
+     "fact": "Four removable tween-decks let her reshape her holds for very different cargoes.",
+     "source": "Scheepvaartwest, Exeborg IMO 9650482 - https://www.scheepvaartwest.be/CMS/index.php/general-cargo/8041-exeborg-imo-9650482"
+    },
+    {
+     "fact": "Her strengthened holds are built to carry heavy, oversized project cargo.",
+     "source": "Scheepvaartwest, Exeborg IMO 9650482 - https://www.scheepvaartwest.be/CMS/index.php/general-cargo/8041-exeborg-imo-9650482"
+    }
+   ]
+  },
+  {
+   "name": "PETIT FORTE",
+   "facts": [
+    {
+     "fact": "She was built in 1969 in Selby, England, by Cochrane and Sons.",
+     "source": "gltugs.wordpress.com/petite-forte"
+    },
+    {
+     "fact": "She has carried five different names, first sailing as the E. Bronson Ingram.",
+     "source": "gltugs.wordpress.com/petite-forte"
+    },
+    {
+     "fact": "Before crossing to the Lakes she worked overseas as the Al Battal.",
+     "source": "gltugs.wordpress.com/petite-forte (Arabian Bulk Trade, 1981-1986)"
+    },
+    {
+     "fact": "Today she pushes the cement barge St. Marys Cement, registered in Hamilton, Ontario.",
+     "source": "gltugs.wordpress.com/petite-forte"
+    }
+   ]
+  },
+  {
+   "name": "ALPENA",
+   "facts": [
+    {
+     "fact": "She launched in 1942 with the largest cargo capacity of any ship on the Lakes.",
+     "source": "en.wikipedia.org/wiki/SS_Alpena_(1942)"
+    },
+    {
+     "fact": "One of five identical wartime ore carriers, she could haul enough iron ore to make the steel for eight destroyers.",
+     "source": "en.wikipedia.org/wiki/SS_Alpena_(1942)"
+    },
+    {
+     "fact": "In 1989 her 120-foot midsection was removed and she became a cement carrier.",
+     "source": "en.wikipedia.org/wiki/SS_Alpena_(1942)"
+    },
+    {
+     "fact": "She was built as the Leon Fraser at Ecorse, Michigan's Great Lakes Engineering Works.",
+     "source": "en.wikipedia.org/wiki/SS_Alpena_(1942)"
+    }
+   ]
+  },
+  {
+   "name": "CSL TADOUSSAC",
+   "facts": [
+    {
+     "fact": "She was the first Canada Steamship Lines ship built with her self-unloading gear mounted aft.",
+     "source": "greatlakesships.wordpress.com/tadoussac; en.wikipedia.org/wiki/CSL_Tadoussac"
+    },
+    {
+     "fact": "She was built at the Collingwood Shipyards on Ontario's Georgian Bay.",
+     "source": "en.wikipedia.org/wiki/CSL_Tadoussac; greatlakesships.wordpress.com/tadoussac"
+    }
+   ]
+  },
+  {
+   "name": "AMERICAN MARINER",
+   "facts": [
+    {
+     "fact": "She was built at Bay Shipbuilding in Sturgeon Bay, Wisconsin.",
+     "source": "en.wikipedia.org/wiki/MV_American_Mariner"
+    },
+    {
+     "fact": "She was nearly named Chicago before she launched as the American Mariner.",
+     "source": "en.wikipedia.org/wiki/MV_American_Mariner; greatlakesships.wordpress.com/american-mariner"
+    },
+    {
+     "fact": "Her seven cargo holds are filled through twenty-four deck hatches.",
+     "source": "greatlakesships.wordpress.com/american-mariner"
+    }
+   ]
+  },
+  {
+   "name": "AMERICAN PATRIOT",
+   "facts": [
+    {
+     "fact": "She was built in 2025 by Chesapeake Shipbuilding in Salisbury, Maryland.",
+     "source": "workboat.com/passenger-vessels/american-patriot-embarks-on-first-cruise"
+    },
+    {
+     "fact": "She's an intimate small ship, carrying just 130 guests across five decks.",
+     "source": "workboat.com/passenger-vessels/american-patriot-embarks-on-first-cruise"
+    },
+    {
+     "fact": "She's the very first of American Cruise Lines' new Patriot Class.",
+     "source": "workboat.com/passenger-vessels/american-patriot-embarks-on-first-cruise"
+    },
+    {
+     "fact": "She entered service in June 2025, debuting on a New England cruise from Boston.",
+     "source": "workboat.com/passenger-vessels/american-patriot-embarks-on-first-cruise"
+    }
+   ]
+  },
+  {
+   "name": "CSL ST-LAURENT",
+   "facts": [
+    {
+     "fact": "She was the last of CSL's Trillium Class ships built.",
+     "source": "greatlakesships.wordpress.com/csl-st-laurent"
+    },
+    {
+     "fact": "Her delivery voyage from China to Montreal took roughly two months.",
+     "source": "greatlakesships.wordpress.com/csl-st-laurent (departed Dec 13, 2014, arrived Feb 15, 2015)"
+    }
+   ]
+  },
+  {
+   "name": "CSL LAURENTIEN",
+   "facts": [
+    {
+     "fact": "She first sailed as the Louis R. Desmarais, named for a Canada Steamship Lines president.",
+     "source": "en.wikipedia.org/wiki/Louis_R._Desmarais; greatlakesships.wordpress.com/louis-r-desmarais"
+    },
+    {
+     "fact": "Her 2000 rebuild grafted a brand-new bow and cargo section onto her original stern.",
+     "source": "greatlakesships.wordpress.com/louis-r-desmarais (Port Weller Dry Docks)"
+    },
+    {
+     "fact": "She was built at the Collingwood Shipyards, fourth of five sister ships.",
+     "source": "greatlakesships.wordpress.com/louis-r-desmarais"
+    }
+   ]
+  },
+  {
+   "name": "DOROTHY ANN",
+   "facts": [
+    {
+     "fact": "She's the largest Z-drive tug ever built in North America, at 7,200 horsepower.",
+     "source": "boatnerd.com/vessel-info/interlake-steamship/dorothy-ann-pathfinder"
+    },
+    {
+     "fact": "Her twin drives let her spin on her own axis and stop within her own length.",
+     "source": "boatnerd.com/vessel-info/interlake-steamship/dorothy-ann-pathfinder"
+    },
+    {
+     "fact": "Her barge Pathfinder was rebuilt from a 1950s lake freighter, the J.L. Mauthe.",
+     "source": "boatnerd.com/vessel-info/interlake-steamship/dorothy-ann-pathfinder"
+    },
+    {
+     "fact": "She was built at Bay Shipbuilding in Sturgeon Bay, Wisconsin.",
+     "source": "boatnerd.com/vessel-info/interlake-steamship/dorothy-ann-pathfinder"
+    }
+   ]
+  },
+  {
+   "name": "CALUMET",
+   "facts": [
+    {
+     "fact": "She was built at the American Shipbuilding Company in Lorain, Ohio.",
+     "source": "greatlakesships.wordpress.com/william-r-roesch"
+    },
+    {
+     "fact": "She sailed as the David Z. Norton from 1995 until 2006.",
+     "source": "greatlakesships.wordpress.com/william-r-roesch"
+    },
+    {
+     "fact": "Her aft-mounted self-unloading boom stretches 260 feet.",
+     "source": "greatlakesships.wordpress.com/william-r-roesch"
+    },
+    {
+     "fact": "She's a compact 'River-class' self-unloader, built to reach docks up tight waterways like the Cuyahoga River.",
+     "source": "greatlakesships.wordpress.com/william-r-roesch"
+    }
+   ]
+  },
+  {
+   "name": "FEDERAL BISCAY",
+   "facts": [
+    {
+     "fact": "She was built in 2015 by Oshima Shipbuilding in Japan.",
+     "source": "vesseltracker.com/Ships/Federal-Biscay-9697856; vesselfinder.com IMO 9697856"
+    },
+    {
+     "fact": "She's operated by Montreal-based Fednav as one of its Seaway-size 'laker' bulk carriers.",
+     "source": "vesseltracker.com/Ships/Federal-Biscay-9697856 (Fednav took delivery Oct 2015, 34,500 dwt laker)"
+    }
+   ]
+  },
+  {
+   "name": "AMERICAN CENTURY",
+   "facts": [
+    {
+     "fact": "She was the very last of the thousand-footers to enter service on the Lakes.",
+     "source": "https://greatlakesships.wordpress.com/columbia-star/"
+    },
+    {
+     "fact": "She began life as the Columbia Star, taking the name American Century in 2006.",
+     "source": "https://en.wikipedia.org/wiki/MV_American_Century"
+    },
+    {
+     "fact": "She was built at Bay Shipbuilding in Sturgeon Bay, Wisconsin, back in 1981.",
+     "source": "https://en.wikipedia.org/wiki/MV_American_Century"
+    },
+    {
+     "fact": "Four diesel engines give her about fourteen thousand horsepower to move enormous cargoes.",
+     "source": "https://en.wikipedia.org/wiki/MV_American_Century"
+    }
+   ]
+  },
+  {
+   "name": "KAREN ANDRIE",
+   "facts": [
+    {
+     "fact": "She was built down in Texas in 1965, first named the Sarah Hays.",
+     "source": "https://gltugs.wordpress.com/karen-andrie/"
+    },
+    {
+     "fact": "For years she handled dry-bulk barges out of Tampa, Florida.",
+     "source": "https://gltugs.wordpress.com/karen-andrie/"
+    },
+    {
+     "fact": "Andrie Inc. of Muskegon, Michigan bought her and gave her this name in 1993.",
+     "source": "https://gltugs.wordpress.com/karen-andrie/"
+    },
+    {
+     "fact": "A 2009 refit gave her a new upper pilothouse and a JAK coupler to lock onto the barge Endeavour.",
+     "source": "https://gltugs.wordpress.com/karen-andrie/"
+    }
+   ]
+  },
+  {
+   "name": "WILFRED SYKES",
+   "facts": [
+    {
+     "fact": "She is considered the first of the modern Great Lakes freighters.",
+     "source": "https://en.wikipedia.org/wiki/SS_Wilfred_Sykes"
+    },
+    {
+     "fact": "She was named for Wilfred Sykes, who became president of Inland Steel in 1948.",
+     "source": "https://en.wikipedia.org/wiki/Inland_Steel_Company"
+    },
+    {
+     "fact": "When she was rebuilt as a self-unloader at Superior, Wisconsin in 1975, she was the first laker with the unloading gear mounted aft.",
+     "source": "https://en.wikipedia.org/wiki/SS_Wilfred_Sykes"
+    }
+   ]
+  },
+  {
+   "name": "BBC KOLDING",
+   "facts": [
+    {
+     "fact": "She belongs to BBC Chartering's new LakerMax class, a run of fifteen heavy-lift ships the company began introducing in 2024.",
+     "source": "https://en.wikipedia.org/wiki/BBC_Chartering"
+    }
+   ]
+  },
+  {
+   "name": "ALGOSOLIS",
+   "facts": [
+    {
+     "fact": "Before Algoma, she sailed as the Eli Knutsen for a Norwegian owner.",
+     "source": "https://www.vesselfinder.com/vessels/details/9409261"
+    },
+    {
+     "fact": "She carries roughly sixteen thousand tons of liquid petroleum products.",
+     "source": "https://www.algonet.com/ship/algosolis/"
+    }
+   ]
+  },
+  {
+   "name": "CLYDE S. VANENKEVORT",
+   "facts": [
+    {
+     "fact": "She was built in Erie, Pennsylvania, and first named the Ken Boothe Senior.",
+     "source": "https://gltugs.wordpress.com/clyde-s-vanenkevort/"
+    },
+    {
+     "fact": "VanEnkevort Tug and Barge bought her and gave her this name in 2017.",
+     "source": "https://gltugs.wordpress.com/clyde-s-vanenkevort/"
+    },
+    {
+     "fact": "Her two engines produce nearly eleven thousand horsepower to drive the barge.",
+     "source": "https://gltugs.wordpress.com/clyde-s-vanenkevort/"
+    }
+   ]
+  },
+  {
+   "name": "VERILA",
+   "facts": [
+    {
+     "fact": "She shares her name with Verila, a mountain range in western Bulgaria.",
+     "source": "https://en.wikipedia.org/wiki/Verila"
+    }
+   ]
+  },
+  {
+   "name": "PEARL MIST",
+   "facts": [
+    {
+     "fact": "She was built by Irving's Halifax Shipyard in Nova Scotia, Canada.",
+     "source": "https://en.wikipedia.org/wiki/Pearl_Mist"
+    },
+    {
+     "fact": "She carries up to two hundred ten guests with about seventy crew.",
+     "source": "https://en.wikipedia.org/wiki/Pearl_Mist"
+    },
+    {
+     "fact": "She was ordered for around forty-three million dollars back in 2006.",
+     "source": "https://en.wikipedia.org/wiki/Pearl_Mist"
+    },
+    {
+     "fact": "In 2023 she received a full, top-to-bottom interior makeover.",
+     "source": "https://en.wikipedia.org/wiki/Pearl_Mist"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA STRONGFIELD",
+   "facts": [
+    {
+     "fact": "She was first ordered as the CWB Strongfield by the Canadian Wheat Board.",
+     "source": "https://greatlakesships.wordpress.com/algoma-strongfield/"
+    },
+    {
+     "fact": "Algoma bought her unfinished at auction after the Chinese shipyard went bankrupt.",
+     "source": "https://greatlakesships.wordpress.com/algoma-strongfield/"
+    },
+    {
+     "fact": "Her exhaust scrubbers remove about ninety-seven percent of sulphur oxide emissions.",
+     "source": "https://greatlakesships.wordpress.com/algoma-strongfield/"
+    }
+   ]
+  },
+  {
+   "name": "SAMUEL DE CHAMPLAIN",
+   "facts": [
+    {
+     "fact": "She was built in Houston, Texas, and first named the Musketeer Fury.",
+     "source": "https://gltugs.wordpress.com/samuel-de-champlain/"
+    },
+    {
+     "fact": "She survived a serious fire off the Azores in 1993 before being rebuilt.",
+     "source": "https://gltugs.wordpress.com/samuel-de-champlain/"
+    },
+    {
+     "fact": "She sailed under six different names during her long career.",
+     "source": "https://gltugs.wordpress.com/samuel-de-champlain/"
+    }
+   ]
+  },
+  {
+   "name": "ARTHUR M ANDERSON",
+   "facts": [
+    {
+     "fact": "After the Fitzgerald vanished, she turned back into the storm at the Coast Guard's request to search for survivors.",
+     "source": "Wikipedia, SS Edmund Fitzgerald and SS Arthur M. Anderson (the USCG asked the Anderson to turn around and look for survivors)"
+    },
+    {
+     "fact": "She's named for Arthur Marvin Anderson, a U.S. Steel director and vice chairman of J.P. Morgan and Company.",
+     "source": "Wikipedia, SS Arthur M. Anderson (en.wikipedia.org/wiki/SS_Arthur_M._Anderson)"
+    },
+    {
+     "fact": "The American Ship Building Company launched her at Lorain, Ohio, in February 1952.",
+     "source": "Wikipedia, SS Arthur M. Anderson (launched February 16, 1952)"
+    },
+    {
+     "fact": "A new 120-foot midsection added in 1975 stretched her to 767 feet.",
+     "source": "Wikipedia, SS Arthur M. Anderson (en.wikipedia.org/wiki/SS_Arthur_M._Anderson)"
+    }
+   ]
+  },
+  {
+   "name": "CASON J CALLAWAY",
+   "facts": [
+    {
+     "fact": "She honors Cason Callaway, a Georgia textile magnate who created the famed Callaway Gardens.",
+     "source": "New Georgia Encyclopedia (georgiaencyclopedia.org) - Cason Jewell Callaway, textile manufacturer and creator of Callaway Gardens"
+    },
+    {
+     "fact": "She was built at the Great Lakes Engineering Works in River Rouge, Michigan.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/cason-j-callaway) - Hull #297, Great Lakes Engineering Works, River Rouge, MI"
+    },
+    {
+     "fact": "Fraser Shipyards rebuilt her as a self-unloader at Superior, Wisconsin, in 1982.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/cason-j-callaway) - converted to self-unloader, Fraser Shipyards, Superior WI, 1982"
+    }
+   ]
+  },
+  {
+   "name": "PHILIP R CLARKE",
+   "facts": [
+    {
+     "fact": "Her keel was laid in December 1950 at American Shipbuilding in Lorain, Ohio.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/philip-r-clarke) - keel laid December 18, 1950"
+    },
+    {
+     "fact": "Her AAA class used an asymmetrical stern to smooth water flow to the propeller.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/philip-r-clarke)"
+    }
+   ]
+  },
+  {
+   "name": "STEWART J CORT",
+   "facts": [
+    {
+     "fact": "Her bow and stern were built in Mississippi, then joined to a mid-body built in Erie, Pennsylvania.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/stewart-j-cort) - bow and stern built as one hull at Litton/Ingalls, Pascagoula MS, welded to cargo section built at Erie"
+    },
+    {
+     "fact": "Before her mid-body arrived, the stubby bow-and-stern unit was nicknamed Stubby.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/stewart-j-cort) - Hull #1173 nicknamed 'Stubby'"
+    },
+    {
+     "fact": "She's the only thousand-footer with her pilothouse mounted forward in the bow.",
+     "source": "Door County Pulse (doorcountypulse.com/what-left-port-the-stewart-j-cort)"
+    }
+   ]
+  },
+  {
+   "name": "ROGER BLOUGH",
+   "facts": [
+    {
+     "fact": "She's named for Roger Blough, a former chairman of U.S. Steel.",
+     "source": "Wikipedia, MV Roger Blough (en.wikipedia.org/wiki/MV_Roger_Blough)"
+    },
+    {
+     "fact": "Her unusual aft shuttle boom slides cargo out through small openings in her stern.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/roger-blough) - boom extends about 50 feet out of small openings on either side of her stern"
+    },
+    {
+     "fact": "The American Ship Building Company built her at its Lorain, Ohio, yard.",
+     "source": "Wikipedia, MV Roger Blough (en.wikipedia.org/wiki/MV_Roger_Blough)"
+    }
+   ]
+  },
+  {
+   "name": "JAMES R BARKER",
+   "facts": [
+    {
+     "fact": "She's named for James R. Barker, chairman of the Interlake Steamship Company.",
+     "source": "Wikipedia, James R. Barker (1976 ship) and Great Lakes Ships (greatlakesships.wordpress.com/james-r-barker) - named for Interlake's Chairman of the Board"
+    },
+    {
+     "fact": "She was the third thousand-footer built for the Great Lakes.",
+     "source": "Wikipedia, James R. Barker (1976 ship) and Great Lakes Ships - third 1,000-footer built, first built entirely on the Great Lakes"
+    },
+    {
+     "fact": "Her deckhouse was built in Chicago and shipped to Lorain on the deck of another vessel.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/james-r-barker) - deck house built at South Chicago yard, transported to Lorain on the deck of the George D. Goble"
+    }
+   ]
+  },
+  {
+   "name": "MICHIPICOTEN",
+   "facts": [
+    {
+     "fact": "She was launched in 1952 at Sparrows Point, Maryland, as the Elton Hoyt 2nd.",
+     "source": "Wikipedia, Michipicoten (1952 ship) - built 1952 by Bethlehem Shipbuilding at Sparrows Point, launched as Elton Hoyt 2nd"
+    },
+    {
+     "fact": "She reached the Lakes towed up the rivers, her cabins carried on deck and assembled in Chicago.",
+     "source": "Wikipedia, Michipicoten (1952 ship) - as Elton Hoyt 2nd was brought through the rivers, her cabins and pilothouse were carried on-deck, assembled in Chicago"
+    },
+    {
+     "fact": "Her name means Big Bluffs in Ojibwe, after a river in Ontario.",
+     "source": "Wikipedia, Michipicoten (1952 ship) - name means 'Big bluffs' in Ojibwe, refers to the hills near the river"
+    },
+    {
+     "fact": "Around 2010 to 2011 she was repowered from a steam turbine to a modern diesel engine.",
+     "source": "Wikipedia, Michipicoten (1952 ship) - laid up December 2010, steam turbine replaced with a MaK 6M32C diesel engine"
+    }
+   ]
+  },
+  {
+   "name": "H LEE WHITE",
+   "facts": [
+    {
+     "fact": "She's named for Harris Lee White, a former American Steamship Company chairman.",
+     "source": "Wikipedia, MV H. Lee White (en.wikipedia.org/wiki/MV_H._Lee_White)"
+    },
+    {
+     "fact": "Bay Shipbuilding built her at Sturgeon Bay, Wisconsin, in 1974.",
+     "source": "Wikipedia, MV H. Lee White (en.wikipedia.org/wiki/MV_H._Lee_White)"
+    }
+   ]
+  },
+  {
+   "name": "BUFFALO",
+   "facts": [
+    {
+     "fact": "Bay Shipbuilding built her at Sturgeon Bay, Wisconsin, for about 25 million dollars.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/buffalo-3) - Bay Shipbuilding, Sturgeon Bay WI, at a cost of $25 million"
+    },
+    {
+     "fact": "She slid into the water sideways in a dramatic 1978 side-launch.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/buffalo-3) - side-launched March 16, 1978"
+    },
+    {
+     "fact": "She was one of ten sisters built under a 1970s U.S. maritime-aid program.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/buffalo-3) - seventh of ten ships built for American Steamship under Title XI of the Merchant Marine Act of 1970"
+    }
+   ]
+  },
+  {
+   "name": "ADAM E CORNELIUS",
+   "facts": [
+    {
+     "fact": "She first sailed as the Roger M. Kyes before becoming Adam E. Cornelius in 1989.",
+     "source": "Wikipedia, Algoma Compass - renamed Adam E. Cornelius in June 1989"
+    },
+    {
+     "fact": "Built in Toledo, Ohio, she was the first ship constructed at that yard since 1959.",
+     "source": "Wikipedia, Algoma Compass - ordered from American Shipbuilding of Toledo; first ship to be constructed in Toledo since 1959"
+    },
+    {
+     "fact": "She was among the first Lakes freighters built with all crew quarters set aft.",
+     "source": "Shipwatcher News / Great Lakes Ships (greatlakesships.wordpress.com/roger-m-kyes) - one of the first American vessels built with all accommodations aft"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA CONVEYOR",
+   "facts": [
+    {
+     "fact": "She was the first Equinox-class self-unloader built for Algoma Central.",
+     "source": "https://greatlakesships.wordpress.com/algoma-conveyor/"
+    },
+    {
+     "fact": "She sailed home from China across the Pacific and through the Panama Canal.",
+     "source": "https://www.offshore-energy.biz/algomas-newest-self-unloader-sets-sail-for-canada/"
+    },
+    {
+     "fact": "Her loop-belt system feeds a stern unloading boom over 260 feet long.",
+     "source": "https://greatlakesships.wordpress.com/algoma-conveyor/"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA SAULT",
+   "facts": [
+    {
+     "fact": "Her name is the third Algoma ship to honor Sault Ste. Marie, Ontario.",
+     "source": "https://en.wikipedia.org/wiki/Algoma_Sault"
+    },
+    {
+     "fact": "Her exhaust scrubber removes over 98 percent of the ship's sulfur-oxide emissions.",
+     "source": "https://en.wikipedia.org/wiki/Algoma_Sault"
+    },
+    {
+     "fact": "Her self-unloading boom reaches about 260 feet across the deck.",
+     "source": "https://en.wikipedia.org/wiki/Algoma_Sault"
+    }
+   ]
+  },
+  {
+   "name": "TIM S DOOL",
+   "facts": [
+    {
+     "fact": "She was only the second laker ever built with a single stern superstructure.",
+     "source": "https://en.wikipedia.org/wiki/MV_Tim_S._Dool"
+    },
+    {
+     "fact": "She was built at Saint John, New Brunswick, a saltwater yard far from the Lakes.",
+     "source": "https://en.wikipedia.org/wiki/MV_Tim_S._Dool"
+    },
+    {
+     "fact": "She first sailed as Senneville, then Algoville, before taking her present name.",
+     "source": "https://en.wikipedia.org/wiki/MV_Tim_S._Dool"
+    },
+    {
+     "fact": "She's named for a former president of Algoma Central.",
+     "source": "https://en.wikipedia.org/wiki/MV_Tim_S._Dool"
+    }
+   ]
+  },
+  {
+   "name": "MANITOWOC",
+   "facts": [
+    {
+     "fact": "She was built in Lorain, Ohio, by the American Shipbuilding Company.",
+     "source": "https://greatlakesships.wordpress.com/paul-thayer/"
+    },
+    {
+     "fact": "Her present name honors the Manitowoc River in Wisconsin.",
+     "source": "https://greatlakesships.wordpress.com/paul-thayer/"
+    },
+    {
+     "fact": "Earlier in her life she sailed as the Earl W. Oglebay.",
+     "source": "https://greatlakesships.wordpress.com/paul-thayer/"
+    },
+    {
+     "fact": "Her very first job was hauling iron ore up Cleveland's Cuyahoga River.",
+     "source": "https://greatlakesships.wordpress.com/paul-thayer/"
+    }
+   ]
+  },
+  {
+   "name": "VICTORY I",
+   "facts": [
+    {
+     "fact": "She was built in 2001 in Jacksonville, Florida, as the Cape May Light.",
+     "source": "https://en.wikipedia.org/wiki/Victory_I"
+    },
+    {
+     "fact": "She has sailed under five different names during her career.",
+     "source": "https://en.wikipedia.org/wiki/Victory_I"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA BUFFALO",
+   "facts": [
+    {
+     "fact": "She was built in 1978 at Sturgeon Bay, Wisconsin, simply as the Buffalo.",
+     "source": "https://en.wikipedia.org/wiki/MV_Buffalo"
+    },
+    {
+     "fact": "She sailed as the Buffalo for forty years before Algoma renamed her.",
+     "source": "https://en.wikipedia.org/wiki/MV_Buffalo"
+    },
+    {
+     "fact": "She was built for the American Steamship Company at a cost of about 25 million dollars.",
+     "source": "https://greatlakesships.wordpress.com/buffalo-3/"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA BEAR",
+   "facts": [
+    {
+     "fact": "She's the very first ship of Algoma's new Equinox 2.0 class.",
+     "source": "https://www.ship-technology.com/news/yangzijiang-shipyard-vessel-algoma/"
+    },
+    {
+     "fact": "Her modified stern gives her better speed on less engine power.",
+     "source": "https://www.ship-technology.com/news/yangzijiang-shipyard-vessel-algoma/"
+    },
+    {
+     "fact": "She was built by the Yangzijiang Shipyard in China.",
+     "source": "https://www.ship-technology.com/news/yangzijiang-shipyard-vessel-algoma/"
+    }
+   ]
+  },
+  {
+   "name": "EDWARD L RYERSON",
+   "facts": [
+    {
+     "fact": "She was the very last freighter ever built in Manitowoc, Wisconsin.",
+     "source": "https://en.wikipedia.org/wiki/SS_Edward_L._Ryerson"
+    },
+    {
+     "fact": "She was the last Great Lakes ship built as a straight-decker.",
+     "source": "https://en.wikipedia.org/wiki/SS_Edward_L._Ryerson"
+    },
+    {
+     "fact": "She was launched sideways into the ice-filled Manitowoc River in January 1960.",
+     "source": "https://en.wikipedia.org/wiki/SS_Edward_L._Ryerson"
+    }
+   ]
+  },
+  {
+   "name": "BADGER",
+   "facts": [
+    {
+     "fact": "She's a rare National Historic Landmark that still sails under her own power.",
+     "source": "https://en.wikipedia.org/wiki/SS_Badger"
+    },
+    {
+     "fact": "She was originally built to ferry railroad cars across Lake Michigan.",
+     "source": "https://en.wikipedia.org/wiki/SS_Badger"
+    },
+    {
+     "fact": "She's named for the University of Wisconsin Badgers.",
+     "source": "https://en.wikipedia.org/wiki/SS_Badger"
+    }
+   ]
+  },
+  {
+   "name": "CGC BUCKTHORN",
+   "facts": [
+    {
+     "fact": "She was built far from home, down in Mobile, Alabama, in 1963.",
+     "source": "https://greatlakesships.wordpress.com/uscgc-buckthorn-wli-642/"
+    },
+    {
+     "fact": "She tends more buoys than any other buoy tender on the Great Lakes.",
+     "source": "https://greatlakesships.wordpress.com/uscgc-buckthorn-wli-642/"
+    },
+    {
+     "fact": "She's based at Sault Ste. Marie, tending the busy St. Marys River.",
+     "source": "https://greatlakesships.wordpress.com/uscgc-buckthorn-wli-642/"
+    },
+    {
+     "fact": "Her forward crane and shallow hull let her work thin river ice.",
+     "source": "https://greatlakesships.wordpress.com/uscgc-buckthorn-wli-642/"
+    }
+   ]
+  },
+  {
+   "name": "KATHY MCKEIL",
+   "facts": [
+    {
+     "fact": "She's about 472 feet long and can carry more than 21,000 tonnes of cargo.",
+     "source": "https://www.vesselfinder.com/vessels/details/9127198"
+    }
+   ]
+  },
+  {
+   "name": "ONTARIO VENTURE",
+   "facts": [
+    {
+     "fact": "Her tanker stern was originally built in 2004 at a shipyard in Shanghai, China.",
+     "source": "https://www.grandhaventribune.com/news/local/ontario-venture-makes-1st-2-visits-to-grand-haven/article_9e0a7de6-d8a2-5ebb-b600-469e7c766fda.html"
+    },
+    {
+     "fact": "Before her conversion she sailed the oceans as the tanker Patrona I.",
+     "source": "https://www.grandhaventribune.com/news/local/ontario-venture-makes-1st-2-visits-to-grand-haven/article_9e0a7de6-d8a2-5ebb-b600-469e7c766fda.html"
+    },
+    {
+     "fact": "McKeil sent her back to China, where her old tanker stern was mated to a brand-new self-unloading forebody.",
+     "source": "https://www.grandhaventribune.com/news/local/ontario-venture-makes-1st-2-visits-to-grand-haven/article_9e0a7de6-d8a2-5ebb-b600-469e7c766fda.html"
+    }
+   ]
+  },
+  {
+   "name": "PRESQUE ISLE",
+   "facts": [
+    {
+     "fact": "The whole tug-and-barge unit cost about thirty-five million dollars to build, and was delivered in 1973.",
+     "source": "https://magazines.marinelink.com/Magazines/MaritimeReporter/19740115/content/the-presque-isle-211050"
+    },
+    {
+     "fact": "Her powerful pusher tug was built far away in New Orleans by Halter Marine.",
+     "source": "https://gltugs.wordpress.com/presque-isle/"
+    },
+    {
+     "fact": "The barge's bow section was built by DeFoe Shipbuilding in Bay City, Michigan.",
+     "source": "https://greatlakesships.wordpress.com/presque-isle/"
+    }
+   ]
+  },
+  {
+   "name": "R/V LAKE EXPLORER II",
+   "facts": [
+    {
+     "fact": "She was built back in 1966, long before her EPA research career began.",
+     "source": "https://en.wikipedia.org/wiki/NOAAS_Rude"
+    },
+    {
+     "fact": "She began life as the survey ship Rude, charting the ocean floor.",
+     "source": "https://en.wikipedia.org/wiki/NOAAS_Rude"
+    },
+    {
+     "fact": "She was built at Jacobson Shipyard in Oyster Bay, New York.",
+     "source": "https://en.wikipedia.org/wiki/NOAAS_Rude"
+    },
+    {
+     "fact": "She's been homeported in Duluth, Minnesota, since entering EPA service in 2009.",
+     "source": "https://en.wikipedia.org/wiki/NOAAS_Rude"
+    }
+   ]
+  },
+  {
+   "name": "CSL ASSINIBOINE",
+   "facts": [
+    {
+     "fact": "She first sailed as the Jean Parisien before her 2005 rebuild and renaming.",
+     "source": "https://greatlakesships.wordpress.com/jean-parisien/"
+    },
+    {
+     "fact": "She was built by Davie Shipbuilding in Lauzon, Quebec.",
+     "source": "https://greatlakesships.wordpress.com/jean-parisien/"
+    },
+    {
+     "fact": "Her 2005 forebody brought a state-of-the-art self-unloading system with fully automated controls.",
+     "source": "https://greatlakesships.wordpress.com/jean-parisien/"
+    },
+    {
+     "fact": "She can haul over 36,000 tons of cargo in a single load.",
+     "source": "https://greatlakesships.wordpress.com/jean-parisien/"
+    }
+   ]
+  },
+  {
+   "name": "KAMINISTIQUA",
+   "facts": [
+    {
+     "fact": "She was built in 1983 at the Govan Shipyards in Glasgow, Scotland.",
+     "source": "https://greatlakesships.wordpress.com/saskatchewan-pioneer/"
+    },
+    {
+     "fact": "She first sailed as the Saskatchewan Pioneer for a grain-trading family firm.",
+     "source": "https://greatlakesships.wordpress.com/saskatchewan-pioneer/"
+    },
+    {
+     "fact": "She was designed a 'Saltie-Laker' to work ocean routes each winter in the off-season.",
+     "source": "http://carlzboats.blogspot.com/2012/07/salty-laker-kaministigua.html"
+    },
+    {
+     "fact": "Over the years she's carried four names, including Lady Hamilton.",
+     "source": "https://greatlakesships.wordpress.com/saskatchewan-pioneer/"
+    }
+   ]
+  },
+  {
+   "name": "CARIBOU ISLE",
+   "facts": [
+    {
+     "fact": "She was built in 1985 in Port Hawkesbury, Nova Scotia.",
+     "source": "http://carlzboats.blogspot.com/2015/05/specialty-vessels-ccgs-caribou-isle.html"
+    },
+    {
+     "fact": "She's one of only four vessels built in her class of small buoy tenders.",
+     "source": "http://carlzboats.blogspot.com/2015/05/specialty-vessels-ccgs-caribou-isle.html"
+    },
+    {
+     "fact": "Her hydraulic crane can lift buoys weighing up to two and a half tons.",
+     "source": "http://carlzboats.blogspot.com/2015/05/specialty-vessels-ccgs-caribou-isle.html"
+    },
+    {
+     "fact": "She's laid up every winter because her bow isn't ice-strengthened.",
+     "source": "http://carlzboats.blogspot.com/2015/05/specialty-vessels-ccgs-caribou-isle.html"
+    }
+   ]
+  },
+  {
+   "name": "WELLAND",
+   "facts": [
+    {
+     "fact": "She was built in Owen Sound, Ontario, for the Canadian Department of Transport.",
+     "source": "https://gltugs.wordpress.com/welland/"
+    },
+    {
+     "fact": "She later served the St. Lawrence Seaway Authority.",
+     "source": "https://gltugs.wordpress.com/welland/"
+    },
+    {
+     "fact": "For years she worked Lake Erie, tending offshore natural-gas wells.",
+     "source": "https://gltugs.wordpress.com/welland/"
+    },
+    {
+     "fact": "In the 1990s she was lengthened by about six feet.",
+     "source": "https://gltugs.wordpress.com/welland/"
+    }
+   ]
+  },
+  {
+   "name": "AMERICAN SPIRIT",
+   "facts": [
+    {
+     "fact": "She was the seventh thousand-footer ever built on the Great Lakes.",
+     "source": "https://greatlakesships.wordpress.com/george-a-stinson/"
+    },
+    {
+     "fact": "Her midbody was built at Toledo, then joined to her bow and stern at Lorain, Ohio.",
+     "source": "https://greatlakesships.wordpress.com/george-a-stinson/"
+    },
+    {
+     "fact": "In September 2014 she grounded in the Round Island Passage near Mackinac Island during bad weather, but was freed without damage.",
+     "source": "https://greatlakesships.wordpress.com/george-a-stinson/"
+    },
+    {
+     "fact": "She was renamed American Spirit in 2004 by the American Steamship Company.",
+     "source": "https://greatlakesships.wordpress.com/george-a-stinson/"
+    }
+   ]
+  },
+  {
+   "name": "CAROLINE MCKEE",
+   "facts": [
+    {
+     "fact": "She was built by Main Iron Works in Houma, Louisiana.",
+     "source": "https://gltugs.wordpress.com/caroline-mckee/"
+    },
+    {
+     "fact": "She started out as the offshore tug David P. Guidry.",
+     "source": "https://greatlakesships.wordpress.com/david-p-guidry/"
+    },
+    {
+     "fact": "On the Lakes she pushes the cement barge Commander.",
+     "source": "https://gltugs.wordpress.com/caroline-mckee/"
+    }
+   ]
+  },
+  {
+   "name": "VICTORY II",
+   "facts": [
+    {
+     "fact": "She was built in Jacksonville, Florida — a rare American-built cruise ship.",
+     "source": "https://www.cruisemapper.com/ships/Victory-2-1864"
+    },
+    {
+     "fact": "She was launched as the Cape Cod Light, but her owner went bankrupt and she was repossessed before she ever sailed.",
+     "source": "https://en.wikipedia.org/wiki/American_Classic_Voyages"
+    },
+    {
+     "fact": "She's an intimate ship, carrying only about 220 guests with a crew of over ninety.",
+     "source": "https://www.cruisemapper.com/ships/Victory-2-1864"
+    },
+    {
+     "fact": "Her Tuscan Stone Grill lets guests cook their own dinner on sizzling-hot stones right at the table.",
+     "source": "https://www.cruisemapper.com/ships/Victory-2-1864"
+    }
+   ]
+  },
+  {
+   "name": "JOE DERBAS",
+   "facts": [
+    {
+     "fact": "She was built as the National Freedom by Main Iron Works in Houma, Louisiana.",
+     "source": "https://gltugs.wordpress.com/joe-derbas/"
+    },
+    {
+     "fact": "This eighty-three-foot towboat now works the Illinois River and the busy Chicago waterways.",
+     "source": "https://gltugs.wordpress.com/joe-derbas/"
+    },
+    {
+     "fact": "She's owned by Illinois and Michigan Oil of Joliet, Illinois.",
+     "source": "https://gltugs.wordpress.com/joe-derbas/"
+    }
+   ]
+  },
+  {
+   "name": "KIOWA",
+   "facts": [
+    {
+     "fact": "She was built by the Brent Towing Company of Greenville, Mississippi.",
+     "source": "https://gltugs.wordpress.com/kiowa/"
+    },
+    {
+     "fact": "Just a year after launch, in 1966, she was renamed Margaret Lewis.",
+     "source": "https://gltugs.wordpress.com/kiowa/"
+    },
+    {
+     "fact": "A triple-screw towboat, she's driven by three Cummins diesels making fifteen hundred horsepower.",
+     "source": "https://gltugs.wordpress.com/kiowa/"
+    },
+    {
+     "fact": "She's registered right in Chicago and works there today for Hanson Material Service.",
+     "source": "https://gltugs.wordpress.com/kiowa/"
+    }
+   ]
+  },
+  {
+   "name": "OMSTEADER",
+   "facts": [
+    {
+     "fact": "Her builder, Ralph Hurley of Port Burwell, Ontario, launched his very first boat back in 1947.",
+     "source": "https://evercleverwilson.com/fish-tugs-project/"
+    },
+    {
+     "fact": "Hurley's low, broad-beamed hulls were shaped to glide through the short, choppy waves of the inland lakes.",
+     "source": "https://evercleverwilson.com/fish-tugs-project/"
+    },
+    {
+     "fact": "She's essentially a larger version of another classic Hurley fish tug, the James D.",
+     "source": "https://evercleverwilson.com/fish-tugs-project/"
+    }
+   ]
+  },
+  {
+   "name": "ALBERT",
+   "facts": [
+    {
+     "fact": "She was built as the Hercules by American Gulf Shipyard in Larose, Louisiana.",
+     "source": "https://en.wikipedia.org/wiki/Albert_(tugboat)"
+    },
+    {
+     "fact": "Among her past names was the colorful El Bronco Grande.",
+     "source": "https://en.wikipedia.org/wiki/Albert_(tugboat)"
+    },
+    {
+     "fact": "She's owned by U.S. Oil of Appleton, Wisconsin, moving petroleum across the lakes.",
+     "source": "https://gltugs.wordpress.com/albert/"
+    }
+   ]
+  },
+  {
+   "name": "EVERLAST",
+   "facts": [
+    {
+     "fact": "She began life as the Bilibino, pushing ocean barges in Russia's far east.",
+     "source": "http://carlzboats.blogspot.com/2015/02/articulated-tug-barge-everlast-norman.html"
+    },
+    {
+     "fact": "Before the Great Lakes, she spent years as a Greek-owned salvage tug.",
+     "source": "http://carlzboats.blogspot.com/2015/02/articulated-tug-barge-everlast-norman.html"
+    },
+    {
+     "fact": "Her twin Daihatsu engines make six thousand horsepower, driving her through ice and heavy seas.",
+     "source": "https://gltugs.wordpress.com/everlast/"
+    },
+    {
+     "fact": "An Articouple coupling locks her rigidly to her barge so they move as one.",
+     "source": "https://gltugs.wordpress.com/everlast/"
+    }
+   ]
+  },
+  {
+   "name": "EDGAR B SPEER",
+   "facts": [
+    {
+     "fact": "She's named for Edgar B. Speer, who chaired United States Steel through the 1970s.",
+     "source": "https://en.wikipedia.org/wiki/U.S._Steel"
+    },
+    {
+     "fact": "She was built in two halves at Lorain and Toledo, Ohio, then joined together.",
+     "source": "https://en.wikipedia.org/wiki/MV_Edgar_B._Speer"
+    },
+    {
+     "fact": "She keeps a rare shuttle-boom self-unloader, shared today only with the Stewart J. Cort.",
+     "source": "https://en.wikipedia.org/wiki/MV_Edgar_B._Speer"
+    },
+    {
+     "fact": "Twin Pielstick diesels drive her twin propellers with over nineteen thousand horsepower.",
+     "source": "https://en.wikipedia.org/wiki/MV_Edgar_B._Speer"
+    }
+   ]
+  },
+  {
+   "name": "AMERICAN INTEGRITY",
+   "facts": [
+    {
+     "fact": "She was launched as the Lewis Wilson Foy, named for Bethlehem Steel's chairman.",
+     "source": "https://magazines.marinelink.com/Magazines/MaritimeReporter/197808/content/1000foot-carrier-bethlehem-209801"
+    },
+    {
+     "fact": "In 2017 she hauled the largest cargo ever through the Soo Locks — over seventy-five thousand tons of iron ore.",
+     "source": "https://en.wikipedia.org/wiki/MV_American_Integrity"
+    },
+    {
+     "fact": "She was built by Bay Shipbuilding in Sturgeon Bay, Wisconsin.",
+     "source": "https://en.wikipedia.org/wiki/MV_American_Integrity"
+    },
+    {
+     "fact": "She sailed for years as the Oglebay Norton before her 2006 renaming.",
+     "source": "https://boatnerd.com/pictures/fleet/AmericanIntegrity.htm"
+    }
+   ]
+  },
+  {
+   "name": "CSL NIAGARA",
+   "facts": [
+    {
+     "fact": "She was built as the J.W. McGiffin at Collingwood Shipyards in Ontario.",
+     "source": "https://greatlakesships.wordpress.com/j-w-mcgiffin/"
+    },
+    {
+     "fact": "Her 1999 rebuild made her the first Canadian ship built to the Seaway's maximum Seawaymax dimensions.",
+     "source": "https://greatlakesships.wordpress.com/j-w-mcgiffin/"
+    },
+    {
+     "fact": "Her replacement bow was built at Port Weller Dry Docks in St. Catharines, Ontario.",
+     "source": "https://greatlakesships.wordpress.com/j-w-mcgiffin/"
+    }
+   ]
+  },
+  {
+   "name": "BAIE ST PAUL",
+   "facts": [
+    {
+     "fact": "She was built at the Chengxi Shipyard in Jiangyin, China.",
+     "source": "https://en.wikipedia.org/wiki/Baie_St._Paul_(2012_ship)"
+    },
+    {
+     "fact": "She sailed home across the Pacific and through the Panama Canal to reach Montreal.",
+     "source": "https://cslships.com/news/the-baie-st-paul-csls-new-trillium-class-laker-arrives-in-port-of-montreal/"
+    },
+    {
+     "fact": "She's the second CSL ship to bear the name; the first was scrapped in 1995.",
+     "source": "https://greatlakesships.wordpress.com/baie-st-paul-2/"
+    },
+    {
+     "fact": "She's named for Baie-Saint-Paul, a town in Quebec's scenic Charlevoix region.",
+     "source": "https://en.wikipedia.org/wiki/Baie-Saint-Paul"
+    }
+   ]
+  },
+  {
+   "name": "WHITEFISH BAY",
+   "facts": [
+    {
+     "fact": "She was built at the Chengxi shipyard in Jiangyin, China, and then delivered to the Great Lakes.",
+     "source": "https://en.wikipedia.org/wiki/Whitefish_Bay_(2013_ship)"
+    },
+    {
+     "fact": "Her Trillium class was designed by a Canadian naval-architecture firm for maximum fuel efficiency and minimal environmental impact.",
+     "source": "https://en.wikipedia.org/wiki/Whitefish_Bay_(2013_ship)"
+    },
+    {
+     "fact": "In July 2016 she briefly ran aground near Cornwall, Ontario after a power failure, refloating two days later.",
+     "source": "https://en.wikipedia.org/wiki/Whitefish_Bay_(2013_ship)"
+    }
+   ]
+  },
+  {
+   "name": "SPRUCEGLEN",
+   "facts": [
+    {
+     "fact": "She was launched in Scotland back in 1983 under her very first name, Selkirk Settler.",
+     "source": "https://greatlakesships.wordpress.com/selkirk-settler/"
+    },
+    {
+     "fact": "She was one of three sister ships built to work the Lakes in summer and the oceans in winter.",
+     "source": "https://greatlakesships.wordpress.com/selkirk-settler/"
+    },
+    {
+     "fact": "Over the years she also sailed as Federal St. Louis, Federal Fraser and Fraser before becoming Spruceglen.",
+     "source": "https://greatlakesships.wordpress.com/selkirk-settler/"
+    }
+   ]
+  },
+  {
+   "name": "ATLANTIC HURON",
+   "facts": [
+    {
+     "fact": "She was built at Collingwood, Ontario in 1984 and first christened Prairie Harvest before her renaming.",
+     "source": "http://shipbuildinghistory.com/canadayards/collingwood.htm"
+    },
+    {
+     "fact": "She was later widened at the Port Weller dry docks in 2002 to carry more.",
+     "source": "http://shipfax.blogspot.com/2012/11/atlantic-huron.html"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA HARVESTER",
+   "facts": [
+    {
+     "fact": "She was built at the Nantong Mingde shipyard in China as Algoma's second Equinox-class laker.",
+     "source": "https://greatlakesships.wordpress.com/algoma-harvester/"
+    },
+    {
+     "fact": "An onboard scrubber strips about 97 percent of the sulphur oxides from her engine's exhaust.",
+     "source": "https://greatlakesships.wordpress.com/algoma-harvester/"
+    },
+    {
+     "fact": "She was christened at Hamilton, Ontario in July 2014.",
+     "source": "https://greatlakesships.wordpress.com/algoma-harvester/"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA INTEGRITY",
+   "facts": [
+    {
+     "fact": "Unusually for a Great Lakes ship, she was built in 2009 in Rio de Janeiro, Brazil.",
+     "source": "http://shipfax.blogspot.com/2020/06/algoma-integrity.html"
+    },
+    {
+     "fact": "She started out as Gypsum Integrity, hauling gypsum out of Nova Scotia.",
+     "source": "http://shipfax.blogspot.com/2020/06/algoma-integrity.html"
+    },
+    {
+     "fact": "After the gypsum trade ended, she even ran an iron-ore shuttle off Sierra Leone.",
+     "source": "http://shipfax.blogspot.com/2015/04/algoma-integrity-new-name.html"
+    },
+    {
+     "fact": "Algoma bought her in 2015 and gave her the name she carries today.",
+     "source": "http://shipfax.blogspot.com/2020/06/algoma-integrity.html"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA INTREPID",
+   "facts": [
+    {
+     "fact": "She was built in Croatia at the 3.Maj shipyard in the port of Rijeka.",
+     "source": "https://greatlakesships.wordpress.com/algoma-intrepid/"
+    },
+    {
+     "fact": "Her construction stalled for years when the Croatian yard ran into financial trouble.",
+     "source": "https://greatlakesships.wordpress.com/algoma-intrepid/"
+    },
+    {
+     "fact": "She was going to be named Algoma Endurance before her current name was chosen.",
+     "source": "https://greatlakesships.wordpress.com/algoma-intrepid/"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA MARINER",
+   "facts": [
+    {
+     "fact": "Her forward hull began as a replacement bow section for the older self-unloader Algoport.",
+     "source": "https://en.wikipedia.org/wiki/MV_Algoma_Mariner"
+    },
+    {
+     "fact": "When Algoport sank under tow on her way to China, a whole new stern was built instead.",
+     "source": "https://en.wikipedia.org/wiki/MV_Algoma_Mariner"
+    },
+    {
+     "fact": "She was assembled at the Chengxi Shipyard in Jiangyin, China.",
+     "source": "https://en.wikipedia.org/wiki/MV_Algoma_Mariner"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA VICTORY",
+   "facts": [
+    {
+     "fact": "She previously sailed as Sophie Oldendorff before Algoma purchased her in 2019.",
+     "source": "https://www.vesselfinder.com/vessels/details/9138109"
+    },
+    {
+     "fact": "Her midship unloading boom can swing through a wide 200-degree arc.",
+     "source": "https://www.oldendorff.com/news/self-unloaders-in-csl-pool-sold-to-algoma"
+    },
+    {
+     "fact": "She can pour out her cargo at up to 4,500 tonnes every hour.",
+     "source": "https://cslships.com/vessel/algoma-victory/"
+    }
+   ]
+  },
+  {
+   "name": "ALGOMA VERITY",
+   "facts": [
+    {
+     "fact": "She was built at the Shanghai Shipyard in China around the year 2000.",
+     "source": "https://www.oldendorff.com/news/self-unloaders-in-csl-pool-sold-to-algoma"
+    },
+    {
+     "fact": "She was first ordered as a plain bulk carrier for an Indonesian power project.",
+     "source": "https://www.oldendorff.com/news/self-unloaders-in-csl-pool-sold-to-algoma"
+    },
+    {
+     "fact": "The 1997 Asian financial crisis led to her being rebuilt as a self-unloader instead.",
+     "source": "https://www.oldendorff.com/news/self-unloaders-in-csl-pool-sold-to-algoma"
+    }
+   ]
+  },
+  {
+   "name": "ALGOTERRA",
+   "facts": [
+    {
+     "fact": "She previously sailed as Louise Knutsen under the Norwegian flag.",
+     "source": "https://www.vesselfinder.com/vessels/details/9442249"
+    },
+    {
+     "fact": "Algoma bought her in 2019 as the youngest tanker in its Great Lakes fleet.",
+     "source": "https://www.offshore-energy.biz/algoma-tankers-buys-its-youngest-vessel/"
+    }
+   ]
+  },
+  {
+   "name": "JOSEPH H THOMPSON",
+   "facts": [
+    {
+     "fact": "She helped land Allied troops in the 1944 invasion of southern France.",
+     "source": "https://en.wikipedia.org/wiki/SS_Marine_Robin_(1943)"
+    },
+    {
+     "fact": "Lengthened in 1952, she became Queen of the Lakes as the longest ship afloat on the Great Lakes.",
+     "source": "https://en.wikipedia.org/wiki/SS_Marine_Robin_(1943)"
+    }
+   ]
+  },
+  {
+   "name": "GREAT LAKES TRADER",
+   "facts": [
+    {
+     "fact": "She locks onto her tug with a Hydraconn hinge her owners pioneered on the lakes.",
+     "source": "https://greatlakesships.wordpress.com/great-lakes-trader/"
+    },
+    {
+     "fact": "A 265-foot deck boom lets her unload iron ore and stone by herself.",
+     "source": "https://greatlakesships.wordpress.com/great-lakes-trader/"
+    },
+    {
+     "fact": "She was the first of three similarly designed VanEnkevort barges.",
+     "source": "https://greatlakesships.wordpress.com/great-lakes-trader/"
+    }
+   ]
+  },
+  {
+   "name": "ERIE TRADER",
+   "facts": [
+    {
+     "fact": "Donjon Shipbuilding built her in Erie, Pennsylvania.",
+     "source": "https://greatlakesships.wordpress.com/lakes-contender/"
+    },
+    {
+     "fact": "American Steamship crews first ran her under a five-year charter.",
+     "source": "https://greatlakesships.wordpress.com/lakes-contender/"
+    }
+   ]
+  },
+  {
+   "name": "SAGINAW",
+   "facts": [
+    {
+     "fact": "She steamed for 55 seasons until a diesel engine replaced her steam power.",
+     "source": "https://greatlakesships.wordpress.com/john-j-boland-3/"
+    },
+    {
+     "fact": "In 1973 her unloading boom collapsed and was rebuilt over the winter.",
+     "source": "https://greatlakesships.wordpress.com/john-j-boland-3/"
+    },
+    {
+     "fact": "She was the last commercial ship through the Soo Locks to close the 2003 season.",
+     "source": "https://greatlakesships.wordpress.com/john-j-boland-3/"
+    }
+   ]
+  },
+  {
+   "name": "LEWIS J KUBER",
+   "facts": [
+    {
+     "fact": "She began as the ore carrier Sparrows Point at Bethlehem Steel's Maryland shipyard.",
+     "source": "https://greatlakesships.wordpress.com/sparrows-point/"
+    },
+    {
+     "fact": "Before wearing the Kuber name she sailed for years as the Buckeye.",
+     "source": "https://greatlakesships.wordpress.com/sparrows-point/"
+    },
+    {
+     "fact": "Her tug, the Olive L. Moore, was built in 1928, older than the barge herself.",
+     "source": "https://greatlakesships.wordpress.com/john-f-cushing/"
+    }
+   ]
+  },
+  {
+   "name": "PATHFINDER",
+   "facts": [
+    {
+     "fact": "She is pushed by the Dorothy Ann, a 7,200-horsepower Z-drive tug.",
+     "source": "https://www.interlake-steamship.com/our-fleet/dorothy-ann-pathfinder-tug-barge/"
+    }
+   ]
+  },
+  {
+   "name": "ST MARYS CHALLENGER",
+   "facts": [
+    {
+     "fact": "Before her 2014 refit she was the oldest operating freighter on the Great Lakes.",
+     "source": "https://en.wikipedia.org/wiki/SS_St._Marys_Challenger"
+    },
+    {
+     "fact": "A rare Skinner Unaflow steam engine made her one of the last lakes steamships.",
+     "source": "https://en.wikipedia.org/wiki/SS_St._Marys_Challenger"
+    },
+    {
+     "fact": "She began life in 1906 as the ore carrier William P. Snyder.",
+     "source": "https://en.wikipedia.org/wiki/SS_St._Marys_Challenger"
+    },
+    {
+     "fact": "Her pilothouse is now preserved at the National Museum of the Great Lakes.",
+     "source": "https://en.wikipedia.org/wiki/SS_St._Marys_Challenger"
+    }
+   ]
+  },
+  {
+   "name": "ST MARYS CONQUEST",
+   "facts": [
+    {
+     "fact": "She spent her first half-century hauling petroleum for Standard Oil and Amoco.",
+     "source": "https://greatlakesships.wordpress.com/red-crown/"
+    },
+    {
+     "fact": "Manitowoc Shipbuilding launched her into the Manitowoc River in 1937.",
+     "source": "https://greatlakesships.wordpress.com/red-crown/"
+    },
+    {
+     "fact": "From Red Crown to St. Marys Conquest, she has carried a whole string of names.",
+     "source": "https://greatlakesships.wordpress.com/red-crown/"
+    }
+   ]
+  },
+  {
+   "name": "USCGC MACKINAW",
+   "facts": [
+    {
+     "fact": "She steers with two rotating Azipod thrusters and carries no rudder at all.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Mackinaw_(WLBB-30)"
+    },
+    {
+     "fact": "Besides breaking heavy ice she doubles as a Great Lakes buoy tender.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Mackinaw_(WLBB-30)"
+    },
+    {
+     "fact": "Marinette Marine in Wisconsin built her; Cheboygan, Michigan is her home port.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Mackinaw_(WLBB-30)"
+    }
+   ]
+  },
+  {
+   "name": "CGC HOLLYHOCK",
+   "facts": [
+    {
+     "fact": "She is named for an earlier Coast Guard Hollyhock that served from 1937 to 1982.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Hollyhock_(WLB-214)"
+    },
+    {
+     "fact": "A Juniper-class buoy tender, she was built at Marinette, Wisconsin in 2003.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Hollyhock_(WLB-214)"
+    }
+   ]
+  },
+  {
+   "name": "CGC ALDER",
+   "facts": [
+    {
+     "fact": "She replaced the cutter Sundew, which had served the Coast Guard for sixty years.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Alder_(WLB-216)"
+    },
+    {
+     "fact": "She was built by Marinette Marine in Wisconsin and long homeported at Duluth, Minnesota.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Alder_(WLB-216)"
+    },
+    {
+     "fact": "In 2022 she left the Great Lakes for a new posting in San Francisco Bay.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Alder_(WLB-216)"
+    }
+   ]
+  },
+  {
+   "name": "CGC BISCAYNE BAY",
+   "facts": [
+    {
+     "fact": "She's named after Biscayne Bay in Florida, just off the city of Miami.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Biscayne_Bay"
+    },
+    {
+     "fact": "She was built far away in Tacoma, Washington, on the Pacific coast.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Biscayne_Bay"
+    },
+    {
+     "fact": "She's the fourth of the Coast Guard's nine 140-foot Bay-class cutters.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Biscayne_Bay"
+    },
+    {
+     "fact": "She can push through twenty inches of ice at a steady continuous speed.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Biscayne_Bay"
+    }
+   ]
+  },
+  {
+   "name": "CGC NEAH BAY",
+   "facts": [
+    {
+     "fact": "She's named after Neah Bay, at the far northwest corner of Washington State.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Neah_Bay"
+    },
+    {
+     "fact": "She's homeported in Cleveland, keeping Lake Erie's shipping channels open in winter.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Neah_Bay"
+    },
+    {
+     "fact": "She was built in Tacoma, Washington, and launched in February 1980.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Neah_Bay"
+    },
+    {
+     "fact": "She has even carried a rescued Himalayan cat named Casca as ship's mascot.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Neah_Bay"
+    }
+   ]
+  },
+  {
+   "name": "CGC KATMAI BAY",
+   "facts": [
+    {
+     "fact": "She's named after Katmai Bay in Alaska's Katmai National Park, famous for its brown bears.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Katmai_Bay"
+    },
+    {
+     "fact": "She works hand in hand with the far larger icebreaker Mackinaw.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Katmai_Bay"
+    },
+    {
+     "fact": "She was built in Tacoma, Washington, and can make nearly fifteen knots.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Katmai_Bay"
+    },
+    {
+     "fact": "In 2018 she underwent a major service-life extension refit at the Coast Guard's Baltimore shipyard.",
+     "source": "https://greatlakesships.wordpress.com/uscgc-katmai-bay-wtgb-101/"
+    }
+   ]
+  },
+  {
+   "name": "CGC MOBILE BAY",
+   "facts": [
+    {
+     "fact": "She's named after Mobile Bay in Alabama, on the Gulf of Mexico.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Mobile_Bay"
+    },
+    {
+     "fact": "She sails with her own 120-foot buoy barge to tend navigation aids on the Great Lakes.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Mobile_Bay"
+    },
+    {
+     "fact": "She's the third of the Coast Guard's nine Bay-class icebreaking tugs.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Mobile_Bay"
+    }
+   ]
+  },
+  {
+   "name": "CGC BRISTOL BAY",
+   "facts": [
+    {
+     "fact": "She's named after Bristol Bay in Alaska, one of the world's great salmon fisheries.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Bristol_Bay"
+    },
+    {
+     "fact": "She's homeported in Detroit, watching over the busy Detroit River.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Bristol_Bay"
+    },
+    {
+     "fact": "She was the second Bay-class cutter ever built, back in 1978.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Bristol_Bay"
+    },
+    {
+     "fact": "Her buoy barge helps her tend over 160 navigation aids each year.",
+     "source": "https://en.wikipedia.org/wiki/USCGC_Bristol_Bay"
+    }
+   ]
+  },
+  {
+   "name": "PRIME",
+   "facts": [
+    {
+     "fact": "She's a chemical and oil-products tanker, stretching about 460 feet long.",
+     "source": "https://www.vesselfinder.com/vessels/details/9267558"
+    },
+    {
+     "fact": "She can carry close to fifteen thousand tonnes of liquid cargo.",
+     "source": "https://www.vesselfinder.com/vessels/details/9267558"
+    }
+   ]
+  },
+  {
+   "name": "VIKING POLARIS",
+   "facts": [
+    {
+     "fact": "Her godmother is Ann Bancroft, the first woman to trek to both Poles.",
+     "source": "https://en.wikipedia.org/wiki/Viking_Polaris"
+    },
+    {
+     "fact": "Her identical twin sister ship is the Viking Octantis.",
+     "source": "https://en.wikipedia.org/wiki/Viking_Polaris"
+    },
+    {
+     "fact": "Norway's VARD shipyard built her, and she stretches some 665 feet long.",
+     "source": "https://en.wikipedia.org/wiki/Viking_Polaris"
+    },
+    {
+     "fact": "Beyond polar seas, she's designed to explore North America's Great Lakes.",
+     "source": "https://en.wikipedia.org/wiki/Viking_Polaris"
+    }
+   ]
+  },
+  {
+   "name": "LE CHAMPLAIN",
+   "facts": [
+    {
+     "fact": "She's named for Samuel de Champlain, the explorer called the Father of New France.",
+     "source": "https://en.wikipedia.org/wiki/Le_Champlain"
+    },
+    {
+     "fact": "One of six Ponant sisters, each named for a famous French explorer.",
+     "source": "https://en.wikipedia.org/wiki/Le_Champlain"
+    },
+    {
+     "fact": "She carries just 180 guests for intimate, small-ship expedition cruising.",
+     "source": "https://en.wikipedia.org/wiki/Le_Champlain"
+    },
+    {
+     "fact": "Her hull was built in Romania, then finished in Norway.",
+     "source": "https://en.wikipedia.org/wiki/Le_Champlain"
+    }
+   ]
+  },
+  {
+   "name": "JOHN D LEITCH",
+   "facts": [
+    {
+     "fact": "She was built in 1967 as the Canadian Century at Ontario's Port Weller Dry Docks.",
+     "source": "https://greatlakesships.wordpress.com/canadian-century/"
+    },
+    {
+     "fact": "She's named for John D. Leitch, longtime chairman of Upper Lakes Shipping.",
+     "source": "https://greatlakesships.wordpress.com/canadian-century/"
+    },
+    {
+     "fact": "Algoma Central added her to its Great Lakes fleet in 2011.",
+     "source": "https://greatlakesships.wordpress.com/canadian-century/"
+    }
+   ]
+  },
+  {
+   "name": "RADCLIFFE R LATIMER",
+   "facts": [
+    {
+     "fact": "She is named for Radcliffe Latimer, a former chairman of Algoma Central.",
+     "source": "https://en.wikipedia.org/wiki/Radcliffe_R._Latimer"
+    },
+    {
+     "fact": "She was built in 1978 by Collingwood Shipbuilding in Collingwood, Ontario.",
+     "source": "https://en.wikipedia.org/wiki/Radcliffe_R._Latimer"
+    },
+    {
+     "fact": "She was built to serve a fifteen-year contract hauling about a million tonnes of coal a year for Ontario Hydro.",
+     "source": "https://www.boatnerd.com/vessel-info/algoma-central/radcliffe-r-latimer/"
+    }
+   ]
+  },
+  {
+   "name": "TIM MCKEIL",
+   "facts": [
+    {
+     "fact": "She was built in Japan in 1991 as the Pannawonica I for an Australian iron-ore company.",
+     "source": "https://gltugs.wordpress.com/tim-mckeil/"
+    },
+    {
+     "fact": "She is a powerful twin-screw z-drive tractor tug rated at 4,800 horsepower.",
+     "source": "https://gltugs.wordpress.com/tim-mckeil/"
+    },
+    {
+     "fact": "McKeil Marine of Hamilton, Ontario acquired and renamed her in 2014.",
+     "source": "https://gltugs.wordpress.com/tim-mckeil/"
+    }
+   ]
+  },
+  {
+   "name": "JARRETT M",
+   "facts": [
+    {
+     "fact": "She was designed as an icebreaker able to crack ice up to thirty inches thick.",
+     "source": "https://russelbrothers.com/xatomic.html"
+    },
+    {
+     "fact": "She was built in 1945 by the renowned Russel Brothers tug works for McQueen Marine of Amherstburg.",
+     "source": "https://gltugs.wordpress.com/jarrett-m/"
+    },
+    {
+     "fact": "She was renamed Jarrett M in 2007, after more than sixty years of service.",
+     "source": "https://gltugs.wordpress.com/jarrett-m/"
+    }
+   ]
+  },
+  {
+   "name": "VICTORIOUS",
+   "facts": [
+    {
+     "fact": "She locks onto her barge using an Articouple articulated coupling system.",
+     "source": "https://gltugs.wordpress.com/leo-a-mcarthur/"
+    },
+    {
+     "fact": "Her twin MaK diesel engines push the loaded barge at up to twelve knots.",
+     "source": "https://professionalmariner.com/another-new-atb-for-great-lakes-service-tug-victorious-is-second-unit-for-mcasphalt/"
+    }
+   ]
+  },
+  {
+   "name": "JOHN J CARRICK",
+   "facts": [
+    {
+     "fact": "Her asphalt cargo rides near 350 degrees, kept molten by two one-million-BTU heaters.",
+     "source": "https://professionalmariner.com/another-new-atb-for-great-lakes-service-tug-victorious-is-second-unit-for-mcasphalt/"
+    },
+    {
+     "fact": "She was given a ship-shaped bow, unusual for a barge, to shed winter ice.",
+     "source": "https://professionalmariner.com/another-new-atb-for-great-lakes-service-tug-victorious-is-second-unit-for-mcasphalt/"
+    },
+    {
+     "fact": "She can pump her cargo ashore at up to 6,000 barrels an hour.",
+     "source": "https://professionalmariner.com/another-new-atb-for-great-lakes-service-tug-victorious-is-second-unit-for-mcasphalt/"
+    }
+   ]
+  },
+  {
+   "name": "MENOMINEE",
+   "facts": [
+    {
+     "fact": "She began life as the Maryland-built iron-ore carrier Sparrows Point.",
+     "source": "https://www.boatnerd.com/vessel-info/grand-river-navigation/menominee/"
+    },
+    {
+     "fact": "Across her long career she has carried four names, most recently Menominee.",
+     "source": "https://www.boatnerd.com/vessel-info/grand-river-navigation/menominee/"
+    },
+    {
+     "fact": "She was rebuilt as a self-unloader in 1979 at Fraser Shipyards in Superior, Wisconsin.",
+     "source": "https://www.boatnerd.com/vessel-info/grand-river-navigation/menominee/"
+    },
+    {
+     "fact": "Today the tug Olive L. Moore pushes her in the Great Lakes stone trade.",
+     "source": "https://gltugs.wordpress.com/olive-l-moore/"
+    }
+   ]
+  },
+  {
+   "name": "UNDAUNTED",
+   "facts": [
+    {
+     "fact": "In 1945 she towed the crippled destroyer USS Hugh W. Hadley nearly 7,000 miles home.",
+     "source": "https://en.wikipedia.org/wiki/USS_Undaunted_(ATA-199)"
+    },
+    {
+     "fact": "She was built in Port Arthur, Texas, by Gulfport Boiler and Welding Works.",
+     "source": "https://en.wikipedia.org/wiki/USS_Undaunted_(ATA-199)"
+    },
+    {
+     "fact": "During the war she hauled floating dry-dock sections through the Panama Canal to Pacific bases.",
+     "source": "https://en.wikipedia.org/wiki/USS_Undaunted_(ATA-199)"
+    },
+    {
+     "fact": "In 1998 Basic Marine widened her and rebuilt her into an articulated barge tug.",
+     "source": "https://gltugs.wordpress.com/undaunted/"
+    }
+   ]
+  },
+  {
+   "name": "PERE MARQUETTE 41",
+   "facts": [
+    {
+     "fact": "She entered service in 1941 as the carferry City of Midland 41, built by Manitowoc Shipbuilding.",
+     "source": "https://en.wikipedia.org/wiki/SS_City_of_Midland_41"
+    },
+    {
+     "fact": "When new she was the largest car ferry on the Great Lakes, nicknamed Queen of the Lakes.",
+     "source": "https://en.wikipedia.org/wiki/SS_City_of_Midland_41"
+    },
+    {
+     "fact": "She was driven by rare Skinner Unaflow steam engines.",
+     "source": "https://en.wikipedia.org/wiki/SS_City_of_Midland_41"
+    },
+    {
+     "fact": "Converted to a barge in 1997, she is now pushed by the tug Undaunted.",
+     "source": "https://en.wikipedia.org/wiki/SS_City_of_Midland_41"
+    }
+   ]
+  },
+  {
+   "name": "G L OSTRANDER",
+   "facts": [
+    {
+     "fact": "Before her current name she also sailed as Robert L. Torres and Jacklyn M.",
+     "source": "https://gltugs.wordpress.com/g-l-ostrander/"
+    },
+    {
+     "fact": "She has been repowered twice and now makes 7,200 horsepower.",
+     "source": "https://gltugs.wordpress.com/g-l-ostrander/"
+    },
+    {
+     "fact": "She pushes the cement barge Integrity as an articulated tug, managed by Andrie Incorporated.",
+     "source": "https://gltugs.wordpress.com/g-l-ostrander/"
+    }
+   ]
+  },
+  {
+   "name": "INTEGRITY",
+   "facts": [
+    {
+     "fact": "She was built by Bay Shipbuilding in Sturgeon Bay, Wisconsin.",
+     "source": "https://greatlakesships.wordpress.com/integrity/"
+    },
+    {
+     "fact": "She unloads her cement through a Fuller-Kinyon pneumatic pump system.",
+     "source": "https://greatlakesships.wordpress.com/integrity/"
+    },
+    {
+     "fact": "Coupled to the tug G.L. Ostrander, the tandem stretches about 544 feet.",
+     "source": "https://greatlakesships.wordpress.com/integrity/"
+    }
+   ]
+  },
+  {
+   "name": "JOYCE L VANENKEVORT",
+   "facts": [
+    {
+     "fact": "Bay Shipbuilding in Sturgeon Bay, Wisconsin built her in 1998.",
+     "source": "https://greatlakesships.wordpress.com/joyce-l-vanenkevort/"
+    },
+    {
+     "fact": "Twin Caterpillar diesels give her about 10,200 horsepower, among the most powerful tugs on the Lakes.",
+     "source": "https://gltugs.wordpress.com/joyce-l-vanenkevort/"
+    },
+    {
+     "fact": "In May 2000 she sailed out the Seaway and down the Atlantic coast to New Orleans to fetch her barge.",
+     "source": "https://greatlakesships.wordpress.com/joyce-l-vanenkevort/"
+    },
+    {
+     "fact": "Before her own barge arrived, she spent 1998 pushing Interlake's converted barge Pathfinder.",
+     "source": "https://greatlakesships.wordpress.com/joyce-l-vanenkevort/"
+    }
+   ]
+  },
+  {
+   "name": "GREAT REPUBLIC",
+   "facts": [
+    {
+     "fact": "She was launched in 1981 as the American Republic and renamed Great Republic in 2011.",
+     "source": "https://www.boatnerd.com/vessel-info/great-lakes-fleet/great-republic/"
+    },
+    {
+     "fact": "Her variable-pitch propellers spin inside strengthened Kort nozzles for extra thrust in tight rivers.",
+     "source": "https://www.boatnerd.com/vessel-info/great-lakes-fleet/great-republic/"
+    },
+    {
+     "fact": "She's considered the most nimble and maneuverable ship in the world.",
+     "source": "https://www.boatnerd.com/vessel-info/great-lakes-fleet/great-republic/"
+    },
+    {
+     "fact": "In the summer of 1996 she carried the Olympic flame on her deck in a lit cauldron at Cleveland.",
+     "source": "https://www.boatnerd.com/vessel-info/great-lakes-fleet/great-republic/"
+    }
+   ]
+  },
+  {
+   "name": "KEN BOOTHE SR",
+   "facts": [
+    {
+     "fact": "Her construction stalled in the 2009 recession and was finished after Donjon took over the yard.",
+     "source": "https://greatlakesships.wordpress.com/ken-boothe-sr/"
+    },
+    {
+     "fact": "She was the second big articulated tug of her design, following the 1998 Joyce L. VanEnkevort.",
+     "source": "https://greatlakesships.wordpress.com/ken-boothe-sr/"
+    },
+    {
+     "fact": "Hydraulically operated toothed pins on her sides lock her into the barge's notch.",
+     "source": "https://professionalmariner.com/ken-boothe-sr/"
+    },
+    {
+     "fact": "In 2017 VanEnkevort bought her and renamed her the Clyde S. VanEnkevort.",
+     "source": "https://greatlakesships.wordpress.com/ken-boothe-sr/"
+    }
+   ]
+  },
+  {
+   "name": "LAKES CONTENDER",
+   "facts": [
+    {
+     "fact": "Donjon built her at Erie, Pennsylvania, and christened her Lakes Contender in April 2012.",
+     "source": "https://greatlakesships.wordpress.com/lakes-contender/"
+    },
+    {
+     "fact": "She can haul more than 38,000 tons of ore, coal, or stone.",
+     "source": "https://greatlakesships.wordpress.com/lakes-contender/"
+    },
+    {
+     "fact": "Her cargo rides ashore on a 265-foot aft-mounted unloading boom.",
+     "source": "https://greatlakesships.wordpress.com/lakes-contender/"
+    },
+    {
+     "fact": "In 2017 she was renamed Erie Trader after VanEnkevort bought her.",
+     "source": "https://greatlakesships.wordpress.com/lakes-contender/"
+    }
+   ]
+  },
+  {
+   "name": "MARK W BARKER",
+   "facts": [
+    {
+     "fact": "She's named after Interlake Steamship's own president, Mark W. Barker.",
+     "source": "https://en.wikipedia.org/wiki/MV_Mark_W._Barker"
+    },
+    {
+     "fact": "She's the first ship on the Great Lakes powered by cleaner EPA Tier 4 engines.",
+     "source": "https://en.wikipedia.org/wiki/MV_Mark_W._Barker"
+    },
+    {
+     "fact": "Her unloading boom was salvaged from the scrapped steamer American Victory.",
+     "source": "https://en.wikipedia.org/wiki/MV_Mark_W._Barker"
+    },
+    {
+     "fact": "She's built to carry unusual cargo like wind-turbine blades on deck.",
+     "source": "https://en.wikipedia.org/wiki/MV_Mark_W._Barker"
+    }
+   ]
+  }
+ ]
+}
