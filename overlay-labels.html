@@ -22,6 +22,10 @@
   .lbl .sub { display:block; font-size:11px; font-weight:400; color:#9fc0e6; }
   .lbl::after { content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%);
     border:5px solid transparent; border-top-color:rgba(120,180,255,.55); }
+  .lbl.test { background:rgba(46,8,34,.86); border-color:#ff6ad5; color:#ffd9f2; }
+  .lbl.test::after { border-top-color:#ff6ad5; }
+  .chk { position:absolute; transform:translate(-50%,-50%); pointer-events:none; color:#57e6ff;
+    font-weight:700; font-size:13px; text-shadow:0 0 4px #000,0 0 4px #000; white-space:nowrap; }
   /* draggable calibration anchors */
   .anch { position:absolute; transform:translate(-50%,-50%); pointer-events:auto; cursor:grab;
     color:#ffd23f; text-align:center; touch-action:none; }
@@ -68,7 +72,18 @@
 var CAM = { lat: 45.78712606267091, lon: -84.72825497388841 };
 var MAX_LABEL_MI = 12;
 var CAL_MODE = /[?&]cal=1/.test(location.search);
+var TEST_MODE = /[?&]test=1/.test(location.search);
 var TOWER_H = 168;   // metres above water (552 ft main tower)
+
+// ── Synthetic test targets (?test=1) — verify projection without a real ship ─
+// Ghost ship glides E-W along the channel through the main-span midpoint (water level).
+var TEST_PATH  = { lat:45.81535, lon0:-84.72794, lonAmp:0.014, period:50 };
+// Held-out landmarks NOT used in the tower calibration — if these ✛ land on the
+// real piers, the calibration generalises across the whole frame.
+var TEST_CHECK = [
+  { label:'S pier ✓', lat:45.80527, lon:-84.72945 },
+  { label:'N pier ✓', lat:45.82543, lon:-84.72643 }
+];
 
 // ── Bridge reference anchors (precise OSM-derived coords) ────────
 // h = height above water in metres. Place base anchors at the waterline,
@@ -179,6 +194,14 @@ function render(){
     var miles = (pr.dist/1609.34).toFixed(1);
     html += '<div class="lbl" style="left:'+pr.x.toFixed(0)+'px;top:'+pr.y.toFixed(0)+'px">'+esc(s.name)+'<span class="sub">'+miles+' mi</span></div>';
   });
+  if (TEST_MODE){
+    var t = (performance.now()/1000 % TEST_PATH.period)/TEST_PATH.period;
+    var glon = TEST_PATH.lon0 + TEST_PATH.lonAmp*Math.sin(2*Math.PI*t);
+    var gp = project(TEST_PATH.lat, glon, 0, W, H);
+    if (gp.inView) html += '<div class="lbl test" style="left:'+gp.x.toFixed(0)+'px;top:'+gp.y.toFixed(0)+'px">🚢 TEST SHIP<span class="sub">'+(gp.dist/1609.34).toFixed(1)+' mi · simulated</span></div>';
+    TEST_CHECK.forEach(function(c){ var p = project(c.lat, c.lon, 0, W, H); if (!p.inView) return;
+      html += '<div class="chk" style="left:'+p.x.toFixed(0)+'px;top:'+p.y.toFixed(0)+'px">✛ '+esc(c.label)+'</div>'; });
+  }
   stage.innerHTML = html;
   requestAnimationFrame(render);
 }
