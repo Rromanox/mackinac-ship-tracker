@@ -96,6 +96,7 @@ app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner2.html')));
 app.get('/overlay/banner3',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner3.html')));
 app.get('/overlay/narration', (req, res) => res.sendFile(path.join(__dirname, 'overlay-narration.html'))); // audio-only vessel narration player
+app.get('/overlay/labels',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-labels.html')));   // AIS-anchored on-screen ship labels (add ?cal=1 to calibrate)
 app.get('/missing-facts',     (req, res) => res.sendFile(path.join(__dirname, 'missing-facts.html'))); // human-readable fact-gap list
 // New high-visibility overlay options (design candidates)
 app.get('/overlay/hud/board',     (req, res) => res.sendFile(path.join(__dirname, 'overlay-hud-board.html')));

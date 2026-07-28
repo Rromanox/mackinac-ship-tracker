@@ -1,0 +1,145 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ship Labels (AIS-anchored) — Mackinac Tracker</title>
+<style>
+  html,body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:transparent;
+    font-family:'Segoe UI',system-ui,sans-serif; }
+  #stage { position:fixed; inset:0; }
+  .lbl {
+    position:absolute; transform:translate(-50%,-100%); white-space:nowrap; pointer-events:none;
+    background:rgba(8,14,22,.82); color:#eaf2fb; border:1px solid rgba(120,180,255,.55);
+    border-radius:8px; padding:3px 9px; font-size:15px; font-weight:600; line-height:1.15;
+    box-shadow:0 3px 10px rgba(0,0,0,.45); backdrop-filter:blur(3px);
+  }
+  .lbl .sub { display:block; font-size:11px; font-weight:400; color:#9fc0e6; }
+  .lbl::after { /* little pointer down onto the ship */
+    content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:rgba(120,180,255,.55);
+  }
+  .cross { position:fixed; left:50%; top:50%; width:22px; height:22px; transform:translate(-50%,-50%);
+    pointer-events:none; opacity:.6; }
+  .cross:before,.cross:after { content:''; position:absolute; background:#ff5;}
+  .cross:before { left:50%; top:0; width:2px; height:100%; transform:translateX(-50%);}
+  .cross:after { top:50%; left:0; height:2px; width:100%; transform:translateY(-50%);}
+  #cal { position:fixed; top:10px; left:10px; width:250px; z-index:9; background:rgba(10,16,26,.92);
+    color:#dbe7f5; border:1px solid #2a3648; border-radius:10px; padding:12px 14px; font-size:12px; }
+  #cal h3 { margin:0 0 8px; font-size:13px; }
+  #cal label { display:block; margin:9px 0 2px; color:#9fb4cc; }
+  #cal input[type=range] { width:100%; }
+  #cal .val { color:#7fd0ff; font-weight:700; }
+  #cal .row { display:flex; justify-content:space-between; }
+  #cal .hint { color:#7f93a8; font-size:10.5px; margin-top:10px; line-height:1.4; }
+  #cal button { margin-top:8px; background:#2a6cff; color:#fff; border:0; border-radius:6px; padding:5px 9px; font-weight:700; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+// ── Fixed camera location (the roof cam) ─────────────────────────
+var CAM = { lat: 45.78712606267091, lon: -84.72825497388841 };
+
+// ── Calibration (tunable live in ?cal=1 mode, persisted to localStorage) ──
+var DEFAULTS = { bearing: 0, elev: -1.0, hfov: 20, height: 12 }; // compass°, °up(-down), horizontal FOV°, metres
+var cal = load();
+function load(){ try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('labelCal')||'{}')); } catch(e){ return Object.assign({}, DEFAULTS); } }
+function save(){ try { localStorage.setItem('labelCal', JSON.stringify(cal)); } catch(e){} }
+var CAL_MODE = /[?&]cal=1/.test(location.search);
+
+// ── Live vessel store from the server WebSocket ──────────────────
+var ships = {}; // mmsi -> { name, lat, lon, speed, course, at }
+var RENDER = 'mackinac-ship-tracker.onrender.com';
+var isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+var WS_URL = isLocal ? 'ws://localhost:' + (location.port || 3000) : 'wss://' + RENDER;
+function connect(){
+  var ws = new WebSocket(WS_URL);
+  ws.onmessage = function(ev){ try {
+    var m = JSON.parse(ev.data);
+    if (m.type === 'ship_data' && m.data && m.data.MessageType === 'PositionReport' && m.data.Message && m.data.Message.PositionReport) {
+      var p = m.data.Message.PositionReport, meta = m.data.MetaData || {};
+      if (typeof p.Latitude !== 'number' || typeof p.Longitude !== 'number') return;
+      ships[meta.MMSI] = { name:(meta.ShipName||'Unknown').trim(), lat:p.Latitude, lon:p.Longitude,
+        speed:p.Sog||0, course:p.Cog||0, at:Date.now() };
+    }
+  } catch(e){} };
+  ws.onclose = function(){ setTimeout(connect, 3000); };
+  ws.onerror = function(){ try{ws.close();}catch(e){} };
+}
+connect();
+
+// ── World → screen projection ────────────────────────────────────
+function deadReckon(s){ // advance AIS position by its age so the label doesn't trail
+  var dt = (Date.now() - s.at)/1000; if (dt <= 0 || !s.speed) return { lat:s.lat, lon:s.lon };
+  var mps = s.speed * 0.514444, dist = mps * dt, rad = s.course*Math.PI/180, R = 111320;
+  return { lat: s.lat + (dist*Math.cos(rad))/R, lon: s.lon + (dist*Math.sin(rad))/(R*Math.cos(s.lat*Math.PI/180)) };
+}
+function project(vLat, vLon, W, H){
+  var R = 111320;
+  var dx = (vLon - CAM.lon) * Math.cos(CAM.lat*Math.PI/180) * R;  // east metres
+  var dy = (vLat - CAM.lat) * R;                                   // north metres
+  var d = Math.sqrt(dx*dx + dy*dy);
+  var brg = (Math.atan2(dx, dy) * 180/Math.PI + 360) % 360;        // compass bearing to vessel
+  var elev = -Math.atan2(cal.height, d) * 180/Math.PI;            // below horizontal (deg, negative)
+  var dAz = ((brg - cal.bearing + 540) % 360) - 180;             // -180..180 left/right of centre
+  var dEl = elev - cal.elev;                                      // up/down vs centre
+  var vfov = cal.hfov * H / W;
+  return { x: W/2 + (dAz/(cal.hfov/2))*(W/2), y: H/2 - (dEl/(vfov/2))*(H/2),
+    inView: Math.abs(dAz) <= cal.hfov/2 && Math.abs(dEl) <= vfov/2, dist:d, brg:brg, elev:elev };
+}
+
+// ── Render loop ──────────────────────────────────────────────────
+var stage = document.getElementById('stage');
+function render(){
+  var W = window.innerWidth, H = window.innerHeight, now = Date.now();
+  var html = '';
+  Object.keys(ships).forEach(function(mmsi){
+    var s = ships[mmsi];
+    if (now - s.at > 60000) { delete ships[mmsi]; return; }  // drop if not heard in 60s
+    var dr = deadReckon(s);
+    var pr = project(dr.lat, dr.lon, W, H);
+    if (!pr.inView) return;
+    var miles = (pr.dist/1609.34).toFixed(1);
+    var sub = CAL_MODE ? (miles+' mi · brg '+pr.brg.toFixed(0)+'° · el '+pr.elev.toFixed(1)+'°') : (miles+' mi');
+    html += '<div class="lbl" style="left:'+pr.x.toFixed(0)+'px;top:'+pr.y.toFixed(0)+'px">'+
+      esc(s.name)+'<span class="sub">'+sub+'</span></div>';
+  });
+  stage.innerHTML = html;
+  requestAnimationFrame(render);
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+render();
+
+// ── Calibration panel (only in ?cal=1) ───────────────────────────
+if (CAL_MODE) {
+  document.body.insertAdjacentHTML('beforeend', '<div class="cross"></div>');
+  var fields = [
+    ['bearing','Camera bearing (° compass)',0,360,0.5],
+    ['elev','Camera up/down (° , - = down)',-20,20,0.1],
+    ['hfov','Field of view (° wide)',3,80,0.5],
+    ['height','Camera height above water (m)',2,45,0.5]
+  ];
+  var panel = document.createElement('div'); panel.id='cal';
+  panel.innerHTML = '<h3>🎯 Label calibration</h3>' + fields.map(function(f){
+    return '<label>'+f[1]+' <span class="val" id="v_'+f[0]+'">'+cal[f[0]]+'</span></label>'+
+      '<input type="range" id="s_'+f[0]+'" min="'+f[2]+'" max="'+f[3]+'" step="'+f[4]+'" value="'+cal[f[0]]+'">';
+  }).join('') + '<button id="copyCal">Copy values</button>' +
+    '<div class="hint">Drag until the labels sit on the boats/landmarks. Values auto-save. When perfect, click Copy and send them to Claude to bake in, then load the page WITHOUT ?cal=1 for the clean overlay.</div>';
+  document.body.appendChild(panel);
+  fields.forEach(function(f){
+    var sl = document.getElementById('s_'+f[0]);
+    sl.oninput = function(){ cal[f[0]] = parseFloat(sl.value); document.getElementById('v_'+f[0]).textContent = sl.value; save(); };
+  });
+  document.getElementById('copyCal').onclick = function(){
+    var t = JSON.stringify(cal); navigator.clipboard.writeText(t); this.textContent = '✓ '+t;
+  };
+}
+</script>
+</body>
+</html>
