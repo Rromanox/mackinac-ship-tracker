@@ -45,6 +45,7 @@
 <script>
 // ── Fixed camera location (the roof cam) ─────────────────────────
 var CAM = { lat: 45.78712606267091, lon: -84.72825497388841 };
+var MAX_LABEL_MI = 12;   // only label vessels close enough to actually be in view (drop distant AIS contacts)
 
 // ── Calibration (tunable live in ?cal=1 mode, persisted to localStorage) ──
 var DEFAULTS = { bearing: 0, elev: -1.0, hfov: 20, height: 12 }; // compass°, °up(-down), horizontal FOV°, metres
@@ -104,6 +105,7 @@ function render(){
     if (now - s.at > 60000) { delete ships[mmsi]; return; }  // drop if not heard in 60s
     var dr = deadReckon(s);
     var pr = project(dr.lat, dr.lon, W, H);
+    if (pr.dist > MAX_LABEL_MI * 1609.34) return;   // too far to be in the camera's view
     if (!pr.inView) return;
     var miles = (pr.dist/1609.34).toFixed(1);
     var sub = CAL_MODE ? (miles+' mi · brg '+pr.brg.toFixed(0)+'° · el '+pr.elev.toFixed(1)+'°') : (miles+' mi');
