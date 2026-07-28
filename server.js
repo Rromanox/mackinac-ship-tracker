@@ -478,6 +478,16 @@ function localTimeOfDay() {
   } catch (e) { return 'today'; }
 }
 
+// AIS "destination" is free text the crew types — often blank, a code, or junk.
+// Return something worth speaking aloud, else null (the LLM further judges/ignores codes).
+function cleanDestination(d) {
+  const s = (d || '').trim();
+  if (s.length < 3) return null;
+  if (/^[\d.\-_/> ]+$/.test(s)) return null;                                        // just numbers/punctuation
+  if (/\b(SEE ORDER|ORDERS|UNKNOWN|N\/A|NONE|TBN|GREAT LAKES|USA|CANADA)\b/i.test(s)) return null; // too vague
+  return s;
+}
+
 function narrationTemplate(v) {
   const dir = v.direction === 'eastbound' ? 'heading east toward Lake Huron'
             : v.direction === 'westbound' ? 'heading west toward Lake Michigan'
@@ -491,7 +501,7 @@ async function narrationScriptLLM(v) {
   const system =
     'You narrate a live webcam of ships passing under the Mackinac Bridge in the Straits of Mackinac. ' +
     'Write 2 to 3 sentences (about 45 to 60 words, ~20 seconds spoken) introducing this Great Lakes vessel as it passes beneath the bridge. ' +
-    'Warm, documentary tone, like a knowledgeable local. Weave the fun fact in naturally; you may note its direction and speed. ' +
+    'Warm, documentary tone, like a knowledgeable local. Weave the fun fact in naturally; you may note its direction and speed, and — if a recognizable destination port or place is given — where she is bound. Ignore the destination if it is blank or an unclear code. ' +
     'If you refer to the time of day, use EXACTLY the "Time of day" value provided below — never guess it (it may be evening or night, not morning). ' +
     'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text.';
   const user =
@@ -500,6 +510,7 @@ async function narrationScriptLLM(v) {
     'Length: ' + (v.lengthFt ? v.lengthFt + ' feet' : 'unknown') + '\n' +
     'Direction: ' + (v.direction || 'unknown') + '\n' +
     'Speed: ' + (v.speed || '?') + ' knots\n' +
+    'Destination: ' + (v.destination || '(unknown)') + '\n' +
     'Time of day: ' + localTimeOfDay();
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -601,7 +612,8 @@ async function narrateVessel(mmsi, name, direction, speed) {
   try {
     const v = {
       name: name, direction: direction, speed: Math.round(speed || 0), fact: fact,
-      lengthFt: info.length ? Math.round(info.length * 3.28084) : null
+      lengthFt: info.length ? Math.round(info.length * 3.28084) : null,
+      destination: cleanDestination(info.destination)
     };
     let text, llmUsage = null, usedLLM = false;
     try {
@@ -885,7 +897,8 @@ function processAisMessage(message, source) {
     const sd = message.Message.ShipStaticData;
     const dim = sd.Dimension || {};
     const length = (dim.A || 0) + (dim.B || 0);
-    staticInfo[meta.MMSI] = { type: sd.Type || null, length: length || null };
+    const prevDest = (staticInfo[meta.MMSI] || {}).destination || null;
+    staticInfo[meta.MMSI] = { type: sd.Type || null, length: length || null, destination: (sd.Destination || '').trim() || prevDest };
   }
 
   if (message.MessageType === 'PositionReport' && message.MetaData) {
