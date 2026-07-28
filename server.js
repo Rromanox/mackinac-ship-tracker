@@ -488,6 +488,75 @@ function cleanDestination(d) {
   return s;
 }
 
+// Flag/country from the MMSI's first 3 digits (Maritime Identification Digits).
+// Covers the flags that actually pass through the straits; unknown → null (never guess).
+const MID_COUNTRY = {
+  '338':'the United States','366':'the United States','367':'the United States','368':'the United States','369':'the United States',
+  '316':'Canada',
+  '257':'Norway','258':'Norway','259':'Norway',
+  '244':'the Netherlands','245':'the Netherlands','246':'the Netherlands',
+  '211':'Germany','218':'Germany',
+  '636':'Liberia','637':'Liberia','538':'the Marshall Islands',
+  '351':'Panama','352':'Panama','353':'Panama','354':'Panama','355':'Panama','356':'Panama','357':'Panama','370':'Panama','371':'Panama','372':'Panama','373':'Panama',
+  '215':'Malta','229':'Malta','248':'Malta','249':'Malta','256':'Malta',
+  '209':'Cyprus','210':'Cyprus','212':'Cyprus',
+  '219':'Denmark','220':'Denmark',
+  '237':'Greece','239':'Greece','240':'Greece','241':'Greece',
+  '232':'the United Kingdom','233':'the United Kingdom','234':'the United Kingdom','235':'the United Kingdom',
+  '308':'the Bahamas','309':'the Bahamas','311':'the Bahamas',
+  '477':'Hong Kong','412':'China','563':'Singapore','564':'Singapore','565':'Singapore','566':'Singapore',
+  '265':'Sweden','266':'Sweden','230':'Finland','276':'Estonia',
+  '247':'Italy','224':'Spain','227':'France','228':'France','431':'Japan','440':'South Korea',
+  '304':'Antigua and Barbuda','305':'Antigua and Barbuda','341':'Saint Kitts and Nevis'
+};
+function flagFromMMSI(mmsi) { return MID_COUNTRY[String(mmsi || '').slice(0, 3)] || null; }
+
+// AIS ETA is crew-entered (month/day/hour/minute, no year) and often blank/garbage.
+function cleanEta(eta) {
+  if (!eta) return null;
+  const mo = eta.Month, d = eta.Day, h = eta.Hour, mi = eta.Minute;
+  if (!mo || mo < 1 || mo > 12 || !d || d < 1 || d > 31) return null;
+  const months = ['', 'January','February','March','April','May','June','July','August','September','October','November','December'];
+  let s = months[mo] + ' ' + d;
+  if (typeof h === 'number' && h >= 0 && h <= 23) {
+    const hh = (h % 12) || 12, ap = h < 12 ? 'AM' : 'PM';
+    const mm = (typeof mi === 'number' && mi >= 0 && mi <= 59) ? String(mi).padStart(2, '0') : '00';
+    s += ', around ' + hh + ':' + mm + ' ' + ap;
+  }
+  return s;
+}
+
+// Today's date in the Straits (Eastern) so the narrator can say "tomorrow" correctly.
+function localDateStr() {
+  try { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/Detroit', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()); }
+  catch (e) { return null; }
+}
+
+// How many times has this MMSI crossed the bridge in the last 30 days, and when last?
+async function getVesselHistory(mmsi) {
+  try {
+    if (passingsCollection) {
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const rows = await passingsCollection.find({ mmsi: mmsi, passedTime: { $gte: since } }).sort({ passedTime: -1 }).limit(50).toArray();
+      return { priorPasses: rows.length, lastPassedAt: rows.length ? rows[0].passedTime : null };
+    }
+  } catch (e) { console.error('🎙️ history lookup failed:', e.message); }
+  const mem = recentPassingsMemory.filter(r => r.mmsi === mmsi);
+  return { priorPasses: mem.length, lastPassedAt: mem.length ? mem[0].passedTime : null };
+}
+
+// Rotating style nudges so the narrator never settles into a single formula.
+const NARRATION_STYLES = [
+  'Lead with where she is headed.',
+  'Open on the fun fact, then name her.',
+  'Start with how she looks on the water right now — her size, or how high or low she rides.',
+  'If she is a straits regular, welcome her back like an old friend; if new, mark the first sighting.',
+  'Catch her mid-moment, as if you just spotted her sliding under the span.',
+  'Be brief and vivid — just two sentences.',
+  'If she is a foreign visitor, open on how far she has come to reach the lakes.',
+  'Let the fun fact be your closing note instead of your opener.'
+];
+
 function narrationTemplate(v) {
   const dir = v.direction === 'eastbound' ? 'heading east toward Lake Huron'
             : v.direction === 'westbound' ? 'heading west toward Lake Michigan'
@@ -499,18 +568,28 @@ function narrationTemplate(v) {
 
 async function narrationScriptLLM(v) {
   const system =
-    'You narrate a live webcam of ships passing under the Mackinac Bridge in the Straits of Mackinac. ' +
-    'Write 2 to 3 sentences (about 45 to 60 words, ~20 seconds spoken) introducing this Great Lakes vessel as it passes beneath the bridge. ' +
-    'Warm, documentary tone, like a knowledgeable local. Weave the fun fact in naturally; you may note its direction and speed, and — if a recognizable destination port or place is given — where she is bound. Ignore the destination if it is blank or an unclear code. ' +
-    'If you refer to the time of day, use EXACTLY the "Time of day" value provided below — never guess it (it may be evening or night, not morning). ' +
-    'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text.';
+    'You are the live voice of a webcam watching Great Lakes ships pass beneath the Mackinac Bridge in the Straits of Mackinac. ' +
+    'You have a warm, charismatic PERSONALITY — a beloved local host who is genuinely delighted by every ship, quick with a vivid image or a gentle touch of wit, and always FAMILY-FRIENDLY (nothing crude, scary, or negative). Sound alive and human, never like a robot reading a card. ' +
+    'Introduce THIS vessel in 2 to 3 lively, natural sentences (about 45 to 65 words, ~20 seconds spoken), like you are sharing the moment with friends gathered on the shore. ' +
+    'IMPORTANT — vary yourself every single time: do NOT follow a fixed formula and do NOT reuse the same opening. Change the order, the rhythm, and which detail you lead with from one ship to the next. ' +
+    'You are given several details below. Choose only the 2 to 4 most interesting for THIS ship and weave them in naturally — never list them all, and never sound like a data readout. ' +
+    'Details you may draw on: where she is bound and her ETA (only if a real place/time); whether she rides low and loaded or high and light (from her draft); her flag, especially if she is a foreign ocean visitor; whether she is a straits regular or a first sighting; her size, and the fun fact. ' +
+    'Ignore anything blank, unclear, or a code. Use only the dates and times provided — never invent them (it may be evening or night, not morning). ' +
+    'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text. ' +
+    'Style nudge for this one: ' + NARRATION_STYLES[Math.floor(Math.random() * NARRATION_STYLES.length)];
   const user =
-    'Vessel name: ' + v.name + '\n' +
-    'Fun fact: ' + (v.fact || '(none provided)') + '\n' +
+    'Vessel: ' + v.name + '\n' +
+    'Fun fact: ' + (v.fact || '(none on file)') + '\n' +
     'Length: ' + (v.lengthFt ? v.lengthFt + ' feet' : 'unknown') + '\n' +
-    'Direction: ' + (v.direction || 'unknown') + '\n' +
-    'Speed: ' + (v.speed || '?') + ' knots\n' +
-    'Destination: ' + (v.destination || '(unknown)') + '\n' +
+    'Heading: ' + (v.direction || 'unknown') + ' at ' + (v.speed || '?') + ' knots\n' +
+    'Bound for: ' + (v.destination || '(unknown)') + '\n' +
+    'ETA: ' + (v.eta || '(unknown)') + '\n' +
+    'Draft: ' + (v.draughtFt ? v.draughtFt + ' feet (higher = more heavily loaded)' : 'unknown') + '\n' +
+    'Flag: ' + (v.flag || '(unknown)') + '\n' +
+    'Straits history: ' + (v.priorPasses
+        ? (v.priorPasses + ' crossing(s) logged in the past month' + (v.daysSinceLast != null ? ', the last one ' + v.daysSinceLast + ' day(s) ago' : ''))
+        : 'none on record — likely her first time on our cameras') + '\n' +
+    'Today is ' + (localDateStr() || 'unknown') + '\n' +
     'Time of day: ' + localTimeOfDay();
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -529,7 +608,7 @@ async function synthesizeVoice(text) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-    body: JSON.stringify({ text, model_id: ELEVEN_MODEL, voice_settings: { stability: 0.5, similarity_boost: 0.8, use_speaker_boost: true, speed: 1.1 } })
+    body: JSON.stringify({ text, model_id: ELEVEN_MODEL, voice_settings: { stability: 0.4, similarity_boost: 0.85, style: 0.2, use_speaker_boost: true, speed: 1.1 } })
   });
   if (!res.ok) throw new Error('ElevenLabs ' + res.status + ': ' + (await res.text()).slice(0, 200));
   return Buffer.from(await res.arrayBuffer());
@@ -610,10 +689,16 @@ async function narrateVessel(mmsi, name, direction, speed) {
   narrationInFlight.add(mmsi);
   lastNarratedAt[mmsi] = Date.now();
   try {
+    const history = await getVesselHistory(mmsi);
     const v = {
       name: name, direction: direction, speed: Math.round(speed || 0), fact: fact,
       lengthFt: info.length ? Math.round(info.length * 3.28084) : null,
-      destination: cleanDestination(info.destination)
+      destination: cleanDestination(info.destination),
+      draughtFt: info.draughtM ? Math.round(info.draughtM * 3.28084) : null,
+      eta: cleanEta(info.eta),
+      flag: flagFromMMSI(mmsi),
+      priorPasses: history.priorPasses,
+      daysSinceLast: history.lastPassedAt ? Math.round((Date.now() - new Date(history.lastPassedAt).getTime()) / 86400000) : null
     };
     let text, llmUsage = null, usedLLM = false;
     try {
@@ -897,8 +982,14 @@ function processAisMessage(message, source) {
     const sd = message.Message.ShipStaticData;
     const dim = sd.Dimension || {};
     const length = (dim.A || 0) + (dim.B || 0);
-    const prevDest = (staticInfo[meta.MMSI] || {}).destination || null;
-    staticInfo[meta.MMSI] = { type: sd.Type || null, length: length || null, destination: (sd.Destination || '').trim() || prevDest };
+    const prev = staticInfo[meta.MMSI] || {};
+    staticInfo[meta.MMSI] = {
+      type: sd.Type || null,
+      length: length || null,
+      destination: (sd.Destination || '').trim() || prev.destination || null,
+      draughtM: sd.MaximumStaticDraught || prev.draughtM || null,   // metres, ~how loaded she is
+      eta: sd.Eta || prev.eta || null                               // { Month, Day, Hour, Minute }
+    };
   }
 
   if (message.MessageType === 'PositionReport' && message.MetaData) {
