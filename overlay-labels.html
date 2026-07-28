@@ -83,7 +83,7 @@ var ANCHORS = [
 ];
 
 // ── Calibration state (solved from anchors; seed gets markers close) ─
-var SEED = { bearing:-1.5, elev:1.6, hfov:14.5, height:12 };
+var SEED = { bearing:-1.812, elev:1.946, hfov:16.655, height:12 };  // solved from bridge-tower calibration (locked preset)
 var cal = Object.assign({}, SEED);
 var store = load();
 if (store.cal) cal = Object.assign({}, SEED, store.cal);
