@@ -245,6 +245,16 @@ app.get('/api/status', async (req, res) => {
 const PTZ_BRIDGE_IN_MI  = 0.5;    // zoom IN when an APPROACHING vessel is within this of the bridge (perfect entry timing)
 const PTZ_BRIDGE_OUT_MI = 0.15;   // zoom back to Home once a DEPARTING vessel passes this — asymmetric, so it releases ~40 s after the pass instead of lingering ~2.5 min
 const PTZ_FRESH_MS  = 90 * 1000;  // ignore a vessel not heard from in 90 s
+// Current PTZ preset zone, updated every time Home Assistant polls the cue below.
+// Broadcast to overlays so the AIS label overlay shows ONLY while the camera is at
+// the calibrated 'bridge' preset (the labels are calibrated for that one framing).
+let currentPtzZone = 'home';
+let ptzZoneAt = Date.now();
+function reportPtzZone(zone) {
+  currentPtzZone = zone;
+  ptzZoneAt = Date.now();
+  broadcastToClients({ type: 'ptz_zone', zone: zone, at: ptzZoneAt });
+}
 app.get('/api/ptz-cue', (req, res) => {
   const now = Date.now();
   let best = null;
@@ -253,12 +263,13 @@ app.get('/api/ptz-cue', (req, res) => {
     if (now - v.at > PTZ_FRESH_MS) { delete nearBridge[k]; return; }
     if (!best || v.distKm < best.distKm) best = Object.assign({ mmsi: +k }, v);
   });
-  if (!best) return res.json({ active: false, zone: 'home' });
+  if (!best) { reportPtzZone('home'); return res.json({ active: false, zone: 'home' }); }
   const distMi = +(best.distKm * 0.621371).toFixed(2);
   // Asymmetric: hold the close-up out to 0.5 mi while approaching, but release at just
   // 0.15 mi once departing — so the camera doesn't linger on empty water after the pass.
   const threshold = best.closing === false ? PTZ_BRIDGE_OUT_MI : PTZ_BRIDGE_IN_MI;
   const zone = distMi <= threshold ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
+  reportPtzZone(zone);
   res.json({ active: true, zone: zone, mmsi: best.mmsi, name: best.name, side: best.side,
              distanceMi: distMi, speedKn: +(best.speed || 0).toFixed(1), closing: best.closing !== false });
 });
@@ -1222,7 +1233,9 @@ wss.on('connection', (ws) => {
     message: 'Connected to proxy server',
     connected: true
   }));
-  
+  // Tell the new client the current PTZ preset so label overlays gate correctly
+  ws.send(JSON.stringify({ type: 'ptz_zone', zone: currentPtzZone, at: ptzZoneAt }));
+
   // Connect to AISStream if not already connected
   if (!aisConnection && !isConnecting) {
     connectToAISStream();

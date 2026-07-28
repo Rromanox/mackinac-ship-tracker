@@ -85,6 +85,25 @@ var TEST_CHECK = [
   { label:'N pier ✓', lat:45.82543, lon:-84.72643 }
 ];
 
+// ── Preset gate: on the clean overlay, show labels ONLY while the camera is at the
+// calibrated 'bridge' preset. The server broadcasts the live PTZ zone over the WS.
+// Bypassed in cal/test/always modes so you can tune any time.
+var GATE = !(CAL_MODE || TEST_MODE || /[?&]always=1/.test(location.search));
+var ptzZone = 'home', ptzSeenAt = 0, bridgeEnteredAt = 0;
+var SETTLE_MS = 4000;   // let the camera physically arrive before showing labels
+var STALE_MS  = 45000;  // if the server/HA goes quiet this long, assume off-preset
+function onPtzZone(zone){
+  ptzSeenAt = Date.now();
+  if (zone === 'bridge' && ptzZone !== 'bridge') bridgeEnteredAt = ptzSeenAt;
+  ptzZone = zone || 'home';
+}
+function gateOpen(){
+  if (!GATE) return true;
+  if (ptzZone !== 'bridge') return false;
+  if (Date.now() - ptzSeenAt > STALE_MS) return false;
+  return (Date.now() - bridgeEnteredAt) >= SETTLE_MS;
+}
+
 // ── Bridge reference anchors (precise OSM-derived coords) ────────
 // h = height above water in metres. Place base anchors at the waterline,
 // top anchors at the tower crown.
@@ -123,6 +142,7 @@ function connect(){
   var ws = new WebSocket(WS_URL);
   ws.onmessage = function(ev){ try {
     var m = JSON.parse(ev.data);
+    if (m.type === 'ptz_zone') { onPtzZone(m.zone); return; }
     if (m.type === 'ship_data' && m.data && m.data.MessageType === 'PositionReport' && m.data.Message && m.data.Message.PositionReport) {
       var p = m.data.Message.PositionReport, meta = m.data.MetaData || {};
       if (typeof p.Latitude !== 'number' || typeof p.Longitude !== 'number') return;
@@ -186,6 +206,7 @@ var stage = document.getElementById('stage');
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function render(){
   var W = innerWidth, H = innerHeight, now = Date.now(), html = '';
+  if (!gateOpen()) { stage.innerHTML = ''; requestAnimationFrame(render); return; }
   Object.keys(ships).forEach(function(mmsi){
     var s = ships[mmsi];
     if (now - s.at > 60000) { delete ships[mmsi]; return; }
