@@ -33,6 +33,7 @@ const CFG = {
   clipSeconds:  +(process.env.CLIP_SECONDS || 32),
   saveDelayMs:  +(process.env.SAVE_DELAY_MS || 6000),
   trimStart:    +(process.env.CLIP_TRIM_START || 0),   // seconds to skip from the START of each clip
+  fgWidthPct:   +(process.env.FG_WIDTH_PCT || 0.88),   // boat-band width vs full frame; <1 leaves side margin so phones (Shorts) don't crop the boat
   clipStartHour:+(process.env.CLIP_START_HOUR ?? 6),   // only clip between these local hours
   clipEndHour:  +(process.env.CLIP_END_HOUR ?? 24),    // 6–24 = 6:00am to 11:59pm (skip the dark overnight)
   ambientVol:   +(process.env.AMBIENT_VOLUME || 0.30),
@@ -163,9 +164,10 @@ async function render({ srcVideo, outPath }) {
   // vertical 9:16 with a blurred background so the vessel is never cropped — NO text overlay.
   // Keep the FULL buffer (OBS Max Replay Time) and its ORIGINAL audio — the stream audio already
   // carries the live narration at the right moment, so the timing matches what you saw live.
+  const fgW = Math.round(1080 * CFG.fgWidthPct / 2) * 2;   // inset a bit so phone (Shorts) side-crop eats the margin, not the boat
   const vf = [
     `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`,
-    `[0:v]scale=1080:-2[fg]`,
+    `[0:v]scale=${fgW}:-2[fg]`,
     `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
   ].join(';');
   const args = ['-y', '-ss', String(CFG.trimStart), '-i', srcVideo, '-filter_complex', vf, '-map', '[v]', '-map', '0:a?',
