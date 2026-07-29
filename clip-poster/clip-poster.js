@@ -317,7 +317,7 @@ function bestUnposted(sinceMs) {
 }
 async function postSlot(slot, windowHours) {
   const pick = bestUnposted(Date.now() - windowHours * 3600e3);
-  if (!pick) return log(`🕒 ${slot} slot: no clip in the last ${windowHours}h — skipping`);
+  if (!pick) return false;   // nothing to post yet — caller keeps the slot armed and retries next minute
   log(`🕒 ${slot} slot: posting "${pick.m.name}" (score ${pick.m.score})`);
   try {
     const id = await uploadClip(path.join(CFG.outDir, pick.m.video), pick.m);
@@ -325,18 +325,28 @@ async function postSlot(slot, windowHours) {
     fs.writeFileSync(pick.file, JSON.stringify(pick.m, null, 2));
     log(`  ✅ uploaded (${CFG.ytPrivacy}): https://youtu.be/${id}`);
     if (CFG.ytPrivacy !== 'public') log('     → open YouTube Studio and hit Publish when ready.');
-  } catch (e) { log(`  ✗ ${slot} upload failed:`, e.message); }
+    return true;
+  } catch (e) { log(`  ✗ ${slot} upload failed:`, e.message); return false; }
 }
 const slotFile = path.join(CFG.outDir, '.slots.json');
 const readSlots = () => { try { return JSON.parse(fs.readFileSync(slotFile, 'utf8')); } catch { return {}; } };
 const writeSlots = s => { try { fs.writeFileSync(slotFile, JSON.stringify(s)); } catch {} };
-function checkSlots() {
-  const now = new Date(), today = now.toISOString().slice(0, 10);
-  let st = readSlots(); if (st.date !== today) { st = { date: today }; writeSlots(st); }
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const due = t => { const [h, m] = t.split(':').map(Number); return nowMin >= h * 60 + m && nowMin < h * 60 + m + 6; };
-  if (!st.morning && due(CFG.morningHM)) { st.morning = true; writeSlots(st); postSlot('morning', 14); }
-  if (!st.evening && due(CFG.eveningHM)) { st.evening = true; writeSlots(st); postSlot('evening', 10); }
+// A slot stays ARMED from its time until SLOT_ARM_MIN later. If the pool was empty at slot time,
+// it keeps trying each minute and posts the first good clip that lands — so a 9am boat still gets
+// a morning post instead of waiting for evening. Marked done only once it actually posts.
+const SLOT_ARM_MIN = 6 * 60;
+let slotBusy = false;
+async function checkSlots() {
+  if (slotBusy) return;
+  slotBusy = true;
+  try {
+    const now = new Date(), today = now.toISOString().slice(0, 10);
+    let st = readSlots(); if (st.date !== today) { st = { date: today }; writeSlots(st); }
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const armed = t => { const [h, m] = t.split(':').map(Number); const s = h * 60 + m; return nowMin >= s && nowMin < s + SLOT_ARM_MIN; };
+    if (!st.morning && armed(CFG.morningHM)) { if (await postSlot('morning', 14)) { st.morning = true; writeSlots(st); } }
+    if (!st.evening && armed(CFG.eveningHM)) { if (await postSlot('evening', 10)) { st.evening = true; writeSlots(st); } }
+  } finally { slotBusy = false; }
 }
 
 // ── boot ─────────────────────────────────────────────────────────
@@ -344,7 +354,7 @@ function checkSlots() {
   fs.mkdirSync(CFG.outDir, { recursive: true });
   log(`Mackinac Clip Poster — capturing to ${path.resolve(CFG.outDir)}`);
   if (POST_NOW) {   // one-shot: upload the best recent clip immediately, then exit
-    if (initYouTube()) { log('POST-NOW: uploading the best clip from the last 48h…'); await postSlot('manual', 48); }
+    if (initYouTube()) { log('POST-NOW: uploading the best clip from the last 48h…'); if (!(await postSlot('manual', 48))) log('POST-NOW: no clip in the last 48h to post'); }
     else log('POST-NOW: no token.json — run "node youtube-auth.js" first');
     return process.exit(0);
   }
