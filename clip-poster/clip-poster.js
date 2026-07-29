@@ -39,7 +39,8 @@ const CFG = {
   ytPrivacy:  process.env.YT_PRIVACY || 'private',
   ytCategory: process.env.YT_CATEGORY || '19',
   morningHM:  process.env.MORNING_SLOT || '08:30',
-  eveningHM:  process.env.EVENING_SLOT || '18:30'
+  eveningHM:  process.env.EVENING_SLOT || '18:30',
+  liveUrl:    process.env.LIVE_URL || ''
 };
 const TEST_MODE = process.argv.includes('--test');
 const POST_NOW  = process.argv.includes('--post-now');
@@ -164,21 +165,12 @@ function wrap(text, n) {
 }
 const escFilterPath = p => p.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-async function render({ srcVideo, narration, name, fact, outPath }) {
-  // caption text files (avoids ffmpeg text-escaping headaches)
-  const nameTxt = path.join(tmpDir, 'name.txt');
-  const factTxt = path.join(tmpDir, 'fact.txt');
-  fs.writeFileSync(nameTxt, name.toUpperCase());
-  fs.writeFileSync(factTxt, wrap(fact, 30));
-  const font = escFilterPath(CFG.fontFile);
-  const nameF = escFilterPath(nameTxt), factF = escFilterPath(factTxt);
-
+async function render({ srcVideo, narration, outPath }) {
+  // vertical 9:16 with a blurred background so the vessel is never cropped — NO text overlay
   const vf = [
     `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`,
     `[0:v]scale=1080:-2[fg]`,
-    `[bg][fg]overlay=(W-w)/2:(H-h)/2[base]`,
-    `[base]drawtext=fontfile='${font}':textfile='${nameF}':fontsize=66:fontcolor=white:borderw=4:bordercolor=black@0.85:x=(w-text_w)/2:y=h-430,` +
-      `drawtext=fontfile='${font}':textfile='${factF}':fontsize=40:fontcolor=white:borderw=3:bordercolor=black@0.85:line_spacing=10:x=(w-text_w)/2:y=h-330[v]`
+    `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
   ].join(';');
 
   const args = ['-y', '-t', String(CFG.clipSeconds), '-i', srcVideo];
@@ -200,27 +192,32 @@ async function render({ srcVideo, narration, name, fact, outPath }) {
 }
 
 // ── Haiku-written title + description ────────────────────────────
+const noEmoji = s => String(s || '').replace(/[\p{Extended_Pictographic}️‍]/gu, '').replace(/[ \t]{2,}/g, ' ').trim();
 async function writeTitle({ name, fact, flag, lengthM }) {
-  const fallback = {
-    title: `${name} passes under the Mackinac Bridge 🚢 #Shorts`,
+  const cta = CFG.liveUrl ? `\n\nJoin our 24/7 livestream to watch the Mackinac Bridge and passing freighters live: ${CFG.liveUrl}` : '';
+  let out = {
+    title: `${name} passes under the Mackinac Bridge #Shorts`,
     description: `${name} crossing the Straits of Mackinac.${fact ? ' ' + fact : ''}\n\n#Shorts #GreatLakes #MackinacBridge #ships #freighter`
   };
-  if (!anthropic) return fallback;
-  try {
-    const sys = 'You write short, punchy YouTube Shorts metadata for a live Great Lakes ship-cam. ' +
-      'Return STRICT JSON {"title": "...", "description": "..."} and nothing else. ' +
-      'Title: <=90 chars, a scroll-stopping hook + the ship name, end with #Shorts, at most one emoji. ' +
-      'Description: 1-2 lively sentences using the fact, then 4-6 relevant hashtags on a new line. No clickbait lies.';
-    const facts = [`Ship: ${name}`, lengthM ? `Length: ~${Math.round(lengthM)} m` : '', flag ? `Flag: ${flag}` : '',
-      fact ? `Fun fact: ${fact}` : ''].filter(Boolean).join('\n');
-    const msg = await anthropic.messages.create({
-      model: 'claude-haiku-4-5', max_tokens: 400,
-      messages: [{ role: 'user', content: sys + '\n\n' + facts }]
-    });
-    const text = (msg.content.find(c => c.type === 'text') || {}).text || '';
-    const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
-    return { title: j.title || fallback.title, description: j.description || fallback.description };
-  } catch (e) { log('Haiku title failed, using fallback:', e.message); return fallback; }
+  if (anthropic) {
+    try {
+      const sys = 'You write short, punchy YouTube Shorts metadata for a live Great Lakes ship-cam. ' +
+        'Return STRICT JSON {"title": "...", "description": "..."} and nothing else. ' +
+        'Do NOT use any emojis anywhere. ' +
+        'Title: <=90 chars, a scroll-stopping hook plus the ship name, end with #Shorts. ' +
+        'Description: 1-2 lively sentences using the fact, then 4-6 relevant hashtags on a new line. No clickbait lies.';
+      const facts = [`Ship: ${name}`, lengthM ? `Length: ~${Math.round(lengthM)} m` : '', flag ? `Flag: ${flag}` : '',
+        fact ? `Fun fact: ${fact}` : ''].filter(Boolean).join('\n');
+      const msg = await anthropic.messages.create({
+        model: 'claude-haiku-4-5', max_tokens: 400,
+        messages: [{ role: 'user', content: sys + '\n\n' + facts }]
+      });
+      const text = (msg.content.find(c => c.type === 'text') || {}).text || '';
+      const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+      out = { title: j.title || out.title, description: j.description || out.description };
+    } catch (e) { log('Haiku title failed, using fallback:', e.message); }
+  }
+  return { title: noEmoji(out.title), description: noEmoji(out.description) + cta };
 }
 
 // ── the pipeline for one passing ─────────────────────────────────
@@ -261,7 +258,7 @@ async function handlePassing(data) {
   const outPath = path.join(CFG.outDir, `${stamp}_${safe}.mp4`);
 
   try {
-    await render({ srcVideo: saved, narration, name, fact, outPath });
+    await render({ srcVideo: saved, narration, outPath });
   } catch (e) { return log('  ✗ render failed:', e.message); }
 
   const meta = await writeTitle({ name, fact, flag: info.flag, lengthM: info.lengthM });
