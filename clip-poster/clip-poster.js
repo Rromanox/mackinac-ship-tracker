@@ -239,7 +239,7 @@ async function handlePassing(data) {
   log('  saved replay:', saved);
 
   const bright = await avgBrightness(saved);
-  if (bright >= 0 && bright < CFG.minBright) {
+  if (!TEST_MODE && bright >= 0 && bright < CFG.minBright) {
     return log(`  ✗ rejected: too dark (brightness ${bright.toFixed(0)} < ${CFG.minBright}) — likely night/fog`);
   }
 
