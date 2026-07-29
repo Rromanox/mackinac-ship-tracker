@@ -42,6 +42,7 @@ const CFG = {
   eveningHM:  process.env.EVENING_SLOT || '18:30'
 };
 const TEST_MODE = process.argv.includes('--test');
+const POST_NOW  = process.argv.includes('--post-now');
 
 const tmpDir = path.join(CFG.outDir, 'tmp');
 fs.mkdirSync(tmpDir, { recursive: true });
@@ -336,6 +337,11 @@ function checkSlots() {
 (async () => {
   fs.mkdirSync(CFG.outDir, { recursive: true });
   log(`Mackinac Clip Poster — capturing to ${path.resolve(CFG.outDir)}`);
+  if (POST_NOW) {   // one-shot: upload the best recent clip immediately, then exit
+    if (initYouTube()) { log('POST-NOW: uploading the best clip from the last 48h…'); await postSlot('manual', 48); }
+    else log('POST-NOW: no token.json — run "node youtube-auth.js" first');
+    return process.exit(0);
+  }
   await loadFacts();
   await connectObs();
   connectServer();
