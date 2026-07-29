@@ -158,7 +158,7 @@ app.get('/api/missing-facts', async (req, res) => {
       const seen = new Set();
       rows.forEach(r => {
         const n = (r.name || '').trim();
-        if (skip(n) || shouldHideVessel(r.mmsi) || seen.has(factKey(n)) || have.has(factKey(n))) return;
+        if (skip(n) || shouldHideVessel(r.mmsi, n) || seen.has(factKey(n)) || have.has(factKey(n))) return;
         seen.add(factKey(n));
         crossed.push({ name: n, mmsi: r.mmsi, lastPassed: r.passedTime });
       });
@@ -171,7 +171,7 @@ app.get('/api/missing-facts', async (req, res) => {
       .sort((a, b) => b.at - a.at)
       .forEach(v => {
         const n = (v.name || '').trim();
-        if (skip(n) || shouldHideVessel(v.mmsi) || seenH.has(factKey(n)) || have.has(factKey(n))) return;
+        if (skip(n) || shouldHideVessel(v.mmsi, n) || seenH.has(factKey(n)) || have.has(factKey(n))) return;
         seenH.add(factKey(n));
         heard.push({ name: n, mmsi: v.mmsi, milesFromBridge: +v.distanceMi.toFixed(1) });
       });
@@ -340,9 +340,14 @@ const staticInfo = {};     // mmsi -> { type, length }  (learned from static mes
 // (Nuisance harbour tugs are still handled by the MMSI blocklist.)
 const TOW_TYPES = new Set([31, 32, 52]);
 
-function shouldHideVessel(mmsi) {
+const CG_SMALL_BOATS = new Set(); // runtime: MMSIs of small USCG response boats (AIS name "CG#####")
+// Named cutters ("CG NEAH BAY", "USCGC MACKINAW", "BISCAYNE BAY") have letters, not digits, so they stay visible.
+function isSmallCoastGuardBoat(name) { return /^(US)?CG\s?\d{4,}$/i.test(String(name || '').trim()); }
+function shouldHideVessel(mmsi, name) {
   if (ALLOWED_MMSI_SERVER.has(mmsi)) return false;
   if (BLOCKED_MMSI_SERVER.has(mmsi)) return true;
+  if (CG_SMALL_BOATS.has(mmsi)) return true;
+  if (isSmallCoastGuardBoat(name)) { CG_SMALL_BOATS.add(mmsi); return true; } // small USCG response boats (RB-M/RB-S)
   const info = staticInfo[mmsi];
   if (info) {
     const t = info.type;
@@ -1022,7 +1027,7 @@ function processAisMessage(message, source) {
   if (message.MessageType === 'PositionReport' && message.MetaData) {
     // Single source of truth: drop hidden vessels (ferries, small craft,
     // blocklist) here so no overlay ever sees them.
-    if (shouldHideVessel(message.MetaData.MMSI)) return;
+    if (shouldHideVessel(message.MetaData.MMSI, message.MetaData.ShipName)) return;
 
     const shipInfo = {
       mmsi: message.MetaData.MMSI,
