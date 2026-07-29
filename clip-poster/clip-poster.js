@@ -38,6 +38,7 @@ const CFG = {
   ytEnabled:  process.env.YT_ENABLED === '1',
   ytPrivacy:  process.env.YT_PRIVACY || 'private',
   ytCategory: process.env.YT_CATEGORY || '19',
+  ytPlaylist: process.env.YT_PLAYLIST || '',
   morningHM:  process.env.MORNING_SLOT || '08:30',
   eveningHM:  process.env.EVENING_SLOT || '18:30',
   liveUrl:    process.env.LIVE_URL || ''
@@ -292,7 +293,15 @@ async function uploadClip(videoPath, meta) {
     },
     media: { body: fs.createReadStream(videoPath) }
   });
-  return res.data.id;
+  const id = res.data.id;
+  if (CFG.ytPlaylist) {
+    try {
+      await youtube.playlistItems.insert({ part: ['snippet'],
+        requestBody: { snippet: { playlistId: CFG.ytPlaylist, resourceId: { kind: 'youtube#video', videoId: id } } } });
+      log('  added to playlist');
+    } catch (e) { log('  (playlist add failed:', e.message + ')'); }
+  }
+  return id;
 }
 function bestUnposted(sinceMs) {
   let best = null;

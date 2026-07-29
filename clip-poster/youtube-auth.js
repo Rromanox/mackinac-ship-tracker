@@ -9,7 +9,8 @@ import { exec } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const SCOPES = ['https://www.googleapis.com/auth/youtube.upload'];
+// 'youtube' covers both uploading videos AND managing playlists (add-to-playlist)
+const SCOPES = ['https://www.googleapis.com/auth/youtube'];
 const PORT = 3000;
 const REDIRECT = `http://localhost:${PORT}`;
 const CRED = path.join(process.cwd(), 'credentials.json');
