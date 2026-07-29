@@ -33,7 +33,7 @@ const CFG = {
   clipSeconds:  +(process.env.CLIP_SECONDS || 32),
   saveDelayMs:  +(process.env.SAVE_DELAY_MS || 6000),
   trimStart:    +(process.env.CLIP_TRIM_START || 0),   // seconds to skip from the START of each clip
-  fgWidthPct:   +(process.env.FG_WIDTH_PCT || 0.88),   // boat-band width vs full frame; <1 leaves side margin so phones (Shorts) don't crop the boat
+  fgWidthPct:   +(process.env.FG_WIDTH_PCT || 0.92),   // boat-band width vs full frame; <1 leaves side margin so phones (Shorts) don't crop the boat
   clipStartHour:+(process.env.CLIP_START_HOUR ?? 6),   // only clip between these local hours
   clipEndHour:  +(process.env.CLIP_END_HOUR ?? 24),    // 6–24 = 6:00am to 11:59pm (skip the dark overnight)
   ambientVol:   +(process.env.AMBIENT_VOLUME || 0.30),
