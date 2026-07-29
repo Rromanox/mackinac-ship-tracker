@@ -32,7 +32,8 @@ const CFG = {
   fontFile:   process.env.FONT_FILE   || 'C:/Windows/Fonts/arialbd.ttf',
   clipSeconds:  +(process.env.CLIP_SECONDS || 32),
   saveDelayMs:  +(process.env.SAVE_DELAY_MS || 6000),
-  minBright:    +(process.env.QUALITY_MIN_BRIGHTNESS || 45),
+  clipStartHour:+(process.env.CLIP_START_HOUR ?? 6),   // only clip between these local hours
+  clipEndHour:  +(process.env.CLIP_END_HOUR ?? 24),    // 6–24 = 6:00am to 11:59pm (skip the dark overnight)
   ambientVol:   +(process.env.AMBIENT_VOLUME || 0.30),
   narrationVol: +(process.env.NARRATION_VOLUME || 1.40),
   ytEnabled:  process.env.YT_ENABLED === '1',
@@ -141,19 +142,7 @@ function run(cmd, args) {
     p.on('close', code => code === 0 ? resolve(err) : reject(new Error(cmd + ' exited ' + code + '\n' + err.slice(-800))));
   });
 }
-// Average luma (0-255) across the clip — cheap night/fog gate.
-function avgBrightness(file) {
-  return new Promise(resolve => {
-    const p = spawn('ffmpeg', ['-i', file, '-vf', 'signalstats,metadata=print', '-an', '-f', 'null', '-']);
-    let err = '';
-    p.stderr.on('data', d => { err += d; });
-    p.on('error', () => resolve(-1));
-    p.on('close', () => {
-      const vals = [...err.matchAll(/YAVG:([\d.]+)/g)].map(x => +x[1]);
-      resolve(vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0);
-    });
-  });
-}
+// (brightness gate removed — it was unreliable; clips are now gated by time-of-day and you review each one)
 // wrap text to ~n chars per line on word boundaries
 function wrap(text, n) {
   const words = String(text).split(/\s+/); const lines = []; let line = '';
@@ -230,6 +219,12 @@ async function handlePassing(data) {
 
   const info = staticInfo[mmsi] || {};
   const name = (data.name || info.name || 'Unknown Vessel').trim();
+
+  // Only clip during daylight-ish hours (local time); you review each clip before publishing.
+  const hr = new Date().getHours();
+  if (!TEST_MODE && (hr < CFG.clipStartHour || hr >= CFG.clipEndHour)) {
+    return log(`  ⏰ ${name}: outside clip hours (${CFG.clipStartHour}:00–${CFG.clipEndHour}:00) — skipping`);
+  }
   log(`🚢 passing: ${name} (${mmsi}) — clipping in ${CFG.saveDelayMs / 1000}s`);
 
   await new Promise(r => setTimeout(r, CFG.saveDelayMs)); // let the crossing settle near clip end
@@ -237,11 +232,6 @@ async function handlePassing(data) {
   let saved;
   try { saved = await saveReplay(); } catch (e) { return log('  replay save failed:', e.message); }
   log('  saved replay:', saved);
-
-  const bright = await avgBrightness(saved);
-  if (!TEST_MODE && bright >= 0 && bright < CFG.minBright) {
-    return log(`  ✗ rejected: too dark (brightness ${bright.toFixed(0)} < ${CFG.minBright}) — likely night/fog`);
-  }
 
   // narration audio (already generated on approach) — optional
   let narration = null;
@@ -263,9 +253,9 @@ async function handlePassing(data) {
   } catch (e) { return log('  ✗ render failed:', e.message); }
 
   const meta = await writeTitle({ name, fact, flag: info.flag, lengthM: info.lengthM });
-  const score = Math.round(bright) + (info.lengthM ? Math.min(info.lengthM / 10, 60) : 0); // brightness + size
+  const score = info.lengthM ? Math.min(info.lengthM / 10, 100) : 20; // bigger vessel = higher priority
   const metaOut = { mmsi, name, fact, flag: info.flag || '', lengthM: info.lengthM || null,
-    brightness: Math.round(bright), score, ...meta, video: path.basename(outPath),
+    score, ...meta, video: path.basename(outPath),
     createdAt: new Date().toISOString(), posted: false };
   fs.writeFileSync(outPath.replace(/\.mp4$/, '.json'), JSON.stringify(metaOut, null, 2));
   log(`  ✅ clip ready: ${outPath}`);
