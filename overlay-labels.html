@@ -15,13 +15,14 @@
   #stage,#anchors { position:fixed; inset:0; }
   #anchors { pointer-events:none; }
   /* ship labels */
-  .lbl { position:absolute; transform:translate(-50%,-100%); white-space:nowrap; pointer-events:none;
+  /* label sits just BELOW the vessel (on the water) so it never covers the ship */
+  .lbl { position:absolute; transform:translate(-50%,14px); white-space:nowrap; pointer-events:none;
     background:rgba(8,14,22,.82); color:#eaf2fb; border:1px solid rgba(120,180,255,.55);
     border-radius:8px; padding:3px 9px; font-size:15px; font-weight:600; line-height:1.15;
     box-shadow:0 3px 10px rgba(0,0,0,.45); }
   .lbl .sub { display:block; font-size:11px; font-weight:400; color:#9fc0e6; }
-  .lbl::after { content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%);
-    border:5px solid transparent; border-top-color:rgba(120,180,255,.55); }
+  .lbl::after { content:''; position:absolute; left:50%; bottom:100%; transform:translateX(-50%);
+    border:5px solid transparent; border-bottom-color:rgba(120,180,255,.55); }
   .lbl.test { background:rgba(46,8,34,.86); border-color:#ff6ad5; color:#ffd9f2; }
   .lbl.test::after { border-top-color:#ff6ad5; }
   .chk { position:absolute; transform:translate(-50%,-50%); pointer-events:none; color:#57e6ff;
