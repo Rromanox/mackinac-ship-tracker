@@ -34,6 +34,7 @@ const CFG = {
   saveDelayMs:  +(process.env.SAVE_DELAY_MS || 6000),
   trimStart:    +(process.env.CLIP_TRIM_START || 0),   // seconds to skip from the START of each clip
   fgWidthPct:   +(process.env.FG_WIDTH_PCT || 0.92),   // boat-band width vs full frame; <1 leaves side margin so phones (Shorts) don't crop the boat
+  clipStyle:    (process.env.CLIP_STYLE || 'pad'),     // 'pad' = blur-pad (nothing cropped) | 'fill' = crop to fill 9:16 (bigger subject, sides cropped)
   clipStartHour:+(process.env.CLIP_START_HOUR ?? 6),   // only clip between these local hours
   clipEndHour:  +(process.env.CLIP_END_HOUR ?? 24),    // 6–24 = 6:00am to 11:59pm (skip the dark overnight)
   ambientVol:   +(process.env.AMBIENT_VOLUME || 0.30),
@@ -51,6 +52,7 @@ const POST_NOW  = process.argv.includes('--post-now');
 function argVal(flag) { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : null; }
 const RENDER_FILE = argVal('--render');   // manually render a raw replay file into the pool
 const RENDER_NAME = argVal('--name');
+const RENDER_STYLE = argVal('--style');   // 'pad' | 'fill' — override the clip style for this manual render
 
 const tmpDir = path.join(CFG.outDir, 'tmp');
 fs.mkdirSync(tmpDir, { recursive: true });
@@ -160,16 +162,22 @@ function wrap(text, n) {
 }
 const escFilterPath = p => p.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-async function render({ srcVideo, outPath }) {
-  // vertical 9:16 with a blurred background so the vessel is never cropped — NO text overlay.
-  // Keep the FULL buffer (OBS Max Replay Time) and its ORIGINAL audio — the stream audio already
-  // carries the live narration at the right moment, so the timing matches what you saw live.
-  const fgW = Math.round(1080 * CFG.fgWidthPct / 2) * 2;   // inset a bit so phone (Shorts) side-crop eats the margin, not the boat
-  const vf = [
-    `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`,
-    `[0:v]scale=${fgW}:-2[fg]`,
-    `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
-  ].join(';');
+async function render({ srcVideo, outPath, style }) {
+  // vertical 9:16, keeping the FULL buffer and its ORIGINAL audio (stream audio already carries the
+  // live narration at the right moment). Two looks: 'pad' = blur-pad (nothing cropped); 'fill' =
+  // crop the 16:9 to fill the whole 9:16 (bigger subject, but the far sides are cut).
+  const st = style || CFG.clipStyle;
+  let vf;
+  if (st === 'fill') {
+    vf = `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[v]`;
+  } else {
+    const fgW = Math.round(1080 * CFG.fgWidthPct / 2) * 2;   // inset so phone (Shorts) side-crop eats the margin, not the boat
+    vf = [
+      `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`,
+      `[0:v]scale=${fgW}:-2[fg]`,
+      `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
+    ].join(';');
+  }
   const args = ['-y', '-ss', String(CFG.trimStart), '-i', srcVideo, '-filter_complex', vf, '-map', '[v]', '-map', '0:a?',
     '-r', '30', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', outPath];
@@ -339,7 +347,7 @@ async function checkSlots() {
     const nm = (RENDER_NAME || 'Great Lakes Freighter').trim();
     log(`RENDER: "${nm}" from ${RENDER_FILE}`);
     const outPath = path.join(CFG.outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_${normName(nm).slice(0, 24) || 'vessel'}.mp4`);
-    try { await render({ srcVideo: RENDER_FILE, outPath }); }
+    try { await render({ srcVideo: RENDER_FILE, outPath, style: RENDER_STYLE }); }
     catch (e) { log('  render failed:', e.message); return process.exit(1); }
     const meta = await writeTitle({ name: nm, fact: pickFact(nm), flag: '', lengthM: null });
     fs.writeFileSync(outPath.replace(/\.mp4$/, '.json'), JSON.stringify(
