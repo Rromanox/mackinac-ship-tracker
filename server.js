@@ -256,26 +256,26 @@ function reportPtzZone(zone) {
   broadcastToClients({ type: 'ptz_zone', zone: zone, at: ptzZoneAt });
 }
 
-// ── Scheduled ferry zoom (camera only — NOT the banner/narration) ─
-// Only Shepler's "Mighty Mac" departures detour UNDER the bridge; we can't tell them apart on AIS,
-// so we aim the PTZ at the bridge preset around each pass. FERRY_TIMES are DOCK DEPARTURE times;
-// the boat reaches the span ~FERRY_TRANSIT_MIN later. Fires only when no freighter is in range
-// (real ships win). Times are LOCAL (America/Detroit), 24h — edit as the schedule changes.
-const FERRY_SEASON = { start: '05-22', end: '09-07' };          // MM-DD inclusive
-const FERRY_TIMES  = ['09:00', '09:15', '09:30', '09:45'];      // Shepler's dock DEPARTURE times
-const FERRY_TRANSIT_MIN = 7; // minutes from dock departure to passing UNDER the bridge (~7 Mackinaw City, ~8 St. Ignace)
-const FERRY_LEAD_MIN = 2;    // begin the zoom this many minutes before the estimated under-bridge time
-const FERRY_TAIL_MIN = 4;    // hold it this many minutes after
-function etNowParts() {
-  const p = {};
-  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Detroit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
-    .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
-  return { md: `${p.month}-${p.day}`, min: (+p.hour) * 60 + (+p.minute) };
-}
-function inFerryWindow() {
-  const { md, min } = etNowParts();
-  if (!(md >= FERRY_SEASON.start && md <= FERRY_SEASON.end)) return false;
-  return FERRY_TIMES.some(t => { const [h, m] = t.split(':').map(Number); const c = h * 60 + m + FERRY_TRANSIT_MIN; return min >= c - FERRY_LEAD_MIN && min <= c + FERRY_TAIL_MIN; });
+// ── Shepler's ferry camera cue (camera only — NOT the banner/narration) ─
+// Shepler's "Mighty Mac" departures detour UNDER the bridge; their direct runs head east and never
+// come near the span. So we track the fleet's REAL AIS position and cue the PTZ only when one is
+// actually AT the bridge — no blind schedule, and it never zooms for a run that doesn't go under.
+// These MMSIs stay in the banner/narration blocklist; this only moves the camera. (Fleet MMSIs
+// verified on MarineTraffic/VesselFinder 2026-07-28.)
+const SHEPLERS_FERRIES = new Set([
+  367721870, // WYANDOT
+  367721930, // CAPT. SHEPLER
+  367721890, // MISS MARGY
+  367721960, // THE HOPE
+  368469170, // FELICITY
+  368165150, // WILLIAM RICHARD
+  367721390, // SACRE BLEU (freight/ice boat)
+]);
+const FERRY_BRIDGE_MI = 0.75;   // a Shepler's ferry within this of the bridge = going under → cue the camera
+const ferryNearBridge = {};     // mmsi -> { distKm, at }  (camera-cue only; never broadcast)
+function isFerryAtBridge() {
+  const now = Date.now();
+  return Object.values(ferryNearBridge).some(v => now - v.at < 90000 && v.distKm * 0.621371 <= FERRY_BRIDGE_MI);
 }
 
 app.get('/api/ptz-cue', (req, res) => {
@@ -287,7 +287,7 @@ app.get('/api/ptz-cue', (req, res) => {
     if (!best || v.distKm < best.distKm) best = Object.assign({ mmsi: +k }, v);
   });
   if (!best) {
-    const ferry = inFerryWindow();     // no ship in range → aim at the bridge if a ferry is scheduled now
+    const ferry = isFerryAtBridge();   // no freighter in range → cue the bridge if a Shepler's ferry is passing under
     const zone = ferry ? 'bridge' : 'home';
     reportPtzZone(zone);
     return res.json({ active: ferry, zone: zone, ferry: ferry });
@@ -296,7 +296,8 @@ app.get('/api/ptz-cue', (req, res) => {
   // Asymmetric: hold the close-up out to 0.5 mi while approaching, but release at just
   // 0.15 mi once departing — so the camera doesn't linger on empty water after the pass.
   const threshold = best.closing === false ? PTZ_BRIDGE_OUT_MI : PTZ_BRIDGE_IN_MI;
-  const zone = distMi <= threshold ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
+  let zone = distMi <= threshold ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
+  if (zone !== 'bridge' && isFerryAtBridge()) zone = 'bridge';   // a Shepler's ferry is passing under the span
   reportPtzZone(zone);
   res.json({ active: true, zone: zone, mmsi: best.mmsi, name: best.name, side: best.side,
              distanceMi: distMi, speedKn: +(best.speed || 0).toFixed(1), closing: best.closing !== false });
@@ -349,6 +350,8 @@ const BLOCKED_MMSI_SERVER = new Set([
   338441735, // MISTY MAIDEN
   338095227, // TRANQUILLITY
   367532630, // FLAT OUT (pleasure craft, Class A)
+  368469170, // FELICITY (Shepler's ferry)
+  367721390, // SACRE BLEU (Shepler's freight boat)
 ]);
 const ALLOWED_MMSI_SERVER = new Set([
   311050300, // VICTORY II
@@ -1060,6 +1063,12 @@ function processAisMessage(message, source) {
   }
 
   if (message.MessageType === 'PositionReport' && message.MetaData) {
+    // Shepler's ferries stay hidden from the banner/narration, but we track their real position for
+    // the CAMERA cue so the PTZ catches their Mighty Mac pass under the bridge.
+    const _fpr = message.Message && message.Message.PositionReport;
+    if (SHEPLERS_FERRIES.has(message.MetaData.MMSI) && _fpr && typeof _fpr.Latitude === 'number' && typeof _fpr.Longitude === 'number') {
+      ferryNearBridge[message.MetaData.MMSI] = { distKm: haversineKm(_fpr.Latitude, _fpr.Longitude, BRIDGE_LAT, BRIDGE_LON), at: Date.now() };
+    }
     // Single source of truth: drop hidden vessels (ferries, small craft,
     // blocklist) here so no overlay ever sees them.
     if (shouldHideVessel(message.MetaData.MMSI, message.MetaData.ShipName, message.Message?.PositionReport?.Sog || 0)) return;
