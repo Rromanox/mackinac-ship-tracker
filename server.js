@@ -257,14 +257,15 @@ function reportPtzZone(zone) {
 }
 
 // ── Scheduled ferry zoom (camera only — NOT the banner/narration) ─
-// Shepler's ferries pass under the bridge on a fixed schedule and can't be reliably told apart on
-// AIS, so during the season we aim the PTZ at the bridge preset around each scheduled under-bridge
-// time. This only fires when no tracked (freighter) is in range — real ships always take priority.
-// Times are LOCAL (America/Detroit), 24h. Add/remove times in FERRY_TIMES as the schedule changes.
+// Only Shepler's "Mighty Mac" departures detour UNDER the bridge; we can't tell them apart on AIS,
+// so we aim the PTZ at the bridge preset around each pass. FERRY_TIMES are DOCK DEPARTURE times;
+// the boat reaches the span ~FERRY_TRANSIT_MIN later. Fires only when no freighter is in range
+// (real ships win). Times are LOCAL (America/Detroit), 24h — edit as the schedule changes.
 const FERRY_SEASON = { start: '05-22', end: '09-07' };          // MM-DD inclusive
-const FERRY_TIMES  = ['09:00', '09:15', '09:30', '09:45'];      // times ferries pass under the bridge
-const FERRY_LEAD_MIN = 3;   // begin the zoom this many minutes before each scheduled time
-const FERRY_TAIL_MIN = 4;   // hold it this many minutes after
+const FERRY_TIMES  = ['09:00', '09:15', '09:30', '09:45'];      // Shepler's dock DEPARTURE times
+const FERRY_TRANSIT_MIN = 7; // minutes from dock departure to passing UNDER the bridge (~7 Mackinaw City, ~8 St. Ignace)
+const FERRY_LEAD_MIN = 2;    // begin the zoom this many minutes before the estimated under-bridge time
+const FERRY_TAIL_MIN = 4;    // hold it this many minutes after
 function etNowParts() {
   const p = {};
   new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Detroit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
@@ -274,7 +275,7 @@ function etNowParts() {
 function inFerryWindow() {
   const { md, min } = etNowParts();
   if (!(md >= FERRY_SEASON.start && md <= FERRY_SEASON.end)) return false;
-  return FERRY_TIMES.some(t => { const [h, m] = t.split(':').map(Number); const c = h * 60 + m; return min >= c - FERRY_LEAD_MIN && min <= c + FERRY_TAIL_MIN; });
+  return FERRY_TIMES.some(t => { const [h, m] = t.split(':').map(Number); const c = h * 60 + m + FERRY_TRANSIT_MIN; return min >= c - FERRY_LEAD_MIN && min <= c + FERRY_TAIL_MIN; });
 }
 
 app.get('/api/ptz-cue', (req, res) => {
