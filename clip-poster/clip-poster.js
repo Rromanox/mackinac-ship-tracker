@@ -164,7 +164,7 @@ function wrap(text, n) {
 }
 const escFilterPath = p => p.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-async function render({ srcVideo, outPath, style }) {
+async function render({ srcVideo, outPath, style, zoom }) {
   // vertical 9:16, keeping the FULL buffer and its ORIGINAL audio (stream audio already carries the
   // live narration at the right moment). Two looks: 'pad' = blur-pad (nothing cropped); 'fill' =
   // crop the 16:9 to fill the whole 9:16 (bigger subject, but the far sides are cut).
