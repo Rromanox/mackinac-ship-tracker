@@ -275,7 +275,9 @@ const FERRY_BRIDGE_MI = 0.75;   // a Shepler's ferry within this of the bridge =
 const ferryNearBridge = {};     // mmsi -> { distKm, at }  (camera-cue only; never broadcast)
 function isFerryAtBridge() {
   const now = Date.now();
-  return Object.values(ferryNearBridge).some(v => now - v.at < 90000 && v.distKm * 0.621371 <= FERRY_BRIDGE_MI);
+  // within range, heard recently, AND actually moving (a passing ferry keeps steerage way; a
+  // docked/drifting boat sits near 0 kn and must never lock the camera).
+  return Object.values(ferryNearBridge).some(v => now - v.at < 90000 && v.distKm * 0.621371 <= FERRY_BRIDGE_MI && (v.speed || 0) >= 2);
 }
 
 app.get('/api/ptz-cue', (req, res) => {
@@ -1067,7 +1069,7 @@ function processAisMessage(message, source) {
     // the CAMERA cue so the PTZ catches their Mighty Mac pass under the bridge.
     const _fpr = message.Message && message.Message.PositionReport;
     if (SHEPLERS_FERRIES.has(message.MetaData.MMSI) && _fpr && typeof _fpr.Latitude === 'number' && typeof _fpr.Longitude === 'number') {
-      ferryNearBridge[message.MetaData.MMSI] = { distKm: haversineKm(_fpr.Latitude, _fpr.Longitude, BRIDGE_LAT, BRIDGE_LON), at: Date.now() };
+      ferryNearBridge[message.MetaData.MMSI] = { distKm: haversineKm(_fpr.Latitude, _fpr.Longitude, BRIDGE_LAT, BRIDGE_LON), speed: _fpr.Sog || 0, at: Date.now() };
     }
     // Single source of truth: drop hidden vessels (ferries, small craft,
     // blocklist) here so no overlay ever sees them.
