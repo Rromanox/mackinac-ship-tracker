@@ -32,6 +32,7 @@ const CFG = {
   fontFile:   process.env.FONT_FILE   || 'C:/Windows/Fonts/arialbd.ttf',
   clipSeconds:  +(process.env.CLIP_SECONDS || 32),
   saveDelayMs:  +(process.env.SAVE_DELAY_MS || 6000),
+  trimStart:    +(process.env.CLIP_TRIM_START || 0),   // seconds to skip from the START of each clip
   clipStartHour:+(process.env.CLIP_START_HOUR ?? 6),   // only clip between these local hours
   clipEndHour:  +(process.env.CLIP_END_HOUR ?? 24),    // 6–24 = 6:00am to 11:59pm (skip the dark overnight)
   ambientVol:   +(process.env.AMBIENT_VOLUME || 0.30),
@@ -167,7 +168,7 @@ async function render({ srcVideo, outPath }) {
     `[0:v]scale=1080:-2[fg]`,
     `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
   ].join(';');
-  const args = ['-y', '-i', srcVideo, '-filter_complex', vf, '-map', '[v]', '-map', '0:a?',
+  const args = ['-y', '-ss', String(CFG.trimStart), '-i', srcVideo, '-filter_complex', vf, '-map', '[v]', '-map', '0:a?',
     '-r', '30', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', outPath];
   await run('ffmpeg', args);
