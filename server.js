@@ -171,7 +171,7 @@ app.get('/api/missing-facts', async (req, res) => {
       .sort((a, b) => b.at - a.at)
       .forEach(v => {
         const n = (v.name || '').trim();
-        if (skip(n) || shouldHideVessel(v.mmsi, n) || seenH.has(factKey(n)) || have.has(factKey(n))) return;
+        if (skip(n) || shouldHideVessel(v.mmsi, n, v.speed) || seenH.has(factKey(n)) || have.has(factKey(n))) return;
         seenH.add(factKey(n));
         heard.push({ name: n, mmsi: v.mmsi, milesFromBridge: +v.distanceMi.toFixed(1) });
       });
@@ -320,6 +320,7 @@ const BLOCKED_MMSI_SERVER = new Set([
   // the bridge but aren't Great Lakes freight — off the banners and the fact-gap list.
   338441735, // MISTY MAIDEN
   338095227, // TRANQUILLITY
+  367532630, // FLAT OUT (pleasure craft, Class A)
 ]);
 const ALLOWED_MMSI_SERVER = new Set([
   311050300, // VICTORY II
@@ -343,11 +344,17 @@ const TOW_TYPES = new Set([31, 32, 52]);
 const CG_SMALL_BOATS = new Set(); // runtime: MMSIs of small USCG response boats (AIS name "CG#####")
 // Named cutters ("CG NEAH BAY", "USCGC MACKINAW", "BISCAYNE BAY") have letters, not digits, so they stay visible.
 function isSmallCoastGuardBoat(name) { return /^(US)?CG\s?\d{4,}$/i.test(String(name || '').trim()); }
-function shouldHideVessel(mmsi, name) {
+// No Great Lakes freighter, cruise ship, or cutter tops ~17 kn. A vessel sustaining 22+ kn is a
+// go-fast pleasure boat or fast ferry — hide it on speed alone (no static needed). Remember it
+// (>=26 kn is unambiguous) so it stays hidden even after it slows down.
+const FAST_CRAFT = new Set();
+function shouldHideVessel(mmsi, name, speed = 0) {
   if (ALLOWED_MMSI_SERVER.has(mmsi)) return false;
   if (BLOCKED_MMSI_SERVER.has(mmsi)) return true;
   if (CG_SMALL_BOATS.has(mmsi)) return true;
   if (isSmallCoastGuardBoat(name)) { CG_SMALL_BOATS.add(mmsi); return true; } // small USCG response boats (RB-M/RB-S)
+  if (FAST_CRAFT.has(mmsi)) return true;
+  if (speed >= 22) { if (speed >= 26) FAST_CRAFT.add(mmsi); return true; }    // faster than any freighter → pleasure/fast craft
   const info = staticInfo[mmsi];
   if (info) {
     const t = info.type;
@@ -1027,7 +1034,7 @@ function processAisMessage(message, source) {
   if (message.MessageType === 'PositionReport' && message.MetaData) {
     // Single source of truth: drop hidden vessels (ferries, small craft,
     // blocklist) here so no overlay ever sees them.
-    if (shouldHideVessel(message.MetaData.MMSI, message.MetaData.ShipName)) return;
+    if (shouldHideVessel(message.MetaData.MMSI, message.MetaData.ShipName, message.Message?.PositionReport?.Sog || 0)) return;
 
     const shipInfo = {
       mmsi: message.MetaData.MMSI,
