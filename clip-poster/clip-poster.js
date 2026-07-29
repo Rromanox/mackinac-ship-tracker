@@ -158,30 +158,18 @@ function wrap(text, n) {
 }
 const escFilterPath = p => p.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-async function render({ srcVideo, narration, outPath }) {
-  // vertical 9:16 with a blurred background so the vessel is never cropped — NO text overlay
+async function render({ srcVideo, outPath }) {
+  // vertical 9:16 with a blurred background so the vessel is never cropped — NO text overlay.
+  // Keep the FULL buffer (OBS Max Replay Time) and its ORIGINAL audio — the stream audio already
+  // carries the live narration at the right moment, so the timing matches what you saw live.
   const vf = [
     `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`,
     `[0:v]scale=1080:-2[fg]`,
     `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
   ].join(';');
-
-  // take the LAST clipSeconds of the buffer — the crossing is near the end (SAVE_DELAY after the pass)
-  const args = ['-y', '-sseof', `-${CFG.clipSeconds}`, '-i', srcVideo];
-  if (narration) args.push('-i', narration);
-  args.push('-filter_complex', vf, '-map', '[v]');
-
-  if (narration) {
-    // duck the live ambient under the narration
-    const af = `[0:a]volume=${CFG.ambientVol}[amb];[1:a]volume=${CFG.narrationVol}[nar];` +
-      `[amb][nar]amix=inputs=2:duration=longest:dropout_transition=3[a]`;
-    args.push('-filter_complex', af, '-map', '[a]');
-  } else {
-    args.push('-map', '0:a?');
-  }
-  args.push('-r', '30', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
-    '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart',
-    '-t', String(CFG.clipSeconds), outPath);
+  const args = ['-y', '-i', srcVideo, '-filter_complex', vf, '-map', '[v]', '-map', '0:a?',
+    '-r', '30', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
+    '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', outPath];
   await run('ffmpeg', args);
 }
 
@@ -237,23 +225,13 @@ async function handlePassing(data) {
   try { saved = await saveReplay(); } catch (e) { return log('  replay save failed:', e.message); }
   log('  saved replay:', saved);
 
-  // narration audio (already generated on approach) — optional
-  let narration = null;
-  if (narrationUrl[mmsi]) {
-    try {
-      const r = await fetch(narrationUrl[mmsi]);
-      if (r.ok) { narration = path.join(tmpDir, `narr_${mmsi}.mp3`);
-        fs.writeFileSync(narration, Buffer.from(await r.arrayBuffer())); }
-    } catch (e) { log('  narration fetch failed:', e.message); }
-  }
-
   const fact = pickFact(name);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const safe = normName(name).slice(0, 24) || 'vessel';
   const outPath = path.join(CFG.outDir, `${stamp}_${safe}.mp4`);
 
   try {
-    await render({ srcVideo: saved, narration, outPath });
+    await render({ srcVideo: saved, outPath });   // audio comes from the raw capture (already has narration)
   } catch (e) { return log('  ✗ render failed:', e.message); }
 
   const meta = await writeTitle({ name, fact, flag: info.flag, lengthM: info.lengthM });
@@ -358,7 +336,7 @@ async function checkSlots() {
     const nm = (RENDER_NAME || 'Great Lakes Freighter').trim();
     log(`RENDER: "${nm}" from ${RENDER_FILE}`);
     const outPath = path.join(CFG.outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_${normName(nm).slice(0, 24) || 'vessel'}.mp4`);
-    try { await render({ srcVideo: RENDER_FILE, narration: null, outPath }); }
+    try { await render({ srcVideo: RENDER_FILE, outPath }); }
     catch (e) { log('  render failed:', e.message); return process.exit(1); }
     const meta = await writeTitle({ name: nm, fact: pickFact(nm), flag: '', lengthM: null });
     fs.writeFileSync(outPath.replace(/\.mp4$/, '.json'), JSON.stringify(
