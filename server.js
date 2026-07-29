@@ -255,6 +255,28 @@ function reportPtzZone(zone) {
   ptzZoneAt = Date.now();
   broadcastToClients({ type: 'ptz_zone', zone: zone, at: ptzZoneAt });
 }
+
+// ── Scheduled ferry zoom (camera only — NOT the banner/narration) ─
+// Shepler's ferries pass under the bridge on a fixed schedule and can't be reliably told apart on
+// AIS, so during the season we aim the PTZ at the bridge preset around each scheduled under-bridge
+// time. This only fires when no tracked (freighter) is in range — real ships always take priority.
+// Times are LOCAL (America/Detroit), 24h. Add/remove times in FERRY_TIMES as the schedule changes.
+const FERRY_SEASON = { start: '05-22', end: '09-07' };          // MM-DD inclusive
+const FERRY_TIMES  = ['09:00', '09:15', '09:30', '09:45'];      // times ferries pass under the bridge
+const FERRY_LEAD_MIN = 3;   // begin the zoom this many minutes before each scheduled time
+const FERRY_TAIL_MIN = 4;   // hold it this many minutes after
+function etNowParts() {
+  const p = {};
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Detroit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+    .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+  return { md: `${p.month}-${p.day}`, min: (+p.hour) * 60 + (+p.minute) };
+}
+function inFerryWindow() {
+  const { md, min } = etNowParts();
+  if (!(md >= FERRY_SEASON.start && md <= FERRY_SEASON.end)) return false;
+  return FERRY_TIMES.some(t => { const [h, m] = t.split(':').map(Number); const c = h * 60 + m; return min >= c - FERRY_LEAD_MIN && min <= c + FERRY_TAIL_MIN; });
+}
+
 app.get('/api/ptz-cue', (req, res) => {
   const now = Date.now();
   let best = null;
@@ -263,7 +285,12 @@ app.get('/api/ptz-cue', (req, res) => {
     if (now - v.at > PTZ_FRESH_MS) { delete nearBridge[k]; return; }
     if (!best || v.distKm < best.distKm) best = Object.assign({ mmsi: +k }, v);
   });
-  if (!best) { reportPtzZone('home'); return res.json({ active: false, zone: 'home' }); }
+  if (!best) {
+    const ferry = inFerryWindow();     // no ship in range → aim at the bridge if a ferry is scheduled now
+    const zone = ferry ? 'bridge' : 'home';
+    reportPtzZone(zone);
+    return res.json({ active: ferry, zone: zone, ferry: ferry });
+  }
   const distMi = +(best.distKm * 0.621371).toFixed(2);
   // Asymmetric: hold the close-up out to 0.5 mi while approaching, but release at just
   // 0.15 mi once departing — so the camera doesn't linger on empty water after the pass.
