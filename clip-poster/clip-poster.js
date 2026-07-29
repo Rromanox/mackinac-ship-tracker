@@ -42,6 +42,7 @@ const CFG = {
   ambientVol:   +(process.env.AMBIENT_VOLUME || 0.30),
   narrationVol: +(process.env.NARRATION_VOLUME || 1.40),
   ytEnabled:  process.env.YT_ENABLED === '1',
+  postEach:   process.env.POST_EACH === '1',   // 1 = upload every clip immediately (private) | 0 = 2/day best-of slots
   ytPrivacy:  process.env.YT_PRIVACY || 'private',
   ytCategory: process.env.YT_CATEGORY || '19',
   ytPlaylist: process.env.YT_PLAYLIST || '',
@@ -267,6 +268,15 @@ async function handlePassing(data) {
   fs.writeFileSync(outPath.replace(/\.mp4$/, '.json'), JSON.stringify(metaOut, null, 2));
   log(`  ✅ clip ready: ${outPath}`);
   log(`     title: ${meta.title}`);
+
+  if (CFG.postEach && youtube) {   // upload every clip immediately (private) — you publish the good ones
+    try {
+      const id = await uploadClip(outPath, metaOut);
+      Object.assign(metaOut, { posted: true, youtubeId: id, postedAt: new Date().toISOString() });
+      fs.writeFileSync(outPath.replace(/\.mp4$/, '.json'), JSON.stringify(metaOut, null, 2));
+      log(`  ✅ uploaded (${CFG.ytPrivacy}): https://youtu.be/${id}`);
+    } catch (e) { log('  ✗ upload failed:', e.message); }
+  }
 }
 
 // ── YouTube posting + 2/day scheduler (Phase 2) ──────────────────
@@ -372,14 +382,18 @@ async function checkSlots() {
   }
   await loadFacts();
   await connectObs();
-  connectServer();
   if (CFG.ytEnabled && initYouTube()) {
-    log(`YouTube posting ON — slots ${CFG.morningHM} & ${CFG.eveningHM} local (${CFG.ytPrivacy}); checking hourly`);
-    checkSlots();                          // check once at startup, then every hour
-    setInterval(checkSlots, 60 * 60000);
+    if (CFG.postEach) {
+      log(`YouTube posting ON — uploading EVERY clip as ${CFG.ytPrivacy} (you publish the good ones)`);
+    } else {
+      log(`YouTube posting ON — slots ${CFG.morningHM} & ${CFG.eveningHM} local (${CFG.ytPrivacy}); checking hourly`);
+      checkSlots();                        // check once at startup, then every hour
+      setInterval(checkSlots, 60 * 60000);
+    }
   } else if (!CFG.ytEnabled) {
     log('YouTube posting OFF (set YT_ENABLED=1 in .env once authorized)');
   }
+  connectServer();                         // start listening AFTER YouTube is ready
   if (TEST_MODE) {
     log('TEST MODE: rendering the current replay buffer now…');
     setTimeout(() => handlePassing({ mmsi: 0, name: 'Test Vessel' }).catch(e => log(e.message)), 2500);
