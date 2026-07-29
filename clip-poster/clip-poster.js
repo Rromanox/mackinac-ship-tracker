@@ -36,6 +36,7 @@ const CFG = {
   fgWidthPct:   +(process.env.FG_WIDTH_PCT || 0.92),   // boat-band width vs full frame; <1 leaves side margin so phones (Shorts) don't crop the boat
   clipStyle:    (process.env.CLIP_STYLE || 'pad'),     // 'pad' = blur-pad (nothing cropped) | 'zoom' = zoomed-in on a blurred bg
   clipZoom:     +(process.env.CLIP_ZOOM || 1.5),       // (zoom style) 1 = full width, higher = bigger subject + more side crop; blur fills the rest
+  clipPanX:     +(process.env.CLIP_PAN_X || 0),         // (zoom style) horizontal shift in px: + moves the picture RIGHT, - moves it LEFT
   clipStartHour:+(process.env.CLIP_START_HOUR ?? 6),   // only clip between these local hours
   clipEndHour:  +(process.env.CLIP_END_HOUR ?? 24),    // 6–24 = 6:00am to 11:59pm (skip the dark overnight)
   ambientVol:   +(process.env.AMBIENT_VOLUME || 0.30),
@@ -55,6 +56,7 @@ const RENDER_FILE = argVal('--render');   // manually render a raw replay file i
 const RENDER_NAME = argVal('--name');
 const RENDER_STYLE = argVal('--style');   // 'pad' | 'zoom' — override the clip style for this manual render
 const RENDER_ZOOM  = argVal('--zoom');    // override CLIP_ZOOM for this manual render (e.g. --zoom 1.3)
+const RENDER_PAN   = argVal('--panx');    // override CLIP_PAN_X for this manual render (e.g. --panx 150)
 
 const tmpDir = path.join(CFG.outDir, 'tmp');
 fs.mkdirSync(tmpDir, { recursive: true });
@@ -164,7 +166,7 @@ function wrap(text, n) {
 }
 const escFilterPath = p => p.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-async function render({ srcVideo, outPath, style, zoom }) {
+async function render({ srcVideo, outPath, style, zoom, panX }) {
   // vertical 9:16, keeping the FULL buffer and its ORIGINAL audio (stream audio already carries the
   // live narration at the right moment). Two looks: 'pad' = blur-pad (nothing cropped); 'fill' =
   // crop the 16:9 to fill the whole 9:16 (bigger subject, but the far sides are cut).
@@ -175,9 +177,11 @@ async function render({ srcVideo, outPath, style, zoom }) {
     // the frame. Higher zoom = bigger subject + more side crop; lower = more of the scene + more blur.
     const zm = Math.max(1, +(zoom ?? CFG.clipZoom) || 1);
     const fw = Math.round(1080 * zm / 2) * 2;
+    const pan = +(panX ?? CFG.clipPanX) || 0;
+    const cx = Math.max(0, Math.min(fw - 1080, Math.round((fw - 1080) / 2 - pan)));   // + pan = picture moves right
     vf = [
       `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`,
-      `[0:v]scale=${fw}:-2,crop=1080:ih[fg]`,
+      `[0:v]scale=${fw}:-2,crop=1080:ih:${cx}:0[fg]`,
       `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
     ].join(';');
   } else {
@@ -357,7 +361,7 @@ async function checkSlots() {
     const nm = (RENDER_NAME || 'Great Lakes Freighter').trim();
     log(`RENDER: "${nm}" from ${RENDER_FILE}`);
     const outPath = path.join(CFG.outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_${normName(nm).slice(0, 24) || 'vessel'}.mp4`);
-    try { await render({ srcVideo: RENDER_FILE, outPath, style: RENDER_STYLE, zoom: RENDER_ZOOM }); }
+    try { await render({ srcVideo: RENDER_FILE, outPath, style: RENDER_STYLE, zoom: RENDER_ZOOM, panX: RENDER_PAN }); }
     catch (e) { log('  render failed:', e.message); return process.exit(1); }
     const meta = await writeTitle({ name: nm, fact: pickFact(nm), flag: '', lengthM: null });
     fs.writeFileSync(outPath.replace(/\.mp4$/, '.json'), JSON.stringify(
