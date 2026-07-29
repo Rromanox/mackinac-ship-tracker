@@ -331,9 +331,9 @@ async function postSlot(slot, windowHours) {
 const slotFile = path.join(CFG.outDir, '.slots.json');
 const readSlots = () => { try { return JSON.parse(fs.readFileSync(slotFile, 'utf8')); } catch { return {}; } };
 const writeSlots = s => { try { fs.writeFileSync(slotFile, JSON.stringify(s)); } catch {} };
-// A slot stays ARMED from its time until SLOT_ARM_MIN later. If the pool was empty at slot time,
-// it keeps trying each minute and posts the first good clip that lands — so a 9am boat still gets
-// a morning post instead of waiting for evening. Marked done only once it actually posts.
+// A slot stays ARMED from its time until SLOT_ARM_MIN later (6h). We check hourly: if the pool was
+// empty at slot time, it posts the first good clip that lands on a later hourly check — so a 9am
+// boat still gets a morning post instead of waiting for evening. Marked done only once it posts.
 const SLOT_ARM_MIN = 6 * 60;
 let slotBusy = false;
 async function checkSlots() {
@@ -362,8 +362,9 @@ async function checkSlots() {
   await connectObs();
   connectServer();
   if (CFG.ytEnabled && initYouTube()) {
-    log(`YouTube posting ON — slots ${CFG.morningHM} & ${CFG.eveningHM} local (${CFG.ytPrivacy})`);
-    setInterval(checkSlots, 60000);
+    log(`YouTube posting ON — slots ${CFG.morningHM} & ${CFG.eveningHM} local (${CFG.ytPrivacy}); checking hourly`);
+    checkSlots();                          // check once at startup, then every hour
+    setInterval(checkSlots, 60 * 60000);
   } else if (!CFG.ytEnabled) {
     log('YouTube posting OFF (set YT_ENABLED=1 in .env once authorized)');
   }
