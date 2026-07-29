@@ -46,6 +46,9 @@ const CFG = {
 };
 const TEST_MODE = process.argv.includes('--test');
 const POST_NOW  = process.argv.includes('--post-now');
+function argVal(flag) { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : null; }
+const RENDER_FILE = argVal('--render');   // manually render a raw replay file into the pool
+const RENDER_NAME = argVal('--name');
 
 const tmpDir = path.join(CFG.outDir, 'tmp');
 fs.mkdirSync(tmpDir, { recursive: true });
@@ -163,7 +166,8 @@ async function render({ srcVideo, narration, outPath }) {
     `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
   ].join(';');
 
-  const args = ['-y', '-t', String(CFG.clipSeconds), '-i', srcVideo];
+  // take the LAST clipSeconds of the buffer — the crossing is near the end (SAVE_DELAY after the pass)
+  const args = ['-y', '-sseof', `-${CFG.clipSeconds}`, '-i', srcVideo];
   if (narration) args.push('-i', narration);
   args.push('-filter_complex', vf, '-map', '[v]');
 
@@ -346,6 +350,21 @@ async function checkSlots() {
   if (POST_NOW) {   // one-shot: upload the best recent clip immediately, then exit
     if (initYouTube()) { log('POST-NOW: uploading the best clip from the last 48h…'); if (!(await postSlot('manual', 48))) log('POST-NOW: no clip in the last 48h to post'); }
     else log('POST-NOW: no token.json — run "node youtube-auth.js" first');
+    return process.exit(0);
+  }
+  if (RENDER_FILE) {   // one-shot: render a raw replay file into the pool, then exit
+    if (!fs.existsSync(RENDER_FILE)) { log('--render: file not found:', RENDER_FILE); return process.exit(1); }
+    await loadFacts();
+    const nm = (RENDER_NAME || 'Great Lakes Freighter').trim();
+    log(`RENDER: "${nm}" from ${RENDER_FILE}`);
+    const outPath = path.join(CFG.outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_${normName(nm).slice(0, 24) || 'vessel'}.mp4`);
+    try { await render({ srcVideo: RENDER_FILE, narration: null, outPath }); }
+    catch (e) { log('  render failed:', e.message); return process.exit(1); }
+    const meta = await writeTitle({ name: nm, fact: pickFact(nm), flag: '', lengthM: null });
+    fs.writeFileSync(outPath.replace(/\.mp4$/, '.json'), JSON.stringify(
+      { mmsi: 0, name: nm, score: 50, ...meta, video: path.basename(outPath), createdAt: new Date().toISOString(), posted: false }, null, 2));
+    log(`  ✅ rendered: ${outPath}`);
+    log('  now upload it:  node clip-poster.js --post-now');
     return process.exit(0);
   }
   await loadFacts();
