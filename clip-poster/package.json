@@ -1,0 +1,17 @@
+{
+  "name": "mackinac-clip-poster",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Local pipeline: turn Mackinac bridge passings into vertical YouTube Shorts. Runs on the OBS machine (Phase 1: capture + render).",
+  "scripts": {
+    "start": "node clip-poster.js",
+    "test-clip": "node clip-poster.js --test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "dotenv": "^16.4.5",
+    "obs-websocket-js": "^5.0.6",
+    "ws": "^8.18.0"
+  }
+}
