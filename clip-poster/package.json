@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
+    "@google-cloud/local-auth": "^3.0.1",
     "dotenv": "^16.4.5",
+    "googleapis": "^144.0.0",
     "obs-websocket-js": "^5.0.6",
     "ws": "^8.18.0"
   }

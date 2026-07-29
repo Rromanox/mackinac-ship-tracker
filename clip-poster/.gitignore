@@ -3,3 +3,5 @@ node_modules/
 clips/
 *.mp4
 *.mp3
+credentials.json
+token.json

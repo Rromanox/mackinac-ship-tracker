@@ -20,6 +20,7 @@ import { spawn } from 'node:child_process';
 import WebSocket from 'ws';
 import OBSWebSocket from 'obs-websocket-js';
 import Anthropic from '@anthropic-ai/sdk';
+import { google } from 'googleapis';
 
 const CFG = {
   serverWs:   process.env.SERVER_WS   || 'wss://mackinac-ship-tracker.onrender.com',
@@ -33,7 +34,12 @@ const CFG = {
   saveDelayMs:  +(process.env.SAVE_DELAY_MS || 6000),
   minBright:    +(process.env.QUALITY_MIN_BRIGHTNESS || 45),
   ambientVol:   +(process.env.AMBIENT_VOLUME || 0.30),
-  narrationVol: +(process.env.NARRATION_VOLUME || 1.40)
+  narrationVol: +(process.env.NARRATION_VOLUME || 1.40),
+  ytEnabled:  process.env.YT_ENABLED === '1',
+  ytPrivacy:  process.env.YT_PRIVACY || 'private',
+  ytCategory: process.env.YT_CATEGORY || '19',
+  morningHM:  process.env.MORNING_SLOT || '08:30',
+  eveningHM:  process.env.EVENING_SLOT || '18:30'
 };
 const TEST_MODE = process.argv.includes('--test');
 
@@ -267,6 +273,65 @@ async function handlePassing(data) {
   log(`     title: ${meta.title}`);
 }
 
+// ── YouTube posting + 2/day scheduler (Phase 2) ──────────────────
+let youtube = null;
+function initYouTube() {
+  const tokenPath = path.join(process.cwd(), 'token.json');
+  if (!fs.existsSync(tokenPath)) { log('YouTube: no token.json — run "node youtube-auth.js" to enable posting'); return false; }
+  try {
+    youtube = google.youtube({ version: 'v3', auth: google.auth.fromJSON(JSON.parse(fs.readFileSync(tokenPath, 'utf8'))) });
+    return true;
+  } catch (e) { log('YouTube auth load failed:', e.message); return false; }
+}
+async function uploadClip(videoPath, meta) {
+  const res = await youtube.videos.insert({
+    part: ['snippet', 'status'],
+    requestBody: {
+      snippet: { title: (meta.title || meta.name).slice(0, 100),
+        description: (meta.description || '').slice(0, 4900), categoryId: CFG.ytCategory,
+        tags: ['Shorts', 'GreatLakes', 'MackinacBridge', 'ships', 'freighter'] },
+      status: { privacyStatus: CFG.ytPrivacy, selfDeclaredMadeForKids: false }
+    },
+    media: { body: fs.createReadStream(videoPath) }
+  });
+  return res.data.id;
+}
+function bestUnposted(sinceMs) {
+  let best = null;
+  for (const f of fs.readdirSync(CFG.outDir)) {
+    if (!f.endsWith('.json') || f.startsWith('.')) continue;
+    let m; try { m = JSON.parse(fs.readFileSync(path.join(CFG.outDir, f), 'utf8')); } catch { continue; }
+    if (m.posted || !m.video) continue;
+    if (new Date(m.createdAt).getTime() < sinceMs) continue;
+    if (!fs.existsSync(path.join(CFG.outDir, m.video))) continue;
+    if (!best || (m.score || 0) > (best.m.score || 0)) best = { file: path.join(CFG.outDir, f), m };
+  }
+  return best;
+}
+async function postSlot(slot, windowHours) {
+  const pick = bestUnposted(Date.now() - windowHours * 3600e3);
+  if (!pick) return log(`🕒 ${slot} slot: no clip in the last ${windowHours}h — skipping`);
+  log(`🕒 ${slot} slot: posting "${pick.m.name}" (score ${pick.m.score})`);
+  try {
+    const id = await uploadClip(path.join(CFG.outDir, pick.m.video), pick.m);
+    Object.assign(pick.m, { posted: true, postedSlot: slot, youtubeId: id, postedAt: new Date().toISOString() });
+    fs.writeFileSync(pick.file, JSON.stringify(pick.m, null, 2));
+    log(`  ✅ uploaded (${CFG.ytPrivacy}): https://youtu.be/${id}`);
+    if (CFG.ytPrivacy !== 'public') log('     → open YouTube Studio and hit Publish when ready.');
+  } catch (e) { log(`  ✗ ${slot} upload failed:`, e.message); }
+}
+const slotFile = path.join(CFG.outDir, '.slots.json');
+const readSlots = () => { try { return JSON.parse(fs.readFileSync(slotFile, 'utf8')); } catch { return {}; } };
+const writeSlots = s => { try { fs.writeFileSync(slotFile, JSON.stringify(s)); } catch {} };
+function checkSlots() {
+  const now = new Date(), today = now.toISOString().slice(0, 10);
+  let st = readSlots(); if (st.date !== today) { st = { date: today }; writeSlots(st); }
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const due = t => { const [h, m] = t.split(':').map(Number); return nowMin >= h * 60 + m && nowMin < h * 60 + m + 6; };
+  if (!st.morning && due(CFG.morningHM)) { st.morning = true; writeSlots(st); postSlot('morning', 14); }
+  if (!st.evening && due(CFG.eveningHM)) { st.evening = true; writeSlots(st); postSlot('evening', 10); }
+}
+
 // ── boot ─────────────────────────────────────────────────────────
 (async () => {
   fs.mkdirSync(CFG.outDir, { recursive: true });
@@ -274,6 +339,12 @@ async function handlePassing(data) {
   await loadFacts();
   await connectObs();
   connectServer();
+  if (CFG.ytEnabled && initYouTube()) {
+    log(`YouTube posting ON — slots ${CFG.morningHM} & ${CFG.eveningHM} local (${CFG.ytPrivacy})`);
+    setInterval(checkSlots, 60000);
+  } else if (!CFG.ytEnabled) {
+    log('YouTube posting OFF (set YT_ENABLED=1 in .env once authorized)');
+  }
   if (TEST_MODE) {
     log('TEST MODE: rendering the current replay buffer now…');
     setTimeout(() => handlePassing({ mmsi: 0, name: 'Test Vessel' }).catch(e => log(e.message)), 2500);
