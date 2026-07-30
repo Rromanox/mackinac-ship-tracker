@@ -643,7 +643,7 @@ async function narrationScriptLLM(v) {
     'IMPORTANT — vary yourself every single time: do NOT follow a fixed formula and do NOT reuse the same opening. Change the order, the rhythm, and which detail you lead with from one ship to the next. ' +
     'You are given several details below. Choose only the 2 to 4 most interesting for THIS ship and weave them in naturally — never list them all, and never sound like a data readout. ' +
     'Details you may draw on: which lake she is heading toward (from her HEADING — this is reliable); her ETA and AIS-listed destination ONLY if it is a real place that does NOT contradict her heading (the destination field is crew-typed and frequently stale or the last port); whether she rides low and loaded or high and light (from her draft); her flag, especially if she is a foreign ocean visitor; whether she is a straits regular or a first sighting; her size, and the fun fact. ' +
-    'When you share the fun fact, sometimes build a beat of intrigue first to hook viewers — natural teasers like "now, get this...", "here is something you might not know...", or "you will not believe this..." — but VARY them, keep them genuine and family-friendly, and use one only when the fact is genuinely surprising (never force one onto every ship). ' +
+    'HOW YOU INTRODUCE THE INTERESTING DETAIL — variety is essential; never settle into a catchphrase. Rotate freely among four modes and invent fresh wording every single time: (a) dive in DIRECTLY with the detail and no lead-in at all; (b) a light curiosity opener; (c) a warm conversational aside; (d) a small dramatic build. Fit the opener to the KIND of detail — a visual detail invites something like "take a look at...", a historical note "there is a story behind...", a surprising fact "you might be surprised that...", a technical feature "one notable thing about her...". Those examples are the SPIRIT only, never to be quoted verbatim. BANNED openers: "now watch this", "now hear this", "listen", "listen up", and bare filler "now". Keep every lead warm and natural — a friend pointing something out, never a stock catchphrase. ' +
     'This voice is expressive: weave in two or three audio tags in square brackets to shape the delivery — for example [warmly], [excited], [chuckles], [curious], [with a smile] — placed where the emotion fits and VARIED from one ship to the next. Tags are performance cues, never words to be spoken aloud. ' +
     'Ignore anything blank, unclear, or a code. Use only the dates and times provided — never invent them (it may be evening or night, not morning). ' +
     'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text (including the bracketed tags). ' +
@@ -653,6 +653,12 @@ async function narrationScriptLLM(v) {
     : v.direction === 'westbound'
     ? 'WESTBOUND — moving west toward Lake Michigan, LEAVING Lake Huron and the DeTour / Drummond Island / Soo area behind her to the east'
     : 'transiting the straits (direction unknown)';
+  // ~half the time force a direct open (no lead-in), and feed back recent openings so the model
+  // never echoes itself — this enforces the "variety / no-repeat" rules the LLM can't self-police.
+  const startDirect = Math.random() < 0.5;
+  const recentOpenings = recentNarrationsMemory.slice(0, 10)
+    .map(r => (r.text || '').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].slice(0, 90))
+    .filter(Boolean).slice(0, 8);
   const user =
     'Vessel: ' + v.name + '\n' +
     'Fun fact: ' + (v.fact || '(none on file)') + '\n' +
@@ -665,6 +671,8 @@ async function narrationScriptLLM(v) {
     'Straits history: ' + (v.priorPasses
         ? (v.priorPasses + ' crossing(s) logged in the past month' + (v.daysSinceLast != null ? ', the last one ' + v.daysSinceLast + ' day(s) ago' : ''))
         : 'none on record — likely her first time on our cameras') + '\n' +
+    (startDirect ? 'THIS narration: open by diving STRAIGHT into the most interesting detail — NO lead-in phrase at all.\n' : '') +
+    (recentOpenings.length ? 'Openings you have ALREADY used recently — make THIS one clearly different in wording AND structure; do not echo these:\n' + recentOpenings.map(o => '  · ' + o).join('\n') + '\n' : '') +
     'Today is ' + (localDateStr() || 'unknown') + '\n' +
     'Time of day: ' + localTimeOfDay();
   const res = await fetch('https://api.anthropic.com/v1/messages', {
