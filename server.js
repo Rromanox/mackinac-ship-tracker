@@ -642,18 +642,23 @@ async function narrationScriptLLM(v) {
     'Introduce THIS vessel in 2 to 3 lively, natural sentences (about 45 to 65 words, ~20 seconds spoken), like you are sharing the moment with friends gathered on the shore. ' +
     'IMPORTANT — vary yourself every single time: do NOT follow a fixed formula and do NOT reuse the same opening. Change the order, the rhythm, and which detail you lead with from one ship to the next. ' +
     'You are given several details below. Choose only the 2 to 4 most interesting for THIS ship and weave them in naturally — never list them all, and never sound like a data readout. ' +
-    'Details you may draw on: where she is bound and her ETA (only if a real place/time); whether she rides low and loaded or high and light (from her draft); her flag, especially if she is a foreign ocean visitor; whether she is a straits regular or a first sighting; her size, and the fun fact. ' +
+    'Details you may draw on: which lake she is heading toward (from her HEADING — this is reliable); her ETA and AIS-listed destination ONLY if it is a real place that does NOT contradict her heading (the destination field is crew-typed and frequently stale or the last port); whether she rides low and loaded or high and light (from her draft); her flag, especially if she is a foreign ocean visitor; whether she is a straits regular or a first sighting; her size, and the fun fact. ' +
     'When you share the fun fact, sometimes build a beat of intrigue first to hook viewers — natural teasers like "now, get this...", "here is something you might not know...", or "you will not believe this..." — but VARY them, keep them genuine and family-friendly, and use one only when the fact is genuinely surprising (never force one onto every ship). ' +
     'This voice is expressive: weave in two or three audio tags in square brackets to shape the delivery — for example [warmly], [excited], [chuckles], [curious], [with a smile] — placed where the emotion fits and VARIED from one ship to the next. Tags are performance cues, never words to be spoken aloud. ' +
     'Ignore anything blank, unclear, or a code. Use only the dates and times provided — never invent them (it may be evening or night, not morning). ' +
     'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text (including the bracketed tags). ' +
     'Style nudge for this one: ' + NARRATION_STYLES[Math.floor(Math.random() * NARRATION_STYLES.length)];
+  const headingPhrase = v.direction === 'eastbound'
+    ? 'EASTBOUND — moving east toward Lake Huron and the DeTour Passage / Drummond Island / Soo Locks area, LEAVING Lake Michigan behind her to the west'
+    : v.direction === 'westbound'
+    ? 'WESTBOUND — moving west toward Lake Michigan, LEAVING Lake Huron and the DeTour / Drummond Island / Soo area behind her to the east'
+    : 'transiting the straits (direction unknown)';
   const user =
     'Vessel: ' + v.name + '\n' +
     'Fun fact: ' + (v.fact || '(none on file)') + '\n' +
     'Length: ' + (v.lengthFt ? v.lengthFt + ' feet' : 'unknown') + '\n' +
-    'Heading: ' + (v.direction || 'unknown') + ' at ' + (v.speed || '?') + ' knots\n' +
-    'Bound for: ' + (v.destination || '(unknown)') + '\n' +
+    'Heading (RELIABLE — this is the truth): ' + headingPhrase + ' at ' + (v.speed || '?') + ' knots\n' +
+    'AIS destination field: ' + (v.destination || '(none)') + ' — crew-typed and OFTEN STALE or the LAST port, not necessarily where she is going. Trust the HEADING. Never say she is bound for or heading toward this place if it sits opposite her heading (e.g. a WESTBOUND ship is NOT heading to an eastern port like Drummond Island or the Soo). If unsure, omit it.\n' +
     'ETA: ' + (v.eta || '(unknown)') + '\n' +
     'Draft: ' + (v.draughtFt ? v.draughtFt + ' feet (higher = more heavily loaded)' : 'unknown') + '\n' +
     'Flag: ' + (v.flag || '(unknown)') + '\n' +
