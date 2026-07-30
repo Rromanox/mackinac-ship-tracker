@@ -737,6 +737,7 @@ app.get('/api/narrations', async (req, res) => {
       if (r.at >= startToday) add(totals.today, c, chars);
       return {
         mmsi: r.mmsi, name: r.name, direction: r.direction || null, at: r.at, chars: chars,
+        text: r.text || null,
         model: r.model || '?', hadFact: !!r.hadFact,
         usd: +c.total.toFixed(4), elevenUsd: +c.eleven.toFixed(4), llmUsd: +c.llm.toFixed(5)
       };
@@ -783,12 +784,14 @@ async function narrateVessel(mmsi, name, direction, speed) {
       else text = narrationTemplate(v);
     }
     catch (e) { console.error('🎙️ Script gen failed (' + name + '), using template:', e.message); text = narrationTemplate(v); }
+    const scriptText = text;                  // readable script for the /narrations log (before pronunciation tweaks)
     text = applyPronunciation(text);
     const buffer = await synthesizeVoice(text);
     narrationCache[mmsi] = { buffer: buffer, at: Date.now() };
     console.log('🎙️ Narration ready: ' + name + '  "' + text.slice(0, 90) + '"');
     recordNarration({
       mmsi: mmsi, name: name, direction: direction || null, at: Date.now(),
+      text: scriptText,
       chars: text.length, model: usedLLM ? 'llm' : 'template', hadFact: !!fact,
       inTok: llmUsage ? (llmUsage.input_tokens || 0) : 0,
       outTok: llmUsage ? (llmUsage.output_tokens || 0) : 0

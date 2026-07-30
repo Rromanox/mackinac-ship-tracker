@@ -36,6 +36,8 @@
   .badge { font-size:.68rem; padding:1px 6px; border-radius:5px; background:rgba(255,255,255,.09); color:var(--muted); margin-left:6px; }
   .badge.llm { background:rgba(78,163,255,.16); color:var(--accent); }
   .empty { color:var(--muted); font-style:italic; padding:18px 14px; }
+  .script { color:#cdd6e0; font-size:.9rem; line-height:1.5; padding:2px 12px 12px; max-width:900px; }
+  tr.scriptrow, tr.scriptrow:nth-child(odd) { background:transparent; }
   .note { color:var(--muted); font-size:.78rem; margin-top:14px; max-width:760px; line-height:1.5; }
 </style>
 </head>
@@ -85,7 +87,8 @@ function render(d){
              '<span class="badge'+(r.model==='llm'?' llm':'')+'">'+esc(r.model)+'</span></td>'+
           '<td>'+dirArrow(r.direction)+'</td>'+
           '<td class="num">'+(r.chars||0).toLocaleString()+'</td>'+
-          '<td class="num">'+money(r.usd)+'</td></tr>';
+          '<td class="num">'+money(r.usd)+'</td></tr>'+
+          (r.text ? '<tr class="scriptrow"><td colspan="5" class="script">'+esc(r.text)+'</td></tr>' : '');
       }).join('')
     : '<tr><td colspan="5" class="empty">No narrations yet — they log here the moment a vessel is voiced.</td></tr>';
   if (d.rate) document.getElementById('rateNote').textContent =
