@@ -531,7 +531,21 @@ let NARR_FACTS = {};
 })();
 
 // Say-it-right map — applied to the SPOKEN text only (the banner keeps correct spelling)
-const PRONUNCIATION = [ [/Mackinac/gi, 'Mackinaw'] ];
+// Respell names ElevenLabs tends to mangle. Add more as you hear them.
+const PRONUNCIATION = [
+  [/Mackinac/gi, 'Mackinaw'],
+  [/Sault Ste\.?\s*Marie/gi, 'Soo Saint Marie'],
+  [/\bSault\b/gi, 'Soo'],
+  [/Marquette/gi, 'Mar-KETT'],
+  [/Presque Isle/gi, 'Presk Isle'],
+  [/Escanaba/gi, 'Ess-kuh-NAW-buh'],
+  [/Cheboygan/gi, 'Shuh-BOY-gun'],
+  [/Charlevoix/gi, 'SHAR-luh-voy'],
+  [/\bDeTour\b/gi, 'Dee-Tour'],
+  [/Tregurtha/gi, 'Truh-GUR-thuh'],
+  [/\bBlough\b/gi, 'Bluff'],
+  [/Mesabi/gi, 'Muh-SAH-bee'],
+];
 function applyPronunciation(t) { PRONUNCIATION.forEach(p => { t = t.replace(p[0], p[1]); }); return t; }
 
 // Current time of day in the Straits (US Eastern) so the narrator never guesses wrong
@@ -643,7 +657,10 @@ async function narrationScriptLLM(v) {
     'IMPORTANT — vary yourself every single time: do NOT follow a fixed formula and do NOT reuse the same opening. Change the order, the rhythm, and which detail you lead with from one ship to the next. ' +
     'You are given several details below. Choose only the 2 to 4 most interesting for THIS ship and weave them in naturally — never list them all, and never sound like a data readout. ' +
     'Details you may draw on: which lake she is heading toward (from her HEADING — this is reliable); her ETA and AIS-listed destination ONLY if it is a real place that does NOT contradict her heading (the destination field is crew-typed and frequently stale or the last port); whether she rides low and loaded or high and light (from her draft); her flag, especially if she is a foreign ocean visitor; whether she is a straits regular or a first sighting; her size, and the fun fact. ' +
-    'HOW YOU INTRODUCE THE INTERESTING DETAIL — variety is essential; never settle into a catchphrase. Rotate freely among four modes and invent fresh wording every single time: (a) dive in DIRECTLY with the detail and no lead-in at all; (b) a light curiosity opener; (c) a warm conversational aside; (d) a small dramatic build. Fit the opener to the KIND of detail — a visual detail invites something like "take a look at...", a historical note "there is a story behind...", a surprising fact "you might be surprised that...", a technical feature "one notable thing about her...". Those examples are the SPIRIT only, never to be quoted verbatim. BANNED openers: "now watch this", "now hear this", "listen", "listen up", and bare filler "now". Keep every lead warm and natural — a friend pointing something out, never a stock catchphrase. ' +
+    'HOW YOU INTRODUCE THE INTERESTING DETAIL — variety is essential; never settle into a catchphrase. Rotate freely among four modes and invent fresh wording every single time: (a) dive in DIRECTLY with the detail and no lead-in at all; (b) a light curiosity opener; (c) a warm conversational aside; (d) a small dramatic build. Fit the opener to the KIND of detail — a visual detail invites something like "take a look at...", a historical note "there is a story behind...", a surprising fact "you might be surprised that...", a technical feature "one notable thing about her...". Those examples are the SPIRIT only, never to be quoted verbatim. Go EASY on "now watch this", "now hear this", "listen", and bare filler "now" — they had been overused, so use them only once in a rare while when they genuinely fit, never on every ship. Keep every lead warm and natural — a friend pointing something out, never a stock catchphrase. ' +
+    'EXPLAIN THE JARGON: when you use a nautical term — a self-unloader, a saltie, a laker, a thousand-footer, her draft — add a quick natural half-clause so a first-time viewer follows along (for example, "a self-unloader, so she carries her own boom to offload without any dock crane"). A light touch, never a lecture. ' +
+    'MATCH YOUR ENERGY TO THE SHIP: not every vessel is magnificent. A routine laker you have seen many times gets a warm, familiar welcome-back; a rare foreign saltie, a first sighting, or an unusually large or storied ship earns real excitement — save the big reactions for the big moments so they land. ' +
+    'GROUND IT IN THE LIVE MOMENT: you are on the shore right now — let the time of day, the season, or the light on the water color a phrase here and there so it feels present (never invent weather or anything you were not given). ' +
     'This voice is expressive: weave in two or three audio tags in square brackets to shape the delivery — for example [warmly], [excited], [chuckles], [curious], [with a smile] — placed where the emotion fits and VARIED from one ship to the next. Tags are performance cues, never words to be spoken aloud. ' +
     'Ignore anything blank, unclear, or a code. Use only the dates and times provided — never invent them (it may be evening or night, not morning). ' +
     'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text (including the bracketed tags). ' +
