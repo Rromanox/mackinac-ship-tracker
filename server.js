@@ -660,7 +660,7 @@ async function narrationScriptLLM(v) {
     'HOW YOU INTRODUCE THE INTERESTING DETAIL — variety is essential; never settle into a catchphrase. Rotate freely among four modes and invent fresh wording every single time: (a) dive in DIRECTLY with the detail and no lead-in at all; (b) a light curiosity opener; (c) a warm conversational aside; (d) a small dramatic build. Fit the opener to the KIND of detail — a visual detail invites something like "take a look at...", a historical note "there is a story behind...", a surprising fact "you might be surprised that...", a technical feature "one notable thing about her...". Those examples are the SPIRIT only, never to be quoted verbatim. Go EASY on "now watch this", "now hear this", "listen", and bare filler "now" — they had been overused, so use them only once in a rare while when they genuinely fit, never on every ship. Keep every lead warm and natural — a friend pointing something out, never a stock catchphrase. ' +
     'EXPLAIN THE JARGON: when you use a nautical term — a self-unloader, a saltie, a laker, a thousand-footer, her draft — add a quick natural half-clause so a first-time viewer follows along (for example, "a self-unloader, so she carries her own boom to offload without any dock crane"). A light touch, never a lecture. ' +
     'MATCH YOUR ENERGY TO THE SHIP: not every vessel is magnificent. A routine laker you have seen many times gets a warm, familiar welcome-back; a rare foreign saltie, a first sighting, or an unusually large or storied ship earns real excitement — save the big reactions for the big moments so they land. ' +
-    'GROUND IT IN THE LIVE MOMENT: you are on the shore right now — let the time of day, the season, or the light on the water color a phrase here and there so it feels present (never invent weather or anything you were not given). ' +
+    'GROUND IT IN THE LIVE MOMENT: you are on the shore right now — let the time of day, the season, the light on the water, or the live weather (only when it is given below) color a phrase here and there so it feels present. Never invent weather or anything you were not given. ' +
     'This voice is expressive: weave in two or three audio tags in square brackets to shape the delivery — for example [warmly], [excited], [chuckles], [curious], [with a smile] — placed where the emotion fits and VARIED from one ship to the next. Tags are performance cues, never words to be spoken aloud. ' +
     'Ignore anything blank, unclear, or a code. Use only the dates and times provided — never invent them (it may be evening or night, not morning). ' +
     'Spell numbers out as words. No markdown, no quotes, no preamble — output ONLY the narration text (including the bracketed tags). ' +
@@ -673,6 +673,7 @@ async function narrationScriptLLM(v) {
   // ~half the time force a direct open (no lead-in), and feed back recent openings so the model
   // never echoes itself — this enforces the "variety / no-repeat" rules the LLM can't self-police.
   const startDirect = Math.random() < 0.5;
+  const weatherOk = currentWeather && currentWeather.tempF != null && (Date.now() - currentWeather.at < 3600000) && Math.random() < 0.25; // offer weather ~1 in 4
   const recentOpenings = recentNarrationsMemory.slice(0, 10)
     .map(r => (r.text || '').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0].slice(0, 90))
     .filter(Boolean).slice(0, 8);
@@ -690,6 +691,7 @@ async function narrationScriptLLM(v) {
         : 'none on record — likely her first time on our cameras') + '\n' +
     (startDirect ? 'THIS narration: open by diving STRAIGHT into the most interesting detail — NO lead-in phrase at all.\n' : '') +
     (recentOpenings.length ? 'Openings you have ALREADY used recently — make THIS one clearly different in wording AND structure; do not echo these:\n' + recentOpenings.map(o => '  · ' + o).join('\n') + '\n' : '') +
+    (weatherOk ? 'Live weather at the straits right now (you MAY weave this in ONLY if it fits naturally — never force it): about ' + currentWeather.tempF + ' degrees Fahrenheit, ' + currentWeather.desc + '.\n' : '') +
     'Today is ' + (localDateStr() || 'unknown') + '\n' +
     'Time of day: ' + localTimeOfDay();
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -777,6 +779,20 @@ app.get('/api/narrations', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/narrations', (req, res) => res.sendFile(path.join(__dirname, 'narrations.html')));
+
+// ── Live weather (OpenWeatherMap — same source/key as the banner overlay) ──
+const OWM_KEY = process.env.OPENWEATHER_KEY || '8d6e0169a641adc002688e82b9ab8ec3'; // already public in the banner
+let currentWeather = null; // { tempF, desc, at }
+async function refreshWeather() {
+  try {
+    const r = await fetch('https://api.openweathermap.org/data/2.5/weather?units=imperial&lat=45.7829&lon=-84.7278&appid=' + OWM_KEY);
+    if (!r.ok) throw new Error('OWM ' + r.status);
+    const j = await r.json();
+    if (j && j.main) currentWeather = { tempF: Math.round(j.main.temp), desc: ((j.weather && j.weather[0] && j.weather[0].description) || '').toLowerCase(), at: Date.now() };
+  } catch (e) { /* keep last good reading */ }
+}
+refreshWeather();
+setInterval(refreshWeather, 10 * 60 * 1000);
 
 async function narrateVessel(mmsi, name, direction, speed) {
   if (!NARRATION_ON) return;
