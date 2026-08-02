@@ -1,0 +1,71 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Camera Movements — Mackinac Tracker</title>
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; padding:22px; }
+  h1 { font-size:1.35rem; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:.85rem; margin-bottom:18px; }
+  table { width:100%; border-collapse:collapse; max-width:900px; }
+  th,td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:.74rem; text-transform:uppercase; letter-spacing:.4px; }
+  tbody tr:nth-child(odd){ background:rgba(255,255,255,.025); }
+  td.when { color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; font-size:.85rem; }
+  .z { font-size:.78rem; font-weight:700; padding:2px 9px; border-radius:6px; white-space:nowrap; }
+  .z.bridge { background:rgba(78,163,255,.18); color:var(--accent); }
+  .z.track  { background:rgba(255,209,63,.16); color:#ffd23f; }
+  .z.home   { background:rgba(255,255,255,.08); color:var(--muted); }
+  .why { color:var(--text); }
+  .empty { color:var(--muted); font-style:italic; padding:18px 12px; }
+  .note { color:var(--muted); font-size:.78rem; margin-top:14px; max-width:820px; line-height:1.5; }
+</style>
+</head>
+<body>
+  <h1>Camera Movements</h1>
+  <div class="sub" id="count">loading…</div>
+  <table>
+    <thead><tr><th>When</th><th>Camera</th><th>Why</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="3" class="empty">loading…</td></tr></tbody>
+  </table>
+  <div class="note">Every time the system moves the camera to a different preset, it logs it here — a freighter reaching the bridge, one being tracked in from the west or east, a Shepler's ferry passing under, or a return to the wide Home shot. Newest first. Resets if the server restarts.</div>
+<script>
+  var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function fmtWhen(ms){
+    var d=new Date(ms), now=Date.now(), diff=Math.round((now-ms)/1000);
+    var rel = diff<60 ? diff+'s ago' : diff<3600 ? Math.round(diff/60)+'m ago' : Math.round(diff/3600)+'h ago';
+    var t = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    return t + '  ·  ' + rel;
+  }
+  function zoneLabel(z){
+    return z==='bridge' ? '<span class="z bridge">Zoomed to bridge</span>'
+         : z==='west'   ? '<span class="z track">Tracking · west</span>'
+         : z==='east'   ? '<span class="z track">Tracking · east</span>'
+         :                '<span class="z home">Wide · Home</span>';
+  }
+  function render(d){
+    var list = d.events || [];
+    document.getElementById('count').textContent = list.length + ' recent camera moves';
+    document.getElementById('rows').innerHTML = list.length
+      ? list.map(function(r){
+          return '<tr><td class="when">'+esc(fmtWhen(r.at))+'</td>'+
+            '<td>'+zoneLabel(r.zone)+'</td>'+
+            '<td class="why">'+esc(r.reason||'')+'</td></tr>';
+        }).join('')
+      : '<tr><td colspan="3" class="empty">No camera moves logged yet — they appear here as the camera reacts to boats.</td></tr>';
+  }
+  function load(){ fetch(HTTP_BASE+'/api/ptz-log').then(function(r){return r.json();}).then(render).catch(function(){}); }
+  load();
+  setInterval(load, 15000);
+</script>
+</body>
+</html>

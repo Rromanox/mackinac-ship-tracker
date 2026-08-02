@@ -280,6 +280,16 @@ function isFerryAtBridge() {
   return Object.values(ferryNearBridge).some(v => now - v.at < 90000 && v.distKm * 0.621371 <= FERRY_BRIDGE_MI && (v.speed || 0) >= 2);
 }
 
+// ── Camera decision log — records each preset CHANGE and why (viewable at /ptz-log) ──
+const recentPtzEvents = []; // newest first: { at, zone, reason, name, mmsi, distanceMi }
+let lastPtzLogZone = null;
+function logPtz(zone, reason, extra) {
+  if (zone === lastPtzLogZone) return;   // only log real changes, not every 15 s poll
+  lastPtzLogZone = zone;
+  recentPtzEvents.unshift({ at: Date.now(), zone: zone, reason: reason, ...(extra || {}) });
+  if (recentPtzEvents.length > 500) recentPtzEvents.pop();
+}
+
 app.get('/api/ptz-cue', (req, res) => {
   const now = Date.now();
   let best = null;
@@ -291,6 +301,7 @@ app.get('/api/ptz-cue', (req, res) => {
   if (!best) {
     const ferry = isFerryAtBridge();   // no freighter in range → cue the bridge if a Shepler's ferry is passing under
     const zone = ferry ? 'bridge' : 'home';
+    logPtz(zone, ferry ? "Shepler's ferry passing under the bridge" : 'no vessel in range — camera at Home (wide)');
     reportPtzZone(zone);
     return res.json({ active: ferry, zone: zone, ferry: ferry });
   }
@@ -299,11 +310,19 @@ app.get('/api/ptz-cue', (req, res) => {
   // 0.15 mi once departing — so the camera doesn't linger on empty water after the pass.
   const threshold = best.closing === false ? PTZ_BRIDGE_OUT_MI : PTZ_BRIDGE_IN_MI;
   let zone = distMi <= threshold ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
-  if (zone !== 'bridge' && isFerryAtBridge()) zone = 'bridge';   // a Shepler's ferry is passing under the span
+  let reason = zone === 'bridge'
+    ? best.name + ' at the bridge — ' + distMi + ' mi, ' + (best.closing === false ? 'departing' : 'approaching')
+    : 'tracking ' + best.name + ' from the ' + best.side + ' — ' + distMi + ' mi out';
+  if (zone !== 'bridge' && isFerryAtBridge()) { zone = 'bridge'; reason = "Shepler's ferry passing under (while " + best.name + ' approaches)'; }
+  logPtz(zone, reason, { name: best.name, mmsi: best.mmsi, distanceMi: distMi });
   reportPtzZone(zone);
   res.json({ active: true, zone: zone, mmsi: best.mmsi, name: best.name, side: best.side,
              distanceMi: distMi, speedKn: +(best.speed || 0).toFixed(1), closing: best.closing !== false });
 });
+
+// Camera decision log — when the preset changed and why
+app.get('/api/ptz-log', (req, res) => res.json({ events: recentPtzEvents.slice(0, 200) }));
+app.get('/ptz-log', (req, res) => res.sendFile(path.join(__dirname, 'ptz-log.html')));
 
 // Recent ships that passed the bridge (server-detected longitude crossings)
 app.get('/api/ships/recent', async (req, res) => {
