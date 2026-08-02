@@ -1,0 +1,152 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antenna Range — Mackinac Tracker</title>
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff; --green:#3fbf79; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; padding:22px; }
+  h1 { font-size:1.35rem; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:.88rem; margin-bottom:18px; max-width:820px; }
+  .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; max-width:820px; }
+  @media (max-width:640px){ .cards{ grid-template-columns:1fr; } }
+  .metric { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 17px; }
+  .metric .label { color:var(--muted); font-size:.76rem; text-transform:uppercase; letter-spacing:.5px; margin:0 0 8px; }
+  .metric .big { font-size:2rem; font-weight:800; margin:0; line-height:1; }
+  .metric .big .unit { color:var(--muted); font-size:1rem; font-weight:700; margin-left:3px; }
+  .metric .detail { color:var(--muted); font-size:.8rem; margin:8px 0 0; }
+  .bar { display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  .rangebtns button { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-weight:600; cursor:pointer; font-size:.82rem; }
+  .rangebtns button.on { background:var(--accent); color:#04121f; border-color:var(--accent); }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; max-width:820px; margin-bottom:18px; }
+  .panel h2 { font-size:.82rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 12px; font-weight:600; }
+  svg { width:100%; height:auto; display:block; }
+  .bkt { display:flex; align-items:center; gap:10px; margin:6px 0; font-size:.84rem; }
+  .bkt .name { width:66px; color:var(--muted); flex:none; }
+  .bkt .track { flex:1; background:rgba(255,255,255,.06); border-radius:5px; height:14px; overflow:hidden; }
+  .bkt .fill { height:100%; background:var(--accent); border-radius:5px; }
+  .bkt .n { width:34px; text-align:right; font-variant-numeric:tabular-nums; color:var(--text); flex:none; }
+  .empty { color:var(--muted); font-style:italic; }
+  .note { color:var(--muted); font-size:.78rem; margin-top:6px; max-width:820px; line-height:1.5; }
+</style>
+</head>
+<body>
+  <h1>Antenna Range History</h1>
+  <div class="sub">How far out the <b>local</b> antenna is hearing vessels, sampled every 30 minutes. Move the antenna, then watch the line — a higher curve means better reception.</div>
+
+  <div class="cards">
+    <div class="metric"><p class="label">Right now</p><p class="big" id="cur">—</p><p class="detail" id="curDet"></p></div>
+    <div class="metric"><p class="label">Best in period</p><p class="big" id="best">—</p><p class="detail">farthest logged</p></div>
+    <div class="metric"><p class="label">Samples</p><p class="big" id="cnt">—</p><p class="detail" id="cntDet"></p></div>
+  </div>
+
+  <div class="bar rangebtns">
+    <button data-h="24">24 h</button>
+    <button data-h="168" class="on">7 days</button>
+    <button data-h="720">30 days</button>
+    <span class="count" id="status" style="color:var(--muted);font-size:.82rem;margin-left:6px;"></span>
+  </div>
+
+  <div class="panel">
+    <h2>Max range over time (miles)</h2>
+    <div id="chart"><span class="empty">loading…</span></div>
+  </div>
+
+  <div class="panel">
+    <h2>Where it's hearing vessels right now</h2>
+    <div id="buckets"><span class="empty">loading…</span></div>
+    <div class="note" id="farNote"></div>
+  </div>
+
+  <div class="note">Samples cover the previous 30 minutes of reception. A gap in the line means the local receiver (the OBS PC) was offline, not that range dropped. Includes every vessel heard, even the small craft filtered off the banner.</div>
+
+<script>
+  var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
+  var hours = 168;
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function fmtTime(ms){ var d=new Date(ms); return d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+
+  function drawChart(samples){
+    var el = document.getElementById('chart');
+    if (!samples.length){ el.innerHTML = '<span class="empty">No samples yet — the first one lands ~30 min after the receiver starts hearing vessels.</span>'; return; }
+    var W=820, H=240, padL=38, padR=14, padT=14, padB=26;
+    var xs = samples.map(function(s){ return s.at; });
+    var ys = samples.map(function(s){ return s.maxRangeMi||0; });
+    var minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs);
+    var maxY=Math.max.apply(null,ys); maxY = Math.max(5, Math.ceil(maxY/5)*5);
+    function px(x){ return maxX===minX ? padL : padL + (x-minX)/(maxX-minX)*(W-padL-padR); }
+    function py(y){ return H-padB - (y/maxY)*(H-padT-padB); }
+    var grid=''; var steps=5;
+    for (var i=0;i<=steps;i++){ var yv=maxY*i/steps, y=py(yv);
+      grid += '<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#1f2937" stroke-width="1"/>';
+      grid += '<text x="'+(padL-6)+'" y="'+(y+3)+'" fill="#8aa0b6" font-size="10" text-anchor="end">'+Math.round(yv)+'</text>';
+    }
+    // area + line
+    var pts = samples.map(function(s){ return px(s.at)+','+py(s.maxRangeMi||0); }).join(' ');
+    var area = 'M'+px(xs[0])+','+(H-padB)+' L'+pts.split(' ').join(' L')+' L'+px(xs[xs.length-1])+','+(H-padB)+' Z';
+    var dots = samples.map(function(s){ return '<circle cx="'+px(s.at)+'" cy="'+py(s.maxRangeMi||0)+'" r="2.5" fill="#4ea3ff"/>'; }).join('');
+    // x labels: first, middle, last
+    var xl='';
+    [0, Math.floor(samples.length/2), samples.length-1].forEach(function(idx){
+      if (idx<0||idx>=samples.length) return;
+      var x=px(samples[idx].at);
+      xl += '<text x="'+x+'" y="'+(H-8)+'" fill="#8aa0b6" font-size="10" text-anchor="middle">'+esc(new Date(samples[idx].at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric'}))+'</text>';
+    });
+    el.innerHTML = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+
+      grid +
+      '<path d="'+area+'" fill="rgba(78,163,255,.12)" stroke="none"/>'+
+      '<polyline points="'+pts+'" fill="none" stroke="#4ea3ff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+
+      dots + xl + '</svg>';
+  }
+
+  function drawBuckets(buckets){
+    var el = document.getElementById('buckets');
+    var order = ['0-5mi','5-10mi','10-20mi','20-30mi','30-40mi','40-50mi','50mi+'];
+    var vals = order.map(function(k){ return buckets && buckets[k] || 0; });
+    var max = Math.max.apply(null, vals.concat([1]));
+    var total = vals.reduce(function(a,b){return a+b;},0);
+    if (!total){ el.innerHTML = '<span class="empty">No vessels heard in the last 30 minutes.</span>'; return; }
+    el.innerHTML = order.map(function(k,i){
+      var w = Math.round(vals[i]/max*100);
+      return '<div class="bkt"><span class="name">'+esc(k)+'</span>'+
+             '<span class="track"><span class="fill" style="width:'+w+'%"></span></span>'+
+             '<span class="n">'+vals[i]+'</span></div>';
+    }).join('');
+  }
+
+  function render(d){
+    var c = d.current || {};
+    document.getElementById('cur').innerHTML = (c.maxRangeMi!=null) ? (c.maxRangeMi+'<span class="unit">mi</span>') : '—';
+    document.getElementById('curDet').textContent = (c.vesselsHeard||0) + ' vessel' + ((c.vesselsHeard===1)?'':'s') + ' heard now';
+    document.getElementById('best').innerHTML = d.bestRangeMi ? (d.bestRangeMi+'<span class="unit">mi</span>') : '—';
+    var s = d.samples || [];
+    document.getElementById('cnt').textContent = s.length;
+    document.getElementById('cntDet').textContent = 'every 30 min';
+    document.getElementById('status').textContent = s.length ? ('updated '+fmtTime(s[s.length-1].at)) : '';
+    drawChart(s);
+    drawBuckets(c.buckets);
+    var far = c.farthest || [];
+    document.getElementById('farNote').textContent = far.length ? ('Farthest right now: ' + far.map(function(f){return f.name+' ('+f.mi+' mi)';}).join(', ')) : '';
+  }
+  function load(){
+    fetch(HTTP_BASE+'/api/range-log?hours='+hours).then(function(r){return r.json();}).then(render)
+      .catch(function(e){ document.getElementById('status').textContent='error: '+e.message; });
+  }
+  document.querySelectorAll('.rangebtns button').forEach(function(b){
+    b.onclick = function(){
+      document.querySelectorAll('.rangebtns button').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on'); hours = +b.getAttribute('data-h'); load();
+    };
+  });
+  load();
+  setInterval(load, 60000);
+</script>
+</body>
+</html>

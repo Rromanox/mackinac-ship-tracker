@@ -1,0 +1,156 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Straits Traffic — Mackinac Tracker</title>
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff; --east:#3fbf79; --west:#ffb84e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; padding:22px; }
+  h1 { font-size:1.35rem; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:.88rem; margin-bottom:18px; max-width:820px; }
+  .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; max-width:820px; }
+  @media (max-width:640px){ .cards{ grid-template-columns:1fr; } }
+  .metric { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 17px; }
+  .metric .label { color:var(--muted); font-size:.76rem; text-transform:uppercase; letter-spacing:.5px; margin:0 0 8px; }
+  .metric .big { font-size:2rem; font-weight:800; margin:0; line-height:1; }
+  .metric .detail { color:var(--muted); font-size:.8rem; margin:8px 0 0; }
+  .legend { display:flex; gap:16px; align-items:center; margin-bottom:14px; font-size:.8rem; color:var(--muted); flex-wrap:wrap; }
+  .legend .k { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:11px; height:11px; border-radius:3px; display:inline-block; }
+  .dot.e { background:var(--east); } .dot.w { background:var(--west); }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; max-width:820px; margin-bottom:18px; }
+  .panel h2 { font-size:.82rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 12px; font-weight:600; }
+  svg { width:100%; height:auto; display:block; }
+  .days { max-width:820px; }
+  .day { background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+  .dayhdr { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; }
+  .dayhdr:hover { background:rgba(255,255,255,.02); }
+  .dayhdr .date { font-weight:700; min-width:120px; }
+  .dayhdr .tot { font-weight:800; font-size:1.15rem; min-width:36px; text-align:right; }
+  .dayhdr .split { color:var(--muted); font-size:.84rem; flex:1; }
+  .dayhdr .split b.e { color:var(--east); } .dayhdr .split b.w { color:var(--west); }
+  .dayhdr .chev { color:var(--muted); transition:transform .15s; }
+  .day.open .chev { transform:rotate(90deg); }
+  .vlist { display:none; padding:2px 16px 12px; border-top:1px solid var(--line); }
+  .day.open .vlist { display:block; }
+  .vrow { display:flex; align-items:center; gap:10px; padding:6px 0; font-size:.88rem; border-bottom:1px solid rgba(255,255,255,.04); }
+  .vrow:last-child { border-bottom:0; }
+  .vrow .arrow { width:34px; font-weight:700; flex:none; }
+  .vrow .arrow.e { color:var(--east); } .vrow .arrow.w { color:var(--west); }
+  .vrow .vname { flex:1; }
+  .vrow .vtime { color:var(--muted); font-variant-numeric:tabular-nums; font-size:.82rem; }
+  .empty { color:var(--muted); font-style:italic; padding:8px 0; }
+  .note { color:var(--muted); font-size:.78rem; margin-top:6px; max-width:820px; line-height:1.5; }
+</style>
+</head>
+<body>
+  <h1>Straits Traffic Report</h1>
+  <div class="sub">Every freighter that crossed under the Mackinac Bridge, counted by day. Times are local (Eastern). Tap a day to see the ships.</div>
+
+  <div class="cards">
+    <div class="metric"><p class="label">Today</p><p class="big" id="today">—</p><p class="detail" id="todayDet"></p></div>
+    <div class="metric"><p class="label">This period</p><p class="big" id="period">—</p><p class="detail" id="periodDet"></p></div>
+    <div class="metric"><p class="label">Busiest day</p><p class="big" id="busy">—</p><p class="detail" id="busyDet"></p></div>
+  </div>
+
+  <div class="panel">
+    <h2>Crossings per day</h2>
+    <div class="legend">
+      <span class="k"><span class="dot e"></span> Eastbound (toward Lake Huron)</span>
+      <span class="k"><span class="dot w"></span> Westbound (toward Lake Michigan)</span>
+    </div>
+    <div id="chart"><span class="empty">loading…</span></div>
+  </div>
+
+  <div class="days" id="days"><span class="empty">loading…</span></div>
+
+  <div class="note">A "crossing" is a vessel our detector saw pass the bridge longitude. Small craft, ferries, and pleasure boats are filtered out. Newest day first.</div>
+
+<script>
+  var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function dayLabel(ymd){ try{ var d=new Date(ymd+'T12:00:00'); return d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}); }catch(e){ return ymd; } }
+  function hourLabel(h){ if(h==null) return '—'; var ap=h<12?'am':'pm'; var hh=h%12; if(hh===0)hh=12; return hh+' '+ap; }
+  function fmtClock(ms){ try{ return new Date(ms).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+  function arrow(dir){ return dir==='eastbound' ? '<span class="arrow e">→ E</span>' : dir==='westbound' ? '<span class="arrow w">← W</span>' : '<span class="arrow">·</span>'; }
+
+  function drawChart(days){
+    var el = document.getElementById('chart');
+    var d = days.slice().reverse(); // oldest → newest, left → right
+    if (!d.length){ el.innerHTML='<span class="empty">No crossings logged in this period yet.</span>'; return; }
+    var W=820, H=210, padL=28, padR=10, padT=12, padB=34;
+    var maxY = Math.max.apply(null, d.map(function(x){return x.total;}).concat([1]));
+    maxY = Math.max(4, Math.ceil(maxY/2)*2);
+    var n=d.length, gap=6, bw=Math.max(6,(W-padL-padR)/n - gap);
+    function py(y){ return H-padB - (y/maxY)*(H-padT-padB); }
+    var grid='', steps=4;
+    for (var i=0;i<=steps;i++){ var yv=maxY*i/steps, y=py(yv);
+      grid += '<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#1f2937"/>';
+      grid += '<text x="'+(padL-6)+'" y="'+(y+3)+'" fill="#8aa0b6" font-size="10" text-anchor="end">'+Math.round(yv)+'</text>';
+    }
+    var bars = d.map(function(x,idx){
+      var cx = padL + idx*((W-padL-padR)/n) + gap/2;
+      var eh = (H-padT-padB)*(x.eastbound/maxY), wh=(H-padT-padB)*(x.westbound/maxY);
+      var yE = H-padB-eh, yW = yE-wh;
+      var s = '<rect x="'+cx+'" y="'+yE+'" width="'+bw+'" height="'+eh+'" fill="#3fbf79"/>'+
+              '<rect x="'+cx+'" y="'+yW+'" width="'+bw+'" height="'+wh+'" fill="#ffb84e"/>';
+      if (x.total>0) s += '<text x="'+(cx+bw/2)+'" y="'+(yW-4)+'" fill="#e7edf4" font-size="10" text-anchor="middle" font-weight="700">'+x.total+'</text>';
+      // date label every few bars to avoid crowding
+      if (n<=10 || idx%Math.ceil(n/8)===0 || idx===n-1)
+        s += '<text x="'+(cx+bw/2)+'" y="'+(H-10)+'" fill="#8aa0b6" font-size="9.5" text-anchor="middle">'+esc(new Date(x.date+'T12:00:00').toLocaleDateString([],{month:'numeric',day:'numeric'}))+'</text>';
+      return s;
+    }).join('');
+    el.innerHTML = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+grid+bars+'</svg>';
+  }
+
+  function render(d){
+    var t = d.today || {total:0,eastbound:0,westbound:0,busiestHour:null};
+    document.getElementById('today').textContent = t.total;
+    document.getElementById('todayDet').innerHTML = t.total ? ('→E '+t.eastbound+' &nbsp; ←W '+t.westbound+' &nbsp;·&nbsp; busiest '+hourLabel(t.busiestHour)) : 'no crossings yet today';
+    var tot = d.totals || {};
+    document.getElementById('period').textContent = tot.crossings||0;
+    document.getElementById('periodDet').textContent = 'across '+(tot.days||0)+' day'+((tot.days===1)?'':'s');
+    if (tot.busiestDay){
+      document.getElementById('busy').textContent = tot.busiestDay.total;
+      document.getElementById('busyDet').textContent = dayLabel(tot.busiestDay.date);
+    } else { document.getElementById('busy').textContent='—'; }
+
+    drawChart(d.days||[]);
+
+    var el = document.getElementById('days');
+    var days = d.days || [];
+    el.innerHTML = days.length ? days.map(function(x,i){
+      var vs = (x.vessels||[]).slice().sort(function(a,b){return b.at-a.at;});
+      var rows = vs.length ? vs.map(function(v){
+        return '<div class="vrow">'+arrow(v.direction)+'<span class="vname">'+esc(v.name)+'</span><span class="vtime">'+esc(fmtClock(v.at))+'</span></div>';
+      }).join('') : '<div class="empty">no detail</div>';
+      return '<div class="day'+(i===0?' open':'')+'" data-i="'+i+'">'+
+        '<div class="dayhdr">'+
+          '<span class="date">'+esc(dayLabel(x.date))+'</span>'+
+          '<span class="split">crossings &nbsp; <b class="e">'+x.eastbound+' →E</b> &nbsp; <b class="w">'+x.westbound+' ←W</b> &nbsp;·&nbsp; '+x.uniqueVessels+' vessel'+((x.uniqueVessels===1)?'':'s')+' &nbsp;·&nbsp; busiest '+hourLabel(x.busiestHour)+'</span>'+
+          '<span class="tot">'+x.total+'</span>'+
+          '<span class="chev">&#9656;</span>'+
+        '</div>'+
+        '<div class="vlist">'+rows+'</div>'+
+      '</div>';
+    }).join('') : '<span class="empty">No crossings logged yet — they appear here as freighters pass the bridge.</span>';
+
+    el.querySelectorAll('.dayhdr').forEach(function(h){
+      h.onclick = function(){ h.parentNode.classList.toggle('open'); };
+    });
+  }
+  function load(){
+    fetch(HTTP_BASE+'/api/traffic?days=14').then(function(r){return r.json();}).then(render).catch(function(){});
+  }
+  load();
+  setInterval(load, 60000);
+</script>
+</body>
+</html>

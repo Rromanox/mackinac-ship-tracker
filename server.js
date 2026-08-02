@@ -31,6 +31,7 @@ let shipsCollection = null;
 let passingsCollection = null;
 let narrationsCollection = null;
 let ptzLogCollection = null;
+let rangeLogCollection = null;
 
 // Connect to MongoDB
 async function connectToMongoDB() {
@@ -42,6 +43,7 @@ async function connectToMongoDB() {
     passingsCollection = db.collection('passings');
     narrationsCollection = db.collection('narrations');
     ptzLogCollection = db.collection('ptz_log');
+    rangeLogCollection = db.collection('range_log');
 
     // Create indexes for better performance
     await shipsCollection.createIndex({ mmsi: 1 });
@@ -51,6 +53,7 @@ async function connectToMongoDB() {
     await passingsCollection.createIndex({ mmsi: 1 });
     await narrationsCollection.createIndex({ at: -1 });
     await ptzLogCollection.createIndex({ at: -1 });
+    await rangeLogCollection.createIndex({ at: -1 });
     
     console.log('✓ Connected to MongoDB');
     console.log('📊 Database:', DB_NAME);
@@ -213,6 +216,117 @@ app.get('/api/local-range', (req, res) => {
     buckets: buckets
   });
 });
+
+// ── Antenna range HISTORY — periodic snapshots of how far the local receiver hears ──
+// Sampled every 30 min so we build a time series: the jump from moving the antenna
+// outside, and any later reception drop. Persisted to Mongo; viewable at /range-log.
+const recentRangeSamples = [];                    // newest first — in-memory fallback if DB is down
+const RANGE_SAMPLE_WINDOW_MS = 30 * 60 * 1000;    // each sample summarises the last 30 min of reception
+function rangeBuckets(list) {
+  const b = { '0-5mi': 0, '5-10mi': 0, '10-20mi': 0, '20-30mi': 0, '30-40mi': 0, '40-50mi': 0, '50mi+': 0 };
+  list.forEach(v => { const d = v.distanceMi;
+    if (d < 5) b['0-5mi']++; else if (d < 10) b['5-10mi']++; else if (d < 20) b['10-20mi']++;
+    else if (d < 30) b['20-30mi']++; else if (d < 40) b['30-40mi']++; else if (d < 50) b['40-50mi']++; else b['50mi+']++; });
+  return b;
+}
+function sampleLocalRange() {
+  const now = Date.now();
+  Object.keys(localReception).forEach(k => { if (now - localReception[k].at > 3 * 60 * 60 * 1000) delete localReception[k]; });
+  const recent = Object.values(localReception).filter(v => now - v.at < RANGE_SAMPLE_WINDOW_MS).sort((a, b) => b.distanceMi - a.distanceMi);
+  const receiverAlive = lastLocalMessageAt && (now - lastLocalMessageAt < RANGE_SAMPLE_WINDOW_MS);
+  // Skip a sample only when the receiver is fully offline AND heard nothing — that's a genuine gap,
+  // not a short-range reading. (Prevents the chart filling with zeros when the OBS PC is off.)
+  if (!recent.length && !receiverAlive) return;
+  const sample = {
+    at: now,
+    maxRangeMi: recent.length ? +recent[0].distanceMi.toFixed(1) : 0,
+    vesselsHeard: recent.length,
+    buckets: rangeBuckets(recent),
+    farthest: recent.slice(0, 3).map(v => ({ name: v.name, mi: +v.distanceMi.toFixed(1) }))
+  };
+  recentRangeSamples.unshift(sample);
+  if (recentRangeSamples.length > 400) recentRangeSamples.pop();
+  if (rangeLogCollection) rangeLogCollection.insertOne({ ...sample }).catch(e => console.error('range-log write:', e.message));
+}
+setTimeout(sampleLocalRange, 3 * 60 * 1000);           // first snapshot a few minutes after boot
+setInterval(sampleLocalRange, RANGE_SAMPLE_WINDOW_MS);  // then one every 30 min
+
+app.get('/api/range-log', async (req, res) => {
+  const hours = Math.min(parseInt(req.query.hours) || 168, 24 * 60); // default 7 days, cap 60
+  const since = Date.now() - hours * 60 * 60 * 1000;
+  let samples = [];
+  try {
+    if (rangeLogCollection) {
+      const rows = await rangeLogCollection.find({ at: { $gte: since } }).sort({ at: 1 }).limit(4000).toArray();
+      samples = rows.map(s => ({ at: s.at, maxRangeMi: s.maxRangeMi, vesselsHeard: s.vesselsHeard, buckets: s.buckets, farthest: s.farthest }));
+    }
+  } catch (e) { /* fall back to memory */ }
+  if (!samples.length) samples = recentRangeSamples.filter(s => s.at >= since).slice().reverse();
+  const now = Date.now();
+  const live = Object.values(localReception).filter(v => now - v.at < RANGE_SAMPLE_WINDOW_MS).sort((a, b) => b.distanceMi - a.distanceMi);
+  const bestEver = samples.reduce((m, s) => Math.max(m, s.maxRangeMi || 0), 0);
+  res.json({
+    note: 'Farthest a vessel is heard by the LOCAL antenna, sampled every 30 min.',
+    windowHours: hours,
+    samples: samples,
+    current: {
+      maxRangeMi: live.length ? +live[0].distanceMi.toFixed(1) : null,
+      vesselsHeard: live.length,
+      buckets: rangeBuckets(live),
+      farthest: live.slice(0, 3).map(v => ({ name: v.name, mi: +v.distanceMi.toFixed(1) }))
+    },
+    bestRangeMi: +bestEver.toFixed(1)
+  });
+});
+app.get('/range-log', (req, res) => res.sendFile(path.join(__dirname, 'range-log.html')));
+
+// ── Daily traffic report — bridge crossings aggregated by local (Eastern) day ──
+const STRAITS_TZ = 'America/Detroit';
+function etDateParts(d) {
+  const dtf = new Intl.DateTimeFormat('en-US', { timeZone: STRAITS_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false });
+  const p = {}; dtf.formatToParts(d).forEach(x => { p[x.type] = x.value; });
+  let hour = parseInt(p.hour, 10); if (hour === 24) hour = 0; // some engines emit hour 24 for midnight
+  return { ymd: `${p.year}-${p.month}-${p.day}`, hour };
+}
+app.get('/api/traffic', async (req, res) => {
+  const days = Math.min(parseInt(req.query.days) || 14, 90);
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  let rows = [];
+  try {
+    if (passingsCollection) rows = await passingsCollection.find({ passedTime: { $gte: since } }).sort({ passedTime: -1 }).limit(8000).toArray();
+  } catch (e) { /* fall back to memory */ }
+  if (!rows.length) rows = recentPassingsMemory.slice();
+  const byDay = {};
+  rows.forEach(r => {
+    const t = new Date(r.passedTime);
+    if (isNaN(t.getTime())) return;
+    const { ymd, hour } = etDateParts(t);
+    const d = byDay[ymd] || (byDay[ymd] = { date: ymd, total: 0, eastbound: 0, westbound: 0, hours: {}, vessels: [] });
+    d.total++;
+    if (r.direction === 'eastbound') d.eastbound++; else if (r.direction === 'westbound') d.westbound++;
+    d.hours[hour] = (d.hours[hour] || 0) + 1;
+    d.vessels.push({ name: r.name, direction: r.direction, at: t.getTime() });
+  });
+  const dayList = Object.values(byDay).sort((a, b) => (a.date < b.date ? 1 : -1)).map(d => {
+    let busiestHour = null, bh = -1;
+    Object.keys(d.hours).forEach(h => { if (d.hours[h] > bh) { bh = d.hours[h]; busiestHour = +h; } });
+    const seen = new Set(); d.vessels.forEach(v => seen.add((v.name || '').toUpperCase()));
+    return { date: d.date, total: d.total, eastbound: d.eastbound, westbound: d.westbound, busiestHour, uniqueVessels: seen.size, vessels: d.vessels };
+  });
+  const todayYmd = etDateParts(new Date()).ymd;
+  const busiestDay = dayList.reduce((m, d) => (d.total > (m ? m.total : -1) ? d : m), null);
+  res.json({
+    note: 'Bridge crossings by day, local Eastern time.',
+    days: dayList,
+    today: dayList.find(d => d.date === todayYmd) || { date: todayYmd, total: 0, eastbound: 0, westbound: 0, busiestHour: null, uniqueVessels: 0, vessels: [] },
+    totals: {
+      crossings: dayList.reduce((s, d) => s + d.total, 0),
+      days: dayList.length,
+      busiestDay: busiestDay ? { date: busiestDay.date, total: busiestDay.total } : null
+    }
+  });
+});
+app.get('/traffic', (req, res) => res.sendFile(path.join(__dirname, 'traffic.html')));
 
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {
