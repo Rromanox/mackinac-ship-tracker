@@ -390,7 +390,16 @@ const SHEPLERS_FERRIES = new Set([
 ]);
 const FERRY_BRIDGE_MI = 0.75;   // a Shepler's ferry within this of the bridge = going under → cue the camera
 const ferryNearBridge = {};     // mmsi -> { distKm, at }  (camera-cue only; never broadcast)
+// From early afternoon the Shepler's "Mighty Mac" runs get frequent (back-and-forth under the span),
+// so the ferry zoom fires too often. Pause JUST the ferry cue from 1 PM Eastern until midnight;
+// freighters still trigger the bridge preset normally the whole time.
+const FERRY_CUE_CUTOFF_HOUR = 13; // 1 PM local (Eastern)
+function ferryCueActiveNow() {
+  try { return etDateParts(new Date()).hour < FERRY_CUE_CUTOFF_HOUR; }
+  catch (e) { return true; }      // if the TZ lookup ever fails, leave the cue on rather than break it
+}
 function isFerryAtBridge() {
+  if (!ferryCueActiveNow()) return false;   // paused after 1 PM — too many ferry crossings this time of day
   const now = Date.now();
   // within range, heard recently, AND actually moving (a passing ferry keeps steerage way; a
   // docked/drifting boat sits near 0 kn and must never lock the camera).
