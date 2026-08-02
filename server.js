@@ -30,6 +30,7 @@ let db = null;
 let shipsCollection = null;
 let passingsCollection = null;
 let narrationsCollection = null;
+let ptzLogCollection = null;
 
 // Connect to MongoDB
 async function connectToMongoDB() {
@@ -40,6 +41,7 @@ async function connectToMongoDB() {
     shipsCollection = db.collection('ships');
     passingsCollection = db.collection('passings');
     narrationsCollection = db.collection('narrations');
+    ptzLogCollection = db.collection('ptz_log');
 
     // Create indexes for better performance
     await shipsCollection.createIndex({ mmsi: 1 });
@@ -48,6 +50,7 @@ async function connectToMongoDB() {
     await passingsCollection.createIndex({ passedTime: -1 });
     await passingsCollection.createIndex({ mmsi: 1 });
     await narrationsCollection.createIndex({ at: -1 });
+    await ptzLogCollection.createIndex({ at: -1 });
     
     console.log('✓ Connected to MongoDB');
     console.log('📊 Database:', DB_NAME);
@@ -286,8 +289,10 @@ let lastPtzLogZone = null;
 function logPtz(zone, reason, extra) {
   if (zone === lastPtzLogZone) return;   // only log real changes, not every 15 s poll
   lastPtzLogZone = zone;
-  recentPtzEvents.unshift({ at: Date.now(), zone: zone, reason: reason, ...(extra || {}) });
+  const ev = { at: Date.now(), zone: zone, reason: reason, ...(extra || {}) };
+  recentPtzEvents.unshift(ev);
   if (recentPtzEvents.length > 500) recentPtzEvents.pop();
+  if (ptzLogCollection) ptzLogCollection.insertOne({ ...ev }).catch(e => console.error('ptz-log write:', e.message));
 }
 
 app.get('/api/ptz-cue', (req, res) => {
@@ -321,7 +326,15 @@ app.get('/api/ptz-cue', (req, res) => {
 });
 
 // Camera decision log — when the preset changed and why
-app.get('/api/ptz-log', (req, res) => res.json({ events: recentPtzEvents.slice(0, 200) }));
+app.get('/api/ptz-log', async (req, res) => {
+  try {
+    if (ptzLogCollection) {
+      const rows = await ptzLogCollection.find({}).sort({ at: -1 }).limit(300).toArray();
+      return res.json({ events: rows.map(r => ({ at: r.at, zone: r.zone, reason: r.reason, name: r.name || null, mmsi: r.mmsi || null, distanceMi: r.distanceMi || null })) });
+    }
+    res.json({ events: recentPtzEvents.slice(0, 300) });
+  } catch (e) { res.json({ events: recentPtzEvents.slice(0, 300) }); }
+});
 app.get('/ptz-log', (req, res) => res.sendFile(path.join(__dirname, 'ptz-log.html')));
 
 // Recent ships that passed the bridge (server-detected longitude crossings)
