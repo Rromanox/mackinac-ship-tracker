@@ -24,6 +24,16 @@
   .z.bridge { background:rgba(78,163,255,.18); color:var(--accent); }
   .z.track  { background:rgba(255,209,63,.16); color:#ffd23f; }
   .z.home   { background:rgba(255,255,255,.08); color:var(--muted); }
+  .z.paused { background:rgba(255,184,78,.16); color:#ffb84e; }
+  .controls { display:flex; gap:8px; align-items:center; margin:0 0 18px; flex-wrap:wrap; }
+  .pill { font-size:.8rem; font-weight:800; padding:5px 12px; border-radius:20px; letter-spacing:.3px; }
+  .pill.on  { background:rgba(63,191,121,.16); color:#3fbf79; }
+  .pill.off { background:rgba(255,184,78,.18); color:#ffb84e; }
+  .pill.dis { background:rgba(138,160,182,.15); color:var(--muted); }
+  .ctl { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 13px; font-weight:600; cursor:pointer; font-size:.84rem; }
+  .ctl:hover { border-color:var(--accent); }
+  .ctl.resume { border-color:rgba(63,191,121,.5); color:#3fbf79; }
+  .ctlnote { color:var(--muted); font-size:.8rem; }
   .why { color:var(--text); }
   .empty { color:var(--muted); font-style:italic; padding:18px 12px; }
   .note { color:var(--muted); font-size:.78rem; margin-top:14px; max-width:820px; line-height:1.5; }
@@ -32,6 +42,12 @@
 <body>
   <h1>Camera Movements</h1>
   <div class="sub" id="count">loading…</div>
+  <div class="controls">
+    <span class="pill dis" id="aimPill">checking…</span>
+    <button class="ctl" id="btnAimPause">Pause ship auto-aim</button>
+    <button class="ctl resume" id="btnAimResume">Resume</button>
+    <span class="ctlnote" id="aimNote"></span>
+  </div>
   <table>
     <thead><tr><th>When</th><th>Camera</th><th>Why</th></tr></thead>
     <tbody id="rows"><tr><td colspan="3" class="empty">loading…</td></tr></tbody>
@@ -50,6 +66,7 @@
     return z==='bridge' ? '<span class="z bridge">Zoomed to bridge</span>'
          : z==='west'   ? '<span class="z track">Tracking · west</span>'
          : z==='east'   ? '<span class="z track">Tracking · east</span>'
+         : z==='paused' ? '<span class="z paused">Auto-aim paused</span>'
          :                '<span class="z home">Wide · Home</span>';
   }
   function render(d){
@@ -66,6 +83,29 @@
   function load(){ fetch(HTTP_BASE+'/api/ptz-log').then(function(r){return r.json();}).then(render).catch(function(){}); }
   load();
   setInterval(load, 15000);
+
+  // ── Ship auto-aim pause/resume (persistent; night & morning zoom are unaffected) ──
+  function ptzKey(){ return localStorage.getItem('narrKey') || ''; }   // same key as the narration controls
+  function aimUrl(action){ var u=HTTP_BASE+'/api/ptz/'+action; var k=ptzKey(); if(k) u+=(u.indexOf('?')<0?'?':'&')+'key='+encodeURIComponent(k); return u; }
+  function renderAim(s){
+    var pill=document.getElementById('aimPill');
+    if(!s){ pill.className='pill dis'; pill.textContent='—'; return; }
+    if(s.aimPaused){ pill.className='pill off'; pill.textContent='Ship auto-aim PAUSED'; }
+    else { pill.className='pill on'; pill.textContent='Ship auto-aim ON'; }
+  }
+  function loadAim(){ fetch(HTTP_BASE+'/api/ptz/state').then(function(r){return r.json();}).then(renderAim).catch(function(){}); }
+  function aim(action){
+    document.getElementById('aimNote').textContent='…';
+    fetch(aimUrl(action)).then(function(r){
+      if(r.status===403){ var nk=prompt('Enter control key (LOCAL_AIS_KEY from your Render settings):'); if(nk){ localStorage.setItem('narrKey',nk); return aim(action); } throw new Error('key required'); }
+      return r.json();
+    }).then(function(s){ if(s){ renderAim(s); document.getElementById('aimNote').textContent=''; load(); } })
+      .catch(function(e){ document.getElementById('aimNote').textContent=e.message||'error'; });
+  }
+  document.getElementById('btnAimPause').onclick=function(){ aim('pause'); };
+  document.getElementById('btnAimResume').onclick=function(){ aim('resume'); };
+  loadAim();
+  setInterval(loadAim, 15000);
 </script>
 </body>
 </html>

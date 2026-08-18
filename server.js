@@ -61,6 +61,7 @@ async function connectToMongoDB() {
     console.log('📊 Database:', DB_NAME);
     await loadNameCache();
     await loadNarrationState();   // restore a persisted narration pause across restarts
+    await loadCameraState();      // restore a persisted ship auto-aim pause across restarts
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
     console.error('⚠️ Running without database - data will not be saved');
@@ -425,8 +426,33 @@ function logPtz(zone, reason, extra) {
   if (ptzLogCollection) ptzLogCollection.insertOne({ ...ev }).catch(e => console.error('ptz-log write:', e.message));
 }
 
+// ── Ship auto-aim pause (server-side, persistent) — pauses ONLY the vessel-driven camera cue
+// (freighters + ferries). The night-park (10 PM) and morning-Home (5 AM) automations live in
+// Home Assistant on time triggers and never touch this endpoint, so they keep running while paused.
+let cameraAimPaused = false;
+async function persistCameraState() {
+  if (!configCollection) return;
+  try {
+    await configCollection.updateOne({ _id: 'camera' }, { $set: { aimPaused: cameraAimPaused, updatedAt: new Date() } }, { upsert: true });
+  } catch (e) { console.error('📷 camera state persist:', e.message); }
+}
+async function loadCameraState() {
+  if (!configCollection) return;
+  try {
+    const doc = await configCollection.findOne({ _id: 'camera' });
+    if (doc && doc.aimPaused) { cameraAimPaused = true; console.log('📷 Ship auto-aim restored to PAUSED'); }
+  } catch (e) { console.error('📷 camera state load:', e.message); }
+}
+function cameraState() { return { aimPaused: cameraAimPaused }; }
+
 app.get('/api/ptz-cue', (req, res) => {
   const now = Date.now();
+  if (cameraAimPaused) {
+    // Vessel auto-aim paused — don't compute or log ship moves. The night/morning HA schedule owns the camera.
+    logPtz('paused', 'Ship auto-aim paused — camera left to the night/morning schedule');
+    reportPtzZone('home');   // hides the AIS labels; does not itself move the camera
+    return res.json({ active: false, paused: true, zone: 'home' });
+  }
   let best = null;
   Object.keys(nearBridge).forEach(k => {
     const v = nearBridge[k];
@@ -466,6 +492,25 @@ app.get('/api/ptz-log', async (req, res) => {
   } catch (e) { res.json({ events: recentPtzEvents.slice(0, 300) }); }
 });
 app.get('/ptz-log', (req, res) => res.sendFile(path.join(__dirname, 'ptz-log.html')));
+
+// ── Ship auto-aim manual controls (pause/resume, persistent) — used by the /ptz-log page.
+// Same key as the narration controls. Pauses only vessel-driven moves; HA night/morning untouched.
+app.get('/api/ptz/state', (req, res) => res.json(cameraState()));
+app.get('/api/ptz/pause', (req, res) => {
+  if (!narrationControlAuthed(req, res)) return;
+  cameraAimPaused = true; persistCameraState();
+  logPtz('paused', 'Ship auto-aim paused from /ptz-log');
+  reportPtzZone('home');
+  console.log('📷 Ship auto-aim PAUSED');
+  res.json(cameraState());
+});
+app.get('/api/ptz/resume', (req, res) => {
+  if (!narrationControlAuthed(req, res)) return;
+  cameraAimPaused = false; persistCameraState();
+  lastPtzLogZone = null;   // let the next real decision log fresh
+  console.log('📷 Ship auto-aim RESUMED');
+  res.json(cameraState());
+});
 
 // Recent ships that passed the bridge (server-detected longitude crossings)
 app.get('/api/ships/recent', async (req, res) => {
