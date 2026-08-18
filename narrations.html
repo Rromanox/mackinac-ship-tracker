@@ -39,6 +39,15 @@
   .script { color:#cdd6e0; font-size:.9rem; line-height:1.5; padding:2px 12px 12px; max-width:900px; }
   tr.scriptrow, tr.scriptrow:nth-child(odd) { background:transparent; }
   .note { color:var(--muted); font-size:.78rem; margin-top:14px; max-width:760px; line-height:1.5; }
+  .controls { display:flex; gap:8px; align-items:center; margin:0 0 20px; flex-wrap:wrap; }
+  .pill { font-size:.8rem; font-weight:800; padding:5px 12px; border-radius:20px; letter-spacing:.3px; }
+  .pill.on  { background:rgba(63,191,121,.16); color:var(--green); }
+  .pill.off { background:rgba(255,184,78,.18); color:#ffb84e; }
+  .pill.dis { background:rgba(138,160,182,.15); color:var(--muted); }
+  .ctl { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 13px; font-weight:600; cursor:pointer; font-size:.84rem; }
+  .ctl:hover { border-color:var(--accent); }
+  .ctl.resume { border-color:rgba(63,191,121,.5); color:var(--green); }
+  .ctlnote { color:var(--muted); font-size:.8rem; }
 </style>
 </head>
 <body>
@@ -47,6 +56,13 @@
   <div class="bar">
     <button id="refresh">&#8635; Refresh</button>
     <span class="count" id="count">loading…</span>
+  </div>
+  <div class="controls">
+    <span class="pill dis" id="narrPill">checking…</span>
+    <button class="ctl" id="btnPause">Pause</button>
+    <button class="ctl" id="btnPause1h">Pause 1 hour</button>
+    <button class="ctl resume" id="btnResume">Resume</button>
+    <span class="ctlnote" id="ctlNote"></span>
   </div>
   <div class="cards">
     <div class="metric"><p class="label">Today</p><p class="usd" id="tUsd">—</p><p class="detail" id="tDet"></p></div>
@@ -103,6 +119,46 @@ function load(){
 document.getElementById('refresh').onclick = load;
 load();
 setInterval(load, 30000);
+
+// ── Live pause/resume controls ──
+function narrKey(){ return localStorage.getItem('narrKey') || ''; }
+function ctlUrl(action){
+  var u = HTTP_BASE + '/api/narration/' + action;
+  var k = narrKey();
+  if (k) u += (u.indexOf('?') < 0 ? '?' : '&') + 'key=' + encodeURIComponent(k);
+  return u;
+}
+function renderState(s){
+  var pill = document.getElementById('narrPill');
+  if (!s || !s.on){ pill.className = 'pill dis'; pill.textContent = 'Narration unavailable'; return; }
+  if (s.paused){
+    pill.className = 'pill off';
+    pill.textContent = 'PAUSED' + (s.secondsLeft ? '  ·  ' + Math.ceil(s.secondsLeft/60) + ' min left' : '');
+  } else {
+    pill.className = 'pill on';
+    pill.textContent = 'Narration ON';
+  }
+}
+function loadState(){
+  fetch(HTTP_BASE + '/api/narration/state').then(function(r){ return r.json(); }).then(renderState).catch(function(){});
+}
+function ctl(action){
+  document.getElementById('ctlNote').textContent = '…';
+  fetch(ctlUrl(action)).then(function(r){
+    if (r.status === 403){
+      var nk = prompt('Enter control key (LOCAL_AIS_KEY from your Render settings):');
+      if (nk){ localStorage.setItem('narrKey', nk); return ctl(action); }
+      throw new Error('key required');
+    }
+    return r.json();
+  }).then(function(s){ if (s){ renderState(s); document.getElementById('ctlNote').textContent = ''; } })
+    .catch(function(e){ document.getElementById('ctlNote').textContent = e.message || 'error'; });
+}
+document.getElementById('btnPause').onclick   = function(){ ctl('pause'); };
+document.getElementById('btnPause1h').onclick = function(){ ctl('pause?mins=60'); };
+document.getElementById('btnResume').onclick  = function(){ ctl('resume'); };
+loadState();
+setInterval(loadState, 15000);
 </script>
 </body>
 </html>

@@ -953,8 +953,29 @@ async function refreshWeather() {
 refreshWeather();
 setInterval(refreshWeather, 10 * 60 * 1000);
 
+// ── Live narration pause switch (manual, no redeploy) — controlled from /narrations ──
+// In-memory on purpose: if the server restarts it resets to ON (fail-open, so it can never
+// get stuck silent). A timed pause auto-resumes on its own.
+let narrationPaused = false;
+let narrationPauseUntil = 0;   // epoch ms; 0 = paused with no end time
+function narrationIsPaused() {
+  if (narrationPaused && narrationPauseUntil && Date.now() >= narrationPauseUntil) {
+    narrationPaused = false; narrationPauseUntil = 0;   // timed pause elapsed → auto-resume
+  }
+  return narrationPaused;
+}
+function narrationState() {
+  narrationIsPaused(); // refresh auto-resume before reporting
+  return {
+    on: NARRATION_ON,
+    paused: narrationPaused,
+    secondsLeft: narrationPauseUntil ? Math.max(0, Math.round((narrationPauseUntil - Date.now()) / 1000)) : null
+  };
+}
+
 async function narrateVessel(mmsi, name, direction, speed) {
   if (!NARRATION_ON) return;
+  if (narrationIsPaused()) return;   // manually paused from the /narrations page
   const cleanName = (name || '').trim();
   if (!cleanName || cleanName.toUpperCase() === 'UNKNOWN') return; // never narrate an un-named vessel
   const factPool = NARR_FACTS[factKey(cleanName)];
@@ -1003,6 +1024,33 @@ async function narrateVessel(mmsi, name, direction, speed) {
     narrationInFlight.delete(mmsi);
   }
 }
+
+// ── Narration manual controls (pause/resume live, no redeploy) ──
+// Uses the same key as the test endpoint. If LOCAL_AIS_KEY isn't set on the server, they're open.
+// NOTE: these MUST be registered before '/api/narration/:mmsi' or the param route swallows them.
+function narrationControlAuthed(req, res) {
+  if (LOCAL_AIS_KEY && (req.query.key || req.headers['x-api-key']) !== LOCAL_AIS_KEY) {
+    res.status(403).json({ error: 'invalid key' }); return false;
+  }
+  return true;
+}
+app.get('/api/narration/state', (req, res) => res.json(narrationState()));
+app.get('/api/narration/pause', (req, res) => {
+  if (!narrationControlAuthed(req, res)) return;
+  const mins = Math.min(parseInt(req.query.mins) || 0, 720);   // optional auto-resume, cap 12 h
+  narrationPaused = true;
+  narrationPauseUntil = mins > 0 ? Date.now() + mins * 60000 : 0;
+  broadcastToClients({ type: 'narration_state', data: narrationState() });
+  console.log('🎙️ Narration PAUSED' + (mins ? ' for ' + mins + ' min' : ' (until resumed)'));
+  res.json(narrationState());
+});
+app.get('/api/narration/resume', (req, res) => {
+  if (!narrationControlAuthed(req, res)) return;
+  narrationPaused = false; narrationPauseUntil = 0;
+  broadcastToClients({ type: 'narration_state', data: narrationState() });
+  console.log('🎙️ Narration RESUMED');
+  res.json(narrationState());
+});
 
 // Serve a generated vessel narration clip (kept in memory ~30 min)
 app.get('/api/narration/:mmsi', (req, res) => {
