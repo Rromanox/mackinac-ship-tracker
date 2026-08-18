@@ -1,0 +1,122 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu — Mackinac Tracker</title>
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff;
+          --page:#4ea3ff; --ovl:#ffb84e; --api:#8aa0b6; --live:#3fbf79; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; padding:22px; }
+  h1 { font-size:1.5rem; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:.9rem; margin-bottom:22px; max-width:860px; }
+  .sec { max-width:900px; margin:0 auto 22px; }
+  .sec h2 { font-size:.82rem; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:0 0 4px; font-weight:700; }
+  .sec .secnote { color:var(--muted); font-size:.8rem; margin:0 0 12px; }
+  .wrap { max-width:900px; margin:0 auto; }
+  .row { display:flex; align-items:flex-start; gap:12px; background:var(--card); border:1px solid var(--line);
+         border-radius:11px; padding:12px 14px; margin-bottom:9px; }
+  .row .tag { flex:none; font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px;
+              padding:3px 7px; border-radius:5px; margin-top:2px; min-width:58px; text-align:center; }
+  .tag.page { background:rgba(78,163,255,.16); color:var(--page); }
+  .tag.ovl  { background:rgba(255,184,78,.15); color:var(--ovl); }
+  .tag.api  { background:rgba(138,160,182,.15); color:var(--api); }
+  .tag.live { background:rgba(63,191,121,.16); color:var(--live); }
+  .row .body { flex:1; min-width:0; }
+  .row a.path { color:var(--text); font-weight:700; font-size:.98rem; text-decoration:none; word-break:break-word; }
+  .row a.path:hover { color:var(--accent); text-decoration:underline; }
+  .row a.path .base { color:var(--muted); font-weight:400; }
+  .row .desc { color:var(--muted); font-size:.85rem; margin-top:3px; line-height:1.45; }
+  .row .desc b { color:#cdd6e0; font-weight:600; }
+  .row .copy { flex:none; background:transparent; border:1px solid var(--line); color:var(--muted);
+               border-radius:7px; padding:5px 10px; font-size:.74rem; cursor:pointer; margin-top:1px; white-space:nowrap; }
+  .row .copy:hover { border-color:var(--accent); color:var(--accent); }
+  .row .copy.done { border-color:var(--live); color:var(--live); }
+  .note { color:var(--muted); font-size:.78rem; max-width:900px; margin:6px auto 0; line-height:1.5; }
+  @media (max-width:560px){ .row{ flex-wrap:wrap; } .row .copy{ margin-top:6px; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Mackinac Tracker — Control Panel</h1>
+    <div class="sub">Everything the server hosts, grouped by what it's for. <b style="color:#cdd6e0">Pages</b> you look at, <b style="color:#cdd6e0">overlays</b> go into OBS as browser sources, <b style="color:#cdd6e0">JSON</b> is under-the-hood diagnostics. Tap any link to open it; use <b style="color:#cdd6e0">Copy URL</b> to grab an overlay's full address for OBS.</div>
+  </div>
+  <div id="app"></div>
+  <div class="note">Base address for everything: <b>https://mackinac-ship-tracker.onrender.com</b>. Bookmark <b>/menu</b> to get back here.</div>
+
+<script>
+var SECTIONS = [
+  { title: 'Live', note: 'The main site.', items: [
+    { path:'/', tag:'page', name:'Ship tracker', desc:'The main tracker page — live map and vessels in the straits.' }
+  ]},
+  { title: 'Dashboards', note: "Pages you check — they read the server's history.", items: [
+    { path:'/traffic',       tag:'page', name:'Straits traffic report', desc:'Bridge crossings by day: eastbound/westbound split, busiest hour, and the full ship list per day. Good for "X freighters today" posts.' },
+    { path:'/range-log',     tag:'page', name:'Antenna range history',  desc:'How far the local antenna hears vessels over time — a chart that shows the before/after of moving it outside, plus a live distance breakdown.' },
+    { path:'/narrations',    tag:'page', name:'Narration log &amp; cost',   desc:'Every vessel the AI voice narrated, the script it read, and the running ElevenLabs cost (today / month / all-time).' },
+    { path:'/ptz-log',       tag:'page', name:'Camera movements',        desc:'Every time the camera changed preset and why — freighter at the bridge, tracking west/east, a ferry passing under, or back to Home.' },
+    { path:'/missing-facts', tag:'page', name:'Missing facts list',      desc:'Vessels that crossed but have no fun fact yet — the list to fill in so the narrator has something to say about them.' }
+  ]},
+  { title: 'OBS Overlays', note: 'Transparent browser-source URLs for the stream. banner3 is the one you publish.', items: [
+    { path:'/overlay/banner3',       tag:'live', name:'Lower-third banner v3',   desc:'<b>The published banner.</b> Cycling lower-third with the fun-fact notch. This is what viewers see.' },
+    { path:'/overlay/narration',     tag:'live', name:'Vessel narration (audio)', desc:'<b>The AI voice.</b> Audio-only source — add as a browser source with audio monitoring on. No picture.' },
+    { path:'/overlay/labels',        tag:'ovl',  name:'AIS ship labels',          desc:'Ship-name labels pinned on the video at the bridge preset. Dev/calibration — add <b>?cal=1</b> to calibrate.' },
+    { path:'/overlay/banner2',       tag:'ovl',  name:'Lower-third banner v2',    desc:'Earlier cycling banner. Superseded by v3 — kept as a fallback.' },
+    { path:'/overlay/banner',        tag:'ovl',  name:'Lower-third banner v1',    desc:'Original unified banner. Superseded.' },
+    { path:'/overlay/hud/board',     tag:'ovl',  name:'HUD — departure board',    desc:'Airport-style departure board of vessels in the straits.' },
+    { path:'/overlay/hud/spotlight', tag:'ovl',  name:'HUD — spotlight focus',    desc:'Big focus card on the featured/closest vessel.' },
+    { path:'/overlay/hud/rail',      tag:'ovl',  name:'HUD — side rail',          desc:'Vertical side-rail list of tracked ships.' },
+    { path:'/overlay/spotlight',     tag:'ovl',  name:'Spotlight overlay',        desc:'Alternate spotlight style.' },
+    { path:'/overlay/corner',        tag:'ovl',  name:'Corner overlay',           desc:'Compact corner card.' },
+    { path:'/overlay/bar',           tag:'ovl',  name:'Bar overlay',              desc:'Simple info bar.' },
+    { path:'/overlay/alert',         tag:'ovl',  name:'Alert overlay',            desc:'Pop-up alerts when a notable vessel arrives.' },
+    { path:'/overlay/minimal',       tag:'ovl',  name:'Minimal overlay',          desc:'Stripped-down minimal style.' },
+    { path:'/overlay',               tag:'ovl',  name:'Base overlay',             desc:'The original all-in-one stream overlay.' }
+  ]},
+  { title: 'Diagnostics (JSON)', note: 'Raw data for debugging — plain JSON, not pretty pages.', items: [
+    { path:'/api/status',       tag:'api', name:'/api/status',       desc:'Health check: connections, database, AIS feeds, and which vessels were heard in the last 10 min.' },
+    { path:'/api/ptz-cue',      tag:'api', name:'/api/ptz-cue',      desc:'Which camera zone the system wants right now (home / west / east / bridge). Home Assistant polls this.' },
+    { path:'/api/local-range',  tag:'api', name:'/api/local-range',  desc:'Live snapshot of how far the local antenna is hearing right now (feeds the Range History page).' },
+    { path:'/api/traffic',      tag:'api', name:'/api/traffic',      desc:'Raw traffic aggregation behind the traffic report. Add ?days=N.' },
+    { path:'/api/range-log',    tag:'api', name:'/api/range-log',    desc:'Raw range samples behind the range history. Add ?hours=N.' },
+    { path:'/api/ptz-log',      tag:'api', name:'/api/ptz-log',      desc:'Raw camera-move log behind the Camera Movements page.' },
+    { path:'/api/narrations',   tag:'api', name:'/api/narrations',   desc:'Raw narration log + cost totals behind the narration page.' },
+    { path:'/api/ships/recent', tag:'api', name:'/api/ships/recent', desc:'The most recent vessels detected crossing the bridge.' },
+    { path:'/api/missing-facts',tag:'api', name:'/api/missing-facts',desc:'Raw fact-gap list behind the Missing Facts page.' },
+    { path:'/api/vessel-facts', tag:'api', name:'/api/vessel-facts', desc:'The curated fun-fact database the narrator draws from.' },
+    { path:'/api/narrate-test', tag:'api', name:'/api/narrate-test', desc:'Trigger a one-off test narration to check the voice pipeline.' }
+  ]}
+];
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function rowHtml(it){
+  var isOverlay = (it.tag==='ovl' || it.tag==='live');
+  var copy = isOverlay ? '<button class="copy" data-path="'+esc(it.path)+'">Copy URL</button>' : '';
+  return '<div class="row">'+
+    '<span class="tag '+it.tag+'">'+(it.tag==='ovl'?'overlay':it.tag)+'</span>'+
+    '<div class="body">'+
+      '<a class="path" href="'+esc(it.path)+'" target="_blank" rel="noopener">'+it.name+' <span class="base">'+esc(it.path)+'</span></a>'+
+      '<div class="desc">'+it.desc+'</div>'+
+    '</div>'+ copy +
+  '</div>';
+}
+document.getElementById('app').innerHTML = SECTIONS.map(function(s){
+  return '<div class="sec"><h2>'+esc(s.title)+'</h2><div class="secnote">'+esc(s.note)+'</div>'+
+         s.items.map(rowHtml).join('')+'</div>';
+}).join('');
+document.querySelectorAll('.copy').forEach(function(b){
+  b.onclick = function(){
+    var url = location.origin + b.getAttribute('data-path');
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function(){
+      b.textContent='Copied'; b.classList.add('done'); setTimeout(function(){ b.textContent='Copy URL'; b.classList.remove('done'); },1400);
+    }).catch(function(){ prompt('Copy this URL:', url); });
+  };
+});
+</script>
+</body>
+</html>

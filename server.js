@@ -91,6 +91,10 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Control panel: an index of every page / overlay / API and what each one does
+app.get('/menu',  (req, res) => res.sendFile(path.join(__dirname, 'menu.html')));
+app.get('/links', (req, res) => res.sendFile(path.join(__dirname, 'menu.html')));
+
 // Overlays (transparent, OBS browser source friendly)
 app.get('/overlay',           (req, res) => res.sendFile(path.join(__dirname, 'overlay.html')));
 app.get('/overlay/bar',       (req, res) => res.sendFile(path.join(__dirname, 'overlay-bar.html')));
