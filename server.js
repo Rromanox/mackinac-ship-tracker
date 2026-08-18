@@ -913,17 +913,19 @@ app.get('/api/narrations', async (req, res) => {
     let rows;
     if (narrationsCollection) rows = await narrationsCollection.find({}).sort({ at: -1 }).limit(300).toArray();
     else rows = recentNarrationsMemory.slice(0, 300);
-    const now = new Date();
-    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    // Bucket by local (Eastern) calendar day/month, NOT the server's UTC clock — otherwise
+    // "Today" rolls over at 8 PM Eastern (UTC midnight) and drops the evening's narrations.
+    const todayYmd = etDateParts(new Date()).ymd;   // e.g. '2026-08-17'
+    const monthPrefix = todayYmd.slice(0, 7);        // '2026-08'
     const totals = { today: { count: 0, usd: 0, chars: 0 }, month: { count: 0, usd: 0, chars: 0 }, all: { count: 0, usd: 0, chars: 0 } };
     const add = (b, c, chars) => { b.count++; b.usd += c.total; b.chars += chars; };
     const list = rows.map(r => {
       const c = narrationCost(r);
       const chars = r.chars || 0;
+      const ymd = etDateParts(new Date(r.at)).ymd;   // this narration's Eastern day
       add(totals.all, c, chars);
-      if (r.at >= startMonth) add(totals.month, c, chars);
-      if (r.at >= startToday) add(totals.today, c, chars);
+      if (ymd.slice(0, 7) === monthPrefix) add(totals.month, c, chars);
+      if (ymd === todayYmd) add(totals.today, c, chars);
       return {
         mmsi: r.mmsi, name: r.name, direction: r.direction || null, at: r.at, chars: chars,
         text: r.text || null,
