@@ -32,6 +32,7 @@ let passingsCollection = null;
 let narrationsCollection = null;
 let ptzLogCollection = null;
 let rangeLogCollection = null;
+let configCollection = null;
 
 // Connect to MongoDB
 async function connectToMongoDB() {
@@ -44,6 +45,7 @@ async function connectToMongoDB() {
     narrationsCollection = db.collection('narrations');
     ptzLogCollection = db.collection('ptz_log');
     rangeLogCollection = db.collection('range_log');
+    configCollection = db.collection('app_config');
 
     // Create indexes for better performance
     await shipsCollection.createIndex({ mmsi: 1 });
@@ -58,6 +60,7 @@ async function connectToMongoDB() {
     console.log('✓ Connected to MongoDB');
     console.log('📊 Database:', DB_NAME);
     await loadNameCache();
+    await loadNarrationState();   // restore a persisted narration pause across restarts
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
     console.error('⚠️ Running without database - data will not be saved');
@@ -954,13 +957,38 @@ refreshWeather();
 setInterval(refreshWeather, 10 * 60 * 1000);
 
 // ── Live narration pause switch (manual, no redeploy) — controlled from /narrations ──
-// In-memory on purpose: if the server restarts it resets to ON (fail-open, so it can never
-// get stuck silent). A timed pause auto-resumes on its own.
+// Persisted to Mongo (app_config, _id 'narration') so a pause survives restarts and deploys.
+// A timed pause still auto-resumes on its own — even if the restart happened mid-pause.
 let narrationPaused = false;
 let narrationPauseUntil = 0;   // epoch ms; 0 = paused with no end time
+async function persistNarrationState() {
+  if (!configCollection) return;   // DB down → in-memory only (resets to ON on restart)
+  try {
+    await configCollection.updateOne(
+      { _id: 'narration' },
+      { $set: { paused: narrationPaused, pauseUntil: narrationPauseUntil, updatedAt: new Date() } },
+      { upsert: true }
+    );
+  } catch (e) { console.error('🎙️ narration state persist:', e.message); }
+}
+async function loadNarrationState() {
+  if (!configCollection) return;
+  try {
+    const doc = await configCollection.findOne({ _id: 'narration' });
+    if (!doc) return;
+    narrationPaused = !!doc.paused;
+    narrationPauseUntil = doc.pauseUntil || 0;
+    if (narrationPaused && narrationPauseUntil && Date.now() >= narrationPauseUntil) {
+      narrationPaused = false; narrationPauseUntil = 0;   // timed pause elapsed while we were down
+      await persistNarrationState();
+    }
+    if (narrationPaused) console.log('🎙️ Narration restored to PAUSED' + (narrationPauseUntil ? ' until ' + new Date(narrationPauseUntil).toISOString() : ' (until resumed)'));
+  } catch (e) { console.error('🎙️ narration state load:', e.message); }
+}
 function narrationIsPaused() {
   if (narrationPaused && narrationPauseUntil && Date.now() >= narrationPauseUntil) {
     narrationPaused = false; narrationPauseUntil = 0;   // timed pause elapsed → auto-resume
+    persistNarrationState();                            // remember the auto-resume across restarts
   }
   return narrationPaused;
 }
@@ -1040,6 +1068,7 @@ app.get('/api/narration/pause', (req, res) => {
   const mins = Math.min(parseInt(req.query.mins) || 0, 720);   // optional auto-resume, cap 12 h
   narrationPaused = true;
   narrationPauseUntil = mins > 0 ? Date.now() + mins * 60000 : 0;
+  persistNarrationState();   // survive restarts
   broadcastToClients({ type: 'narration_state', data: narrationState() });
   console.log('🎙️ Narration PAUSED' + (mins ? ' for ' + mins + ' min' : ' (until resumed)'));
   res.json(narrationState());
@@ -1047,6 +1076,7 @@ app.get('/api/narration/pause', (req, res) => {
 app.get('/api/narration/resume', (req, res) => {
   if (!narrationControlAuthed(req, res)) return;
   narrationPaused = false; narrationPauseUntil = 0;
+  persistNarrationState();   // survive restarts
   broadcastToClients({ type: 'narration_state', data: narrationState() });
   console.log('🎙️ Narration RESUMED');
   res.json(narrationState());
