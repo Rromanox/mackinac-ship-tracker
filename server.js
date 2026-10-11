@@ -528,6 +528,7 @@ const TRK_DEFAULT_LEN_M = 180;   // unknown length, or a tug whose barge isn't i
 const TRK_MIN_EXTENT_M = 40;     // bow-on ships still get a sensible frame
 const TRK_FRESH_MS = 90 * 1000;
 const TRK_DR_MAX_S = 60;         // never dead-reckon more than a minute past the last fix
+const TRK_RELEASE_MI = 2;        // let a departing ship go this far past the bridge, then back to the wide view
 
 function trkBearing(lat1, lon1, lat2, lon2) {
   const r = Math.PI / 180, dl = (lon2 - lon1) * r;
@@ -587,7 +588,10 @@ function trkCandidates(now) {
   const list = [];
   Object.keys(nearBridge).forEach(k => {
     const v = nearBridge[k];
-    if (now - v.at <= TRK_FRESH_MS && (v.speed || 0) >= 2) list.push(Object.assign({ mmsi: +k, ferry: false }, v, { closing: trkClosing(v) }));
+    if (now - v.at > TRK_FRESH_MS || (v.speed || 0) < 2) return;
+    const closing = trkClosing(v);
+    if (!closing && v.distKm * 0.621371 > TRK_RELEASE_MI) return;   // passed and well on its way — not worth the frame
+    list.push(Object.assign({ mmsi: +k, ferry: false }, v, { closing: closing }));
   });
   if (!list.length && ferryCueActiveNow()) {
     Object.keys(ferryNearBridge).forEach(k => {
@@ -598,15 +602,17 @@ function trkCandidates(now) {
   }
   return list.sort((a, b) => a.distKm - b.distKm);
 }
-// Stay on the current ship until it has clearly left the scene (departing and past ~0.5 mi) or another
-// ship is much closer to the bridge — prevents ping-ponging between two boats.
+// Pick the ship nearest the bridge that is still coming in (or just passing). Stay on the current ship
+// until it has passed and is heading off (~0.5 mi out), or another ship is much closer — prevents
+// ping-ponging. A departing ship is followed until TRK_RELEASE_MI unless a new one is coming in.
 function trkPick(cands) {
   if (!cands.length) return null;
+  const inPlay = c => c.closing || c.distKm <= 0.8;
+  const best = cands.find(inPlay) || cands[0];
   const cur = cands.find(c => c.mmsi === trk.targetMmsi);
-  const best = cands[0];
   if (!cur || best.mmsi === cur.mmsi) return best;
-  const curLeaving = cur.closing === false && cur.distKm > 0.8;
-  return (curLeaving || best.distKm < cur.distKm - 1.5) ? best : cur;
+  if (!inPlay(cur)) return best;                       // current one has passed — hand over to the next one in
+  return (best.distKm < cur.distKm - 1.5) ? best : cur;
 }
 // Deadband: only "send" a move when the aim drifts ~20% of the frame or the zoom changes ~15%,
 // so the camera glides in steps instead of twitching on every AIS fix.
@@ -624,7 +630,7 @@ function trkTick() {
   const tm = pick ? pick.mmsi : null;
   if (tm !== trk.targetMmsi || mode !== trk.mode) {
     if (pick) trkNote('target', (trk.targetMmsi ? 'Switched to ' : 'Locked on ') + pick.name + (pick.ferry ? " (Shepler's ferry)" : '') + ' — ' + aim.distMi + ' mi from camera');
-    else trkNote('home', mode === 'paused' ? 'Ship auto-aim paused — would hold the wide Home view' : 'No ship in range — would return to the wide Home view');
+    else trkNote('home', mode === 'paused' ? 'Ship auto-aim paused — would hold the wide Home view' : 'No ship to follow — would return to the wide Home view');
   }
   trk.mode = mode; trk.targetMmsi = tm; trk.aim = aim;
   trk.target = pick ? { mmsi: tm, name: pick.name, ferry: pick.ferry, side: pick.side, speedKn: +(pick.speed || 0).toFixed(1),
@@ -784,7 +790,12 @@ function checkBridgePassing(mmsi, name, lat, lon, speed, cog) {
   vesselSides[mmsi] = { side, at: Date.now() };
   // Live camera-cue feed: closest in-range moving vessel drives the PTZ preset (see /api/ptz-cue)
   const prevNear = nearBridge[mmsi];
-  const closing = prevNear ? (distKm <= prevNear.distKm + 0.02) : true; // approaching vs receding (20 m noise margin)
+  // Approaching vs departing. Prefer COURSE (is it pointed at the bridge?): the same fix often arrives
+  // twice (cloud AIS + local antenna), and comparing distances then reads a departing ship as approaching,
+  // which held the bridge close-up to 0.5 mi instead of releasing at PTZ_BRIDGE_OUT_MI.
+  const closing = (typeof cog === 'number' && cog < 360)
+    ? Math.cos((cog - trkBearing(lat, lon, BRIDGE_LAT, BRIDGE_LON)) * Math.PI / 180) > 0
+    : (prevNear ? (distKm <= prevNear.distKm + 0.02) : true); // no course: distance trend (20 m noise margin)
   nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, cog: (typeof cog === 'number' && cog < 360) ? cog : null, lat: lat, lon: lon, at: Date.now(), closing: closing };
 
   // Narrate as an APPROACHING vessel reaches the bridge (not on the pass), so the

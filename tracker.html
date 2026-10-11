@@ -70,7 +70,7 @@
       </div>
     </div>
   </div>
-  <div class="note">Pan is a true compass bearing from the camera mast (0° = north). Zoom is approximate until the camera's real zoom curve is measured; the north offset and tilt get calibrated on install day. Ship length comes from AIS — "est." means unknown or a tug pushing a barge, so a typical freighter length is used. Uses the same ship rules as the current camera cue, including the Shepler's before-1-PM rule and the Pause switch on /ptz-log.</div>
+  <div class="note">Pan is a true compass bearing from the camera mast (0° = north). Zoom is approximate until the camera's real zoom curve is measured; the north offset and tilt get calibrated on install day. Ship length comes from AIS — "est." means unknown or a tug pushing a barge, so a typical freighter length is used. Departing ships are let go 2 mi past the bridge (sooner if a new one is coming in). Uses the same ship rules as the current camera cue, including the Shepler's before-1-PM rule and the Pause switch on /ptz-log.</div>
 
 <script>
   var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
@@ -123,7 +123,7 @@
       ? (t.ferry ? "Shepler's ferry · " : '') + t.speedKn + ' kn' + (t.cog!=null ? ' heading ' + t.cog + '° ' + cardinal(t.cog) : '') +
         ' · ' + t.distBridgeMi + ' mi from bridge, ' + (t.closing ? 'approaching' : 'departing') +
         '<br>Ship ' + (a.lenFt ? (a.lenKnown ? '' : 'est. ') + a.lenFt.toLocaleString() + ' ft' : '?') + ' · last AIS fix ' + t.fixAgeS + 's ago'
-      : 'No moving ship in range — it would hold the wide Home view.';
+      : 'No ship to follow — it would hold the wide Home view.';
     document.getElementById('pan').innerHTML  = a.pan!=null ? a.pan.toFixed(1) + '° <small>' + cardinal(a.pan) + '</small>' : '—';
     document.getElementById('tilt').textContent = a.tilt!=null ? a.tilt.toFixed(2) + '°' : '—';
     document.getElementById('zoom').textContent = a.zoomX!=null ? '≈' + a.zoomX + 'x' : '—';
