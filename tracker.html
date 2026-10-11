@@ -20,6 +20,7 @@
   .grid { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:16px; max-width:1200px; }
   @media (max-width:860px){ .grid{ grid-template-columns:1fr; } }
   #map { height:540px; border-radius:12px; border:1px solid var(--line); background:#0e141b; }
+  #map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }  /* dark basemap from standard OSM tiles */
   @media (max-width:860px){ #map{ height:380px; } }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
   .pill { display:inline-block; font-size:.76rem; font-weight:800; padding:4px 11px; border-radius:20px; letter-spacing:.4px; }
@@ -83,8 +84,8 @@
   }
 
   var map = L.map('map', { zoomControl:true }).setView([45.802, -84.728], 12);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 18, attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18, attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
   var cone = L.polygon([], { color:'#ffb84e', weight:1, fillColor:'#ffb84e', fillOpacity:0.15 }).addTo(map);
   var axis = L.polyline([], { color:'#ffb84e', weight:1, dashArray:'4 4', opacity:0.7 }).addTo(map);
