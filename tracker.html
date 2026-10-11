@@ -1,0 +1,144 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PTZ Tracker — Mackinac Tracker</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff; --amber:#ffb84e; --green:#3fbf79; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; padding:22px; }
+  h1 { font-size:1.35rem; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:.88rem; margin-bottom:16px; max-width:900px; line-height:1.45; }
+  .grid { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:16px; max-width:1200px; }
+  @media (max-width:860px){ .grid{ grid-template-columns:1fr; } }
+  #map { height:540px; border-radius:12px; border:1px solid var(--line); background:#0e141b; }
+  @media (max-width:860px){ #map{ height:380px; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .pill { display:inline-block; font-size:.76rem; font-weight:800; padding:4px 11px; border-radius:20px; letter-spacing:.4px; }
+  .pill.tracking { background:rgba(255,184,78,.18); color:var(--amber); }
+  .pill.idle     { background:rgba(255,255,255,.08); color:var(--muted); }
+  .pill.paused   { background:rgba(138,160,182,.15); color:var(--muted); }
+  .tname { font-size:1.3rem; font-weight:800; margin:10px 0 2px; }
+  .tsub { color:var(--muted); font-size:.85rem; line-height:1.5; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
+  .stat .k { color:var(--muted); font-size:.68rem; text-transform:uppercase; letter-spacing:.5px; }
+  .stat .v { font-size:1.15rem; font-weight:700; font-variant-numeric:tabular-nums; margin-top:2px; }
+  .stat .v small { color:var(--muted); font-size:.75rem; font-weight:600; }
+  h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 10px; font-weight:700; }
+  #log { max-height:300px; overflow-y:auto; font-size:.82rem; }
+  .lrow { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+  .lrow .t { color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; min-width:62px; }
+  .lrow.target .x { color:var(--amber); font-weight:600; }
+  .lrow.home .x { color:var(--muted); }
+  .lrow.move .x { color:#cdd6e0; }
+  .note { color:var(--muted); font-size:.78rem; line-height:1.5; max-width:1200px; margin-top:6px; }
+  .empty { color:var(--muted); font-style:italic; }
+</style>
+</head>
+<body>
+  <h1>PTZ Tracker — dry run</h1>
+  <div class="sub">Where the new Axis camera <b>would</b> point right now to follow the ship. Nothing is sent to a camera yet — this checks the ship picking, aim and zoom on real passes before install. The shaded cone is the camera's would-be view.</div>
+
+  <div class="grid">
+    <div id="map"></div>
+    <div>
+      <div class="card">
+        <span class="pill idle" id="mode">loading…</span>
+        <div class="tname" id="tname">—</div>
+        <div class="tsub" id="tsub"></div>
+        <div class="stats">
+          <div class="stat"><div class="k">Pan</div><div class="v" id="pan">—</div></div>
+          <div class="stat"><div class="k">Tilt</div><div class="v" id="tilt">—</div></div>
+          <div class="stat"><div class="k">Zoom</div><div class="v" id="zoom">—</div></div>
+          <div class="stat"><div class="k">View width</div><div class="v" id="hfov">—</div></div>
+          <div class="stat"><div class="k">From camera</div><div class="v" id="dist">—</div></div>
+          <div class="stat"><div class="k">Moves / min</div><div class="v" id="mpm">—</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Decisions</h2>
+        <div id="log"><span class="empty">loading…</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="note">Pan is a true compass bearing from the camera mast (0° = north). Zoom is approximate until the camera's real zoom curve is measured; the north offset and tilt get calibrated on install day. Ship length comes from AIS — "est." means unknown or a tug pushing a barge, so a typical freighter length is used. Uses the same ship rules as the current camera cue, including the Shepler's before-1-PM rule and the Pause switch on /ptz-log.</div>
+
+<script>
+  var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function cardinal(b){ return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(b/22.5)%16]; }
+  function dest(lat, lon, brg, d){
+    var R=6371000, r=Math.PI/180, b=brg*r, la=lat*r, lo=lon*r, a=d/R;
+    var la2=Math.asin(Math.sin(la)*Math.cos(a)+Math.cos(la)*Math.sin(a)*Math.cos(b));
+    var lo2=lo+Math.atan2(Math.sin(b)*Math.sin(a)*Math.cos(la), Math.cos(a)-Math.sin(la)*Math.sin(la2));
+    return [la2/r, lo2/r];
+  }
+
+  var map = L.map('map', { zoomControl:true }).setView([45.802, -84.728], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 18, attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+  }).addTo(map);
+  var cone = L.polygon([], { color:'#ffb84e', weight:1, fillColor:'#ffb84e', fillOpacity:0.15 }).addTo(map);
+  var axis = L.polyline([], { color:'#ffb84e', weight:1, dashArray:'4 4', opacity:0.7 }).addTo(map);
+  var camMk = null, bridgeMk = null, shipLayer = L.layerGroup().addTo(map);
+
+  function drawMap(d){
+    if (!camMk && d.camera){
+      camMk = L.circleMarker([d.camera.lat, d.camera.lon], { radius:6, color:'#4ea3ff', fillColor:'#4ea3ff', fillOpacity:1 })
+        .bindTooltip('Camera mast').addTo(map);
+      bridgeMk = L.circleMarker([d.bridge.lat, d.bridge.lon], { radius:5, color:'#8aa0b6', fillColor:'#8aa0b6', fillOpacity:0.8 })
+        .bindTooltip('Mackinac Bridge (center)').addTo(map);
+    }
+    var a = d.aim; if (!a || !d.camera) return;
+    var len = Math.max(1500, a.distMi * 1609.344 * 1.25);
+    var pts = [[d.camera.lat, d.camera.lon]];
+    for (var i = 0; i <= 8; i++) pts.push(dest(d.camera.lat, d.camera.lon, a.pan - a.hfov/2 + a.hfov*i/8, len));
+    cone.setLatLngs(pts);
+    axis.setLatLngs([[d.camera.lat, d.camera.lon], dest(d.camera.lat, d.camera.lon, a.pan, len)]);
+    shipLayer.clearLayers();
+    var tm = d.target ? d.target.mmsi : null;
+    (d.candidates || []).forEach(function(c){
+      var isT = c.mmsi === tm;
+      L.circleMarker([c.lat, c.lon], { radius: isT?8:5, color: isT?'#ffb84e':'#cdd6e0', fillColor: isT?'#ffb84e':'#cdd6e0', fillOpacity: isT?1:0.6, weight: isT?2:1 })
+        .bindTooltip(esc(c.name) + ' — ' + c.speedKn + ' kn, ' + c.distBridgeMi + ' mi from bridge').addTo(shipLayer);
+    });
+  }
+
+  function render(d){
+    var m = document.getElementById('mode');
+    m.className = 'pill ' + d.mode;
+    m.textContent = d.mode==='tracking' ? 'TRACKING' : d.mode==='paused' ? 'PAUSED — HOME VIEW' : 'NO SHIP — HOME VIEW';
+    var t = d.target, a = d.aim || {};
+    document.getElementById('tname').textContent = t ? t.name : 'Wide view on the bridge';
+    document.getElementById('tsub').innerHTML = t
+      ? (t.ferry ? "Shepler's ferry · " : '') + t.speedKn + ' kn' + (t.cog!=null ? ' heading ' + t.cog + '° ' + cardinal(t.cog) : '') +
+        ' · ' + t.distBridgeMi + ' mi from bridge, ' + (t.closing ? 'approaching' : 'departing') +
+        '<br>Ship ' + (a.lenFt ? (a.lenKnown ? '' : 'est. ') + a.lenFt.toLocaleString() + ' ft' : '?') + ' · last AIS fix ' + t.fixAgeS + 's ago'
+      : 'No moving ship in range — it would hold the wide Home view.';
+    document.getElementById('pan').innerHTML  = a.pan!=null ? a.pan.toFixed(1) + '° <small>' + cardinal(a.pan) + '</small>' : '—';
+    document.getElementById('tilt').textContent = a.tilt!=null ? a.tilt.toFixed(2) + '°' : '—';
+    document.getElementById('zoom').textContent = a.zoomX!=null ? '≈' + a.zoomX + 'x' : '—';
+    document.getElementById('hfov').textContent = a.hfov!=null ? a.hfov.toFixed(1) + '°' : '—';
+    document.getElementById('dist').textContent = a.distMi!=null ? a.distMi + ' mi' : '—';
+    document.getElementById('mpm').textContent = d.movesLastMin;
+    var log = d.log || [];
+    document.getElementById('log').innerHTML = log.length ? log.map(function(r){
+      var tm = new Date(r.at).toLocaleTimeString([], {hour:'numeric', minute:'2-digit', second:'2-digit'});
+      return '<div class="lrow ' + r.kind + '"><span class="t">' + esc(tm) + '</span><span class="x">' + esc(r.text) + '</span></div>';
+    }).join('') : '<span class="empty">No decisions yet.</span>';
+    drawMap(d);
+  }
+  function load(){ fetch(HTTP_BASE + '/api/tracker').then(function(r){ return r.json(); }).then(render).catch(function(){}); }
+  load();
+  setInterval(load, 1000);
+</script>
+</body>
+</html>

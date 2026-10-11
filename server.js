@@ -512,6 +512,140 @@ app.get('/api/ptz/resume', (req, res) => {
   res.json(cameraState());
 });
 
+// ── AIS-driven PTZ tracker — DRY RUN (prep for the Axis Q6358-LE) ──────────────
+// Every second, works out where a steerable PTZ on the camera mast WOULD point to follow
+// the current target ship: true-bearing pan, tilt to the hull, and a zoom (horizontal field
+// of view) that keeps the ship a steady size in frame. Nothing is sent to a camera yet —
+// /tracker shows the decisions so aiming and ship-picking can be checked on real passes.
+// Later, a small driver on the OBS PC reads /api/tracker and turns pan/tilt/hfov into VAPIX
+// commands using its own calibration (north offset, zoom curve).
+const TRK_CAM = { lat: 45.78712606267091, lon: -84.72825497388841, heightM: 9.1 }; // label-overlay mast, ~30 ft up
+const TRK_HFOV_WIDE = 58.5, TRK_HFOV_TELE = 2.3, TRK_ZOOM_MAX = 31; // Q6358-LE datasheet
+const TRK_FILL = 0.5;            // ship spans ~half the frame: room ahead of the bow, and tolerant of where
+                                 // its AIS antenna sits (stern on salties, bow on old lakers)
+const TRK_AIM_HEIGHT_M = 8;      // aim at mid-superstructure, not the waterline
+const TRK_DEFAULT_LEN_M = 180;   // unknown length, or a tug whose barge isn't in its own AIS length
+const TRK_MIN_EXTENT_M = 40;     // bow-on ships still get a sensible frame
+const TRK_FRESH_MS = 90 * 1000;
+const TRK_DR_MAX_S = 60;         // never dead-reckon more than a minute past the last fix
+
+function trkBearing(lat1, lon1, lat2, lon2) {
+  const r = Math.PI / 180, dl = (lon2 - lon1) * r;
+  const y = Math.sin(dl) * Math.cos(lat2 * r);
+  const x = Math.cos(lat1 * r) * Math.sin(lat2 * r) - Math.sin(lat1 * r) * Math.cos(lat2 * r) * Math.cos(dl);
+  return (Math.atan2(y, x) / r + 360) % 360;
+}
+// Dead-reckon along course over ground between AIS fixes so the camera leads the ship smoothly
+function trkPredict(v, now) {
+  const dt = Math.min((now - v.at) / 1000, TRK_DR_MAX_S);
+  if (!(dt > 0) || !v.speed || v.cog == null) return { lat: v.lat, lon: v.lon };
+  const d = v.speed * 0.514444 * dt, R = 6371000, c = v.cog * Math.PI / 180;
+  return { lat: v.lat + (d * Math.cos(c) / R) * 180 / Math.PI,
+           lon: v.lon + (d * Math.sin(c) / (R * Math.cos(v.lat * Math.PI / 180))) * 180 / Math.PI };
+}
+// Zoom ratio for a field of view, log-interpolated so the ends match the spec (58.5° = 1x, 2.3° = 31x).
+// Approximate until the real zoom curve is measured on the camera.
+function trkZoomX(hfov) {
+  return Math.exp(Math.log(TRK_ZOOM_MAX) * Math.log(TRK_HFOV_WIDE / hfov) / Math.log(TRK_HFOV_WIDE / TRK_HFOV_TELE));
+}
+function trkAimAt(lat, lon, hfov) {
+  const distM = haversineKm(TRK_CAM.lat, TRK_CAM.lon, lat, lon) * 1000;
+  return { pan: +trkBearing(TRK_CAM.lat, TRK_CAM.lon, lat, lon).toFixed(2),
+           tilt: +(Math.atan2(TRK_AIM_HEIGHT_M - TRK_CAM.heightM, Math.max(distM, 1)) * 180 / Math.PI).toFixed(2),
+           hfov: +hfov.toFixed(2), zoomX: +trkZoomX(hfov).toFixed(1), distMi: +(distM / 1609.344).toFixed(2) };
+}
+function trkAim(v, now) {
+  const p = trkPredict(v, now);
+  const distM = haversineKm(TRK_CAM.lat, TRK_CAM.lon, p.lat, p.lon) * 1000;
+  const info = staticInfo[v.mmsi] || {};
+  const lenKnown = !!(info.length && !TOW_TYPES.has(info.type));
+  const lenM = lenKnown ? info.length : TRK_DEFAULT_LEN_M;
+  // How long the ship LOOKS from the mast: full length broadside, much less bow- or stern-on
+  const pan = trkBearing(TRK_CAM.lat, TRK_CAM.lon, p.lat, p.lon);
+  const aspect = v.cog == null ? 1 : Math.abs(Math.sin((v.cog - pan) * Math.PI / 180));
+  const extentM = Math.max(lenM * aspect, TRK_MIN_EXTENT_M);
+  const hfov = Math.min(TRK_HFOV_WIDE, Math.max(TRK_HFOV_TELE, 2 * Math.atan((extentM / TRK_FILL) / 2 / Math.max(distM, 1)) * 180 / Math.PI));
+  return Object.assign(trkAimAt(p.lat, p.lon, hfov), { lenFt: Math.round(lenM * 3.28084), lenKnown: lenKnown, pos: { lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5) } });
+}
+let trkHome = null;   // wide view on the bridge (computed lazily: BRIDGE_LAT is defined further down)
+function trkHomeAim() { return trkHome || (trkHome = trkAimAt(BRIDGE_LAT, BRIDGE_LON, TRK_HFOV_WIDE)); }
+
+const trk = { mode: 'idle', targetMmsi: null, target: null, aim: null, sent: null };
+const trkLog = [];        // newest first: { at, kind, text }
+const trkMoveTimes = [];  // timestamps of would-be camera commands (moves per minute)
+function trkNote(kind, text) { trkLog.unshift({ at: Date.now(), kind: kind, text: text }); if (trkLog.length > 300) trkLog.pop(); }
+
+// Same eligibility as the preset cue: fresh, moving, in range; Shepler's only near the span and only before 1 PM
+function trkCandidates(now) {
+  const list = [];
+  Object.keys(nearBridge).forEach(k => {
+    const v = nearBridge[k];
+    if (now - v.at <= TRK_FRESH_MS && (v.speed || 0) >= 2) list.push(Object.assign({ mmsi: +k, ferry: false }, v));
+  });
+  if (!list.length && ferryCueActiveNow()) {
+    Object.keys(ferryNearBridge).forEach(k => {
+      const v = ferryNearBridge[k];
+      if (v.lat != null && now - v.at <= TRK_FRESH_MS && (v.speed || 0) >= 2 && v.distKm * 0.621371 <= FERRY_BRIDGE_MI)
+        list.push(Object.assign({ mmsi: +k, ferry: true, name: v.name || "Shepler's ferry" }, v));
+    });
+  }
+  return list.sort((a, b) => a.distKm - b.distKm);
+}
+// Stay on the current ship until it has clearly left the scene (departing and past ~0.5 mi) or another
+// ship is much closer to the bridge — prevents ping-ponging between two boats.
+function trkPick(cands) {
+  if (!cands.length) return null;
+  const cur = cands.find(c => c.mmsi === trk.targetMmsi);
+  const best = cands[0];
+  if (!cur || best.mmsi === cur.mmsi) return best;
+  const curLeaving = cur.closing === false && cur.distKm > 0.8;
+  return (curLeaving || best.distKm < cur.distKm - 1.5) ? best : cur;
+}
+// Deadband: only "send" a move when the aim drifts ~20% of the frame or the zoom changes ~15%,
+// so the camera glides in steps instead of twitching on every AIS fix.
+function trkNeedsMove(a, s) {
+  if (!s) return true;
+  const dPan = Math.abs(((a.pan - s.pan + 540) % 360) - 180);
+  return dPan > s.hfov * 0.2 || Math.abs(a.tilt - s.tilt) > s.hfov * 0.5625 * 0.2 || Math.abs(a.hfov - s.hfov) / s.hfov > 0.15;
+}
+function trkTick() {
+  const now = Date.now();
+  let mode = 'idle', pick = null, aim;
+  if (cameraAimPaused) mode = 'paused';
+  else if ((pick = trkPick(trkCandidates(now)))) mode = 'tracking';
+  aim = pick ? trkAim(pick, now) : trkHomeAim();
+  const tm = pick ? pick.mmsi : null;
+  if (tm !== trk.targetMmsi || mode !== trk.mode) {
+    if (pick) trkNote('target', (trk.targetMmsi ? 'Switched to ' : 'Locked on ') + pick.name + (pick.ferry ? " (Shepler's ferry)" : '') + ' — ' + aim.distMi + ' mi from camera');
+    else trkNote('home', mode === 'paused' ? 'Ship auto-aim paused — would hold the wide Home view' : 'No ship in range — would return to the wide Home view');
+  }
+  trk.mode = mode; trk.targetMmsi = tm; trk.aim = aim;
+  trk.target = pick ? { mmsi: tm, name: pick.name, ferry: pick.ferry, side: pick.side, speedKn: +(pick.speed || 0).toFixed(1),
+    cog: pick.cog == null ? null : Math.round(pick.cog), closing: pick.closing !== false,
+    distBridgeMi: +(pick.distKm * 0.621371).toFixed(2), fixAgeS: Math.round((now - pick.at) / 1000) } : null;
+  if (trkNeedsMove(aim, trk.sent)) {
+    trk.sent = aim; trkMoveTimes.push(now);
+    trkNote('move', 'pan ' + aim.pan.toFixed(1) + '°, tilt ' + aim.tilt.toFixed(2) + '°, ≈' + aim.zoomX + 'x (' + aim.hfov.toFixed(1) + '° wide)');
+  }
+  while (trkMoveTimes.length && now - trkMoveTimes[0] > 60000) trkMoveTimes.shift();
+}
+setInterval(() => { try { trkTick(); } catch (e) { console.error('tracker tick:', e.message); } }, 1000);
+
+app.get('/api/tracker', (req, res) => {
+  const now = Date.now();
+  res.json({
+    dryRun: true,
+    camera: TRK_CAM, lens: { hfovWide: TRK_HFOV_WIDE, hfovTele: TRK_HFOV_TELE, zoomMax: TRK_ZOOM_MAX },
+    bridge: { lat: BRIDGE_LAT, lon: BRIDGE_LON },
+    mode: trk.mode, target: trk.target, aim: trk.aim, sent: trk.sent, movesLastMin: trkMoveTimes.length,
+    candidates: trkCandidates(now).slice(0, 10).map(c => { const p = trkPredict(c, now);
+      return { mmsi: c.mmsi, name: c.name, ferry: c.ferry, lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5),
+               distBridgeMi: +(c.distKm * 0.621371).toFixed(2), speedKn: +(c.speed || 0).toFixed(1) }; }),
+    log: trkLog.slice(0, 150)
+  });
+});
+app.get('/tracker', (req, res) => res.sendFile(path.join(__dirname, 'tracker.html')));
+
 // Recent ships that passed the bridge (server-detected longitude crossings)
 app.get('/api/ships/recent', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 10, 50);
@@ -631,7 +765,7 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function checkBridgePassing(mmsi, name, lat, lon, speed) {
+function checkBridgePassing(mmsi, name, lat, lon, speed, cog) {
   if (BLOCKED_MMSI_SERVER.has(mmsi) && !ALLOWED_MMSI_SERVER.has(mmsi)) return;
 
   const distKm = haversineKm(lat, lon, BRIDGE_LAT, BRIDGE_LON);
@@ -644,7 +778,7 @@ function checkBridgePassing(mmsi, name, lat, lon, speed) {
   // Live camera-cue feed: closest in-range moving vessel drives the PTZ preset (see /api/ptz-cue)
   const prevNear = nearBridge[mmsi];
   const closing = prevNear ? (distKm <= prevNear.distKm + 0.02) : true; // approaching vs receding (20 m noise margin)
-  nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, lat: lat, lon: lon, at: Date.now(), closing: closing };
+  nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, cog: (typeof cog === 'number' && cog < 360) ? cog : null, lat: lat, lon: lon, at: Date.now(), closing: closing };
 
   // Narrate as an APPROACHING vessel reaches the bridge (not on the pass), so the
   // ~5-10s of script + voice generation lands while it's on camera. narrateVessel()
@@ -1406,7 +1540,9 @@ function processAisMessage(message, source) {
     // the CAMERA cue so the PTZ catches their Mighty Mac pass under the bridge.
     const _fpr = message.Message && message.Message.PositionReport;
     if (SHEPLERS_FERRIES.has(message.MetaData.MMSI) && _fpr && typeof _fpr.Latitude === 'number' && typeof _fpr.Longitude === 'number') {
-      ferryNearBridge[message.MetaData.MMSI] = { distKm: haversineKm(_fpr.Latitude, _fpr.Longitude, BRIDGE_LAT, BRIDGE_LON), speed: _fpr.Sog || 0, at: Date.now() };
+      ferryNearBridge[message.MetaData.MMSI] = { distKm: haversineKm(_fpr.Latitude, _fpr.Longitude, BRIDGE_LAT, BRIDGE_LON), speed: _fpr.Sog || 0, at: Date.now(),
+        name: (message.MetaData.ShipName || '').trim(), lat: _fpr.Latitude, lon: _fpr.Longitude,
+        cog: (typeof _fpr.Cog === 'number' && _fpr.Cog < 360) ? _fpr.Cog : null };   // position/course for the PTZ tracker
     }
     // Single source of truth: drop hidden vessels (ferries, small craft,
     // blocklist) here so no overlay ever sees them.
@@ -1427,7 +1563,7 @@ function processAisMessage(message, source) {
 
     // Detect bridge passings (side-of-bridge crossing)
     const pos = message.Message.PositionReport;
-    checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed);
+    checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog);
 
     // Save to database (async, don't wait)
     saveShipToDatabase(shipInfo).catch(err =>
