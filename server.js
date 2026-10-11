@@ -752,6 +752,10 @@ const PRONUNCIATION = [
   [/Tregurtha/gi, 'Truh-GUR-thuh'],
   [/\bBlough\b/gi, 'Bluff'],
   [/Mesabi/gi, 'Muh-SAH-bee'],
+  [/\bD[aą]bie\b/gi, 'DOMB-yeh'],     // Polsteam Dabie (Polish lake Dąbie)
+  [/Drawsko/gi, 'DRAHV-skoh'],        // Polsteam Drawsko (Polish lake)
+  [/Vlieborg/gi, 'VLEE-borg'],        // Wagenborg Vlieborg (the Vlie channel)
+  [/gracht/gi, 'grahkt'],             // Dutch "-gracht" ships (Humbergracht, Muntgracht)
 ];
 function applyPronunciation(t) { PRONUNCIATION.forEach(p => { t = t.replace(p[0], p[1]); }); return t; }
 

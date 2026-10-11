@@ -1,6 +1,6 @@
 {
  "note": "Curated vessel fun facts for the banner notch, researched + adversarially fact-checked. `vessels` keyed by name (case-insensitive). `general` = Straits of Mackinac shipping facts used as a last-resort fallback when a vessel has no fact and no AIS size/type.",
- "generated": "2026-07-20",
+ "generated": "2026-10-11",
  "_copyright": "Curated vessel-facts database (c) 2026 Kevin Salazar Fernandes. All rights reserved. Proprietary -- see LICENSE.",
  "vessels": [
   {
@@ -2149,6 +2149,395 @@
     "She's the first ship on the Great Lakes powered by cleaner EPA Tier 4 engines.",
     "Her unloading boom was salvaged from the scrapped steamer American Victory.",
     "She's built to carry unusual cargo like wind-turbine blades on deck."
+   ]
+  },
+  {
+   "name": "FEDERAL HAMILTON",
+   "fact": "Fednav ocean-going saltie, ~656 ft, built 2023, Marshall Islands flag",
+   "built": 2023,
+   "lengthFt": 656,
+   "flag": "Marshall Islands",
+   "type": "Ocean-going bulk carrier (saltie)",
+   "source": "vesselfinder.com IMO 9975363 (bulk carrier, 2023, 200 m, Marshall Islands); builder China per MarineLink (unconfirmed)",
+   "facts": [
+    "One of Fednav's newest ocean-going bulk carriers, flagged in the Marshall Islands.",
+    "A Seaway-sized saltie about 656 feet long, built to transit the St. Lawrence Seaway locks into the Great Lakes.",
+    "Operated by Montreal-based Fednav, Canada's largest ocean-going dry-bulk shipowner."
+   ]
+  },
+  {
+   "name": "FEDERAL CLYDE",
+   "fact": "Fednav handysize laker, ~656 ft, built 2016 in Japan (Oshima)",
+   "built": 2016,
+   "lengthFt": 656,
+   "flag": "Marshall Islands",
+   "type": "Ocean-going handysize bulk carrier",
+   "source": "vesselfinder/shipindex IMO 9671072 (bulk, 2016, Marshall Islands, 34,564 DWT); near-sister to Federal Cedar",
+   "facts": [
+    "Built in 2016 as part of Fednav's box-hold handysize series of about 34,500 tons (Oshima Shipbuilding, Japan).",
+    "A Seaway-sized saltie roughly 656 feet long under the Marshall Islands flag.",
+    "A near-sister of the Federal Cedar, from the same 2016 Japanese-built class."
+   ]
+  },
+  {
+   "name": "FEDERAL CEDAR",
+   "fact": "Fednav saltie, ~656 ft, built 2016 by Oshima, Japan; runs FALLine",
+   "built": 2016,
+   "lengthFt": 656,
+   "flag": "Marshall Islands",
+   "type": "Ocean-going handysize bulk carrier",
+   "source": "wikipedia/vesselfinder IMO 9671101 (bulk, 2016 Oshima Japan, 200 m, 34,564 DWT, Marshall Islands)",
+   "facts": [
+    "Built in 2016 by Oshima Shipbuilding in Japan; a box-hold handysize bulker of about 34,500 tons.",
+    "A roughly 656-foot Seaway-sized saltie flagged in the Marshall Islands.",
+    "Sails Fednav's FALLine (Fednav Atlantic Lakes Line), a scheduled service linking Europe with the Great Lakes-St. Lawrence system."
+   ]
+  },
+  {
+   "name": "FEDERAL HUNTER",
+   "fact": "Fednav saltie, ~656 ft, built 2001 in Japan; Marshall Islands flag",
+   "built": 2001,
+   "lengthFt": 656,
+   "flag": "Marshall Islands",
+   "type": "Ocean-going bulk carrier (seaway-size)",
+   "source": "vesselfinder IMO 9205938 (bulk, 2001, 200 m, Marshall Islands, 36,563 DWT); name collides with older unrelated ships",
+   "facts": [
+    "Built in 2001 by Oshima Shipbuilding, Japan; a seaway-sized bulker of about 36,500 tons.",
+    "Roughly 656 feet long, now Marshall Islands flagged after earlier registration in Hong Kong.",
+    "One of the older salties still trading to the Great Lakes within the Fednav fleet."
+   ]
+  },
+  {
+   "name": "FEDERAL YUKINA",
+   "fact": "Fednav saltie, ~656 ft, built 2010; ~12% more fuel-efficient class",
+   "built": 2010,
+   "lengthFt": 656,
+   "flag": "Marshall Islands",
+   "type": "Ocean-going bulk carrier (seaway-size)",
+   "source": "vesselfinder IMO 9476977 (bulk, 2010 Japan, 200 m, 35,868 DWT); Fednav/insidelogistics.ca on 2011 Hamilton call",
+   "facts": [
+    "Built in 2010 in Japan; a seaway-sized saltie of about 35,900 tons, now Marshall Islands flagged.",
+    "When delivered, Fednav said she was about 12% more fuel-efficient than the previous class - roughly 770 tonnes of fuel saved a year.",
+    "On an early Lakes voyage in 2011 she carried industrial slag from Japan to Fednav's Hamilton, Ontario terminal."
+   ]
+  },
+  {
+   "name": "FEDERAL WILLIAM PAUL",
+   "fact": "Fednav's newest saltie, ~656 ft, built 2025; Marshall Islands flag",
+   "built": 2025,
+   "lengthFt": 656,
+   "flag": "Marshall Islands",
+   "type": "Ocean-going bulk carrier (saltie)",
+   "source": "vesselfinder IMO 9975454 (bulk, 2025, 200 m, Marshall Islands); same 9975-series as Federal Hamilton",
+   "facts": [
+    "One of Fednav's very newest bulk carriers, built in 2025 and flagged in the Marshall Islands.",
+    "A Seaway-sized saltie about 656 feet long, from the same recent series as the Federal Hamilton and Federal Minnesota.",
+    "Unusually for the 'Federal' fleet - most named for places or rivers - she carries a personal name."
+   ]
+  },
+  {
+   "name": "POLSTEAM PILE",
+   "fact": "Polsteam lakermax, ~656 ft, built 2024 in China; Portugal flag",
+   "built": 2024,
+   "lengthFt": 656,
+   "flag": "Portugal",
+   "type": "Ocean-going bulk carrier (lakermax)",
+   "source": "gard.no/ajot.com IMO 9971886 (bulk, 2024 Shanhaiguan China, 200 m, 37,654 DWT, Portugal); 4th of 12 new Polsteam lakermaxes",
+   "facts": [
+    "Built in 2024 at China's Shanhaiguan shipyard; the fourth of twelve new ~37,000-ton 'lakermax' bulkers ordered by Polsteam.",
+    "About 656 feet long, Portugal-flagged, and purpose-built to pass the locks into the Great Lakes.",
+    "In spring 2025 she was the first ocean vessel of the season at Burns Harbor, Indiana, delivering specialty steel. She is named for a Polish lake, Jezioro Pile."
+   ]
+  },
+  {
+   "name": "POLSTEAM DABIE",
+   "fact": "Polsteam lakermax, ~656 ft, built 2024; lead ship of a class of 12",
+   "built": 2024,
+   "lengthFt": 656,
+   "flag": "Portugal",
+   "type": "Ocean-going bulk carrier (lakermax)",
+   "source": "gard.no/polsteam.com IMO 9971850 (bulk, 2024 Shanhaiguan China, 200 m, 37,591 DWT, Portugal); lead ship of 12. Pron: DOMB-yeh",
+   "facts": [
+    "The lead ship - first of twelve - in Polsteam's new ~37,000-ton 'lakermax' series, built in 2024 in China.",
+    "About 656 feet long and Portugal-flagged; she reached the Great Lakes in April 2024.",
+    "Named for Lake Dabie near Polsteam's home port of Szczecin, Poland."
+   ]
+  },
+  {
+   "name": "DRAWSKO",
+   "fact": "Polsteam laker, ~623 ft, built 2010 in China; named for a Polish lake",
+   "built": 2010,
+   "lengthFt": 623,
+   "flag": "Malta",
+   "type": "Ocean-going bulk carrier (seaway-size laker)",
+   "source": "vesselfinder/gard.no IMO 9393450 (bulk, 2010 Nantong China, 190 m, 30,000 DWT, Malta). Pron: DRAHV-skoh",
+   "facts": [
+    "Built in 2010 in China; one of a series of ~30,000-ton lakers that Polsteam named after Polish lakes.",
+    "About 623 feet long, Malta-flagged, and sized to fit the St. Lawrence Seaway locks.",
+    "Named after Lake Drawsko in northwestern Poland."
+   ]
+  },
+  {
+   "name": "BBC PHILIPPINES",
+   "fact": "BBC Chartering F500 heavy-lift ship, two 250-ton cranes, ~482 ft (2023)",
+   "built": 2023,
+   "lengthFt": 482,
+   "flag": "Antigua & Barbuda",
+   "type": "Heavy-lift / multipurpose",
+   "source": "heavyliftpfi/Gard IMO 9963401 (2023 Taizhou SanFu China, 147 m, ~12,400 DWT, 2x250t cranes, F500 type)",
+   "facts": [
+    "One of BBC Chartering's new F500-class heavy-lift vessels, built 2023 in China.",
+    "She carries two 250-tonne cranes - 500 tons combined - for project and heavy-lift cargo like wind-turbine and industrial parts.",
+    "German-managed by the Briese group of Leer and flagged in Antigua & Barbuda; about 482 feet long."
+   ]
+  },
+  {
+   "name": "BBC EAGLE",
+   "fact": "Multipurpose cargo ship sailing for BBC Chartering, ~456 ft (2008)",
+   "built": 2008,
+   "lengthFt": 456,
+   "flag": "Antigua & Barbuda",
+   "type": "General cargo / multipurpose",
+   "source": "Gard/Marinelink IMO 9407574 (2008, 139 m, A&B); owned/managed by Juengerhans (ex 'Apus J'), BBC = charterer",
+   "facts": [
+    "A multipurpose general-cargo ship built in 2008, trading for BBC Chartering under the Antigua & Barbuda flag.",
+    "Owned and managed by Germany's Juengerhans Maritime Services; she originally sailed as the Apus J.",
+    "About 456 feet long, carrying general and project cargo."
+   ]
+  },
+  {
+   "name": "BBC VERMONT",
+   "fact": "Multipurpose project-cargo ship for BBC Chartering, ~454 ft (2008)",
+   "built": 2008,
+   "lengthFt": 454,
+   "flag": "Antigua & Barbuda",
+   "type": "General cargo / multipurpose",
+   "source": "Shipfix/WK Webster IMO 9357236 (2008, 138.5 m, A&B, ~12,800 DWT, up to 665 TEU)",
+   "facts": [
+    "A multipurpose general-cargo ship built in 2008, flagged in Antigua & Barbuda.",
+    "She can carry up to about 665 containers plus general and project cargo - roughly 12,800 tons deadweight.",
+    "About 454 feet long, trading for BBC Chartering."
+   ]
+  },
+  {
+   "name": "BBC ROSTOV",
+   "fact": "BBC Chartering F500 heavy-lift ship, two 250-ton cranes, ~482 ft (2024)",
+   "built": 2024,
+   "lengthFt": 482,
+   "flag": "Antigua & Barbuda",
+   "type": "Heavy-lift / multipurpose",
+   "source": "Shipfix/heavyliftpfi IMO 9964443 (delivered ~2024, 147 m, A&B, ~12,400 DWT, F500 type)",
+   "facts": [
+    "One of BBC Chartering's newest F500-class heavy-lift vessels, delivered around 2024.",
+    "She carries two 250-tonne cranes - 500 tons combined - for project and heavy-lift cargo.",
+    "German-managed by the Briese group of Leer and flagged in Antigua & Barbuda; about 482 feet long."
+   ]
+  },
+  {
+   "name": "FLEVOBORG",
+   "fact": "Royal Wagenborg ice-class multipurpose ship, built 2010 (Ferus Smit)",
+   "built": 2010,
+   "lengthFt": null,
+   "flag": "Netherlands",
+   "type": "Multipurpose dry cargo (ice-class 1A)",
+   "source": "wagenborg.com/wikipedia IMO 9419292 (2010 Ferus Smit, ~14,600 DWT, Ice 1A, Delfzijl). LOA disputed (Wagenborg 154.6m vs aggregators ~142.8m) so length left off",
+   "facts": [
+    "A Dutch multipurpose dry-cargo carrier built in 2010 by Ferus Smit; part of Royal Wagenborg's F-class.",
+    "Ice-class 1A and about 14,600 tons deadweight, with two box-shaped holds for general and project cargo; registered in Delfzijl.",
+    "Her name follows Wagenborg's convention of Dutch place names - here Flevoland, the reclaimed-land province."
+   ]
+  },
+  {
+   "name": "FINNBORG",
+   "fact": "Royal Wagenborg ice-class multipurpose ship, built 2011 (Ferus Smit)",
+   "built": 2011,
+   "lengthFt": null,
+   "flag": "Netherlands",
+   "type": "Multipurpose dry cargo (ice-class 1A)",
+   "source": "wagenborg.com IMO 9419321 (2011 Ferus Smit, ~14,600 DWT, Ice 1A, Delfzijl); sister to Flevoborg/Fivelborg. LOA disputed, length left off",
+   "facts": [
+    "A Royal Wagenborg F-class multipurpose dry-cargo ship, built in 2011 by Ferus Smit; sister to the Flevoborg and Fivelborg.",
+    "Ice-class 1A and about 14,600 tons deadweight; Dutch-flagged and registered in Delfzijl.",
+    "Two large open-hatch holds let her carry general and project cargo into the Great Lakes."
+   ]
+  },
+  {
+   "name": "ELBEBORG",
+   "fact": "Royal Wagenborg multipurpose cargo ship, ~474 ft (2011)",
+   "built": 2011,
+   "lengthFt": 474,
+   "flag": "Netherlands",
+   "type": "Multipurpose / general cargo",
+   "source": "offshore-energy/Marinelink IMO 9568249 (2011 Royal Niestern Sander, ~144.6 m, ~12,000 DWT, Delfzijl)",
+   "facts": [
+    "A Dutch multipurpose cargo ship built in 2011 by Royal Niestern Sander for Royal Wagenborg.",
+    "About 474 feet long and roughly 12,000 tons deadweight; registered in Delfzijl.",
+    "Her name echoes Wagenborg's river-name convention - the Elbe, a major European river."
+   ]
+  },
+  {
+   "name": "FIVELBORG",
+   "fact": "Royal Wagenborg ice-class multipurpose ship, built 2010 (Ferus Smit)",
+   "built": 2010,
+   "lengthFt": null,
+   "flag": "Netherlands",
+   "type": "Multipurpose dry cargo (ice-class 1A)",
+   "source": "vesselfinder/wagenborg.com IMO 9419307 (2010 Ferus Smit, ~14,575 DWT, Ice 1A, Delfzijl); sister to Flevoborg/Finnborg. LOA disputed, length left off",
+   "facts": [
+    "A Royal Wagenborg F-class multipurpose dry-cargo ship, built in 2010; sister to the Flevoborg and Finnborg.",
+    "Ice-class 1A and about 14,600 tons deadweight; Dutch-flagged with her home port in Delfzijl.",
+    "Her name recalls the Fivel, a historic river in the Groningen region of the Netherlands."
+   ]
+  },
+  {
+   "name": "VLIEBORG",
+   "fact": "Royal Wagenborg general-cargo ship, ~468 ft (2012)",
+   "built": 2012,
+   "lengthFt": 468,
+   "flag": "Netherlands",
+   "type": "General cargo / multipurpose",
+   "source": "scheepvaartwest/offshore-energy IMO 9554781 (2012 Ferus Smit Westerbroek, 142.65 m, Netherlands, Delfzijl)",
+   "facts": [
+    "A Dutch general-cargo and multipurpose ship built in 2012 by Ferus Smit for Royal Wagenborg.",
+    "About 468 feet long and registered in Delfzijl.",
+    "Named after the Vlie, the tidal channel in the Wadden Sea between the islands of Vlieland and Terschelling."
+   ]
+  },
+  {
+   "name": "HUMBERGRACHT",
+   "fact": "Spliethoff heavy-lift ship, 300-ton cranes, ~454 ft (ex-BBC Montana)",
+   "built": 2009,
+   "lengthFt": 454,
+   "flag": "Netherlands",
+   "type": "Heavy-lift / multipurpose",
+   "source": "MaritimeOptima/heavyliftpfi IMO 9433274 (2008-09 Taizhou Sanfu China, 138.5 m, ~12,770 DWT, 300t crane); ex HHL Tyne, orig. BBC Montana",
+   "facts": [
+    "A Spliethoff heavy-lift and project-cargo ship with a combined crane capacity of 300 tonnes.",
+    "Built in China around 2008-09; she first sailed as the BBC Montana, then HHL Tyne, before Spliethoff bought her in 2019 and reflagged her Dutch.",
+    "About 454 feet long; the '-gracht' ending shared across Spliethoff's fleet is Dutch for 'canal'."
+   ]
+  },
+  {
+   "name": "MACKINAW",
+   "fact": "U.S. Coast Guard heavy icebreaker (WLBB-30), the Lakes' primary ice ship",
+   "built": 2006,
+   "lengthFt": 240,
+   "flag": "United States",
+   "type": "USCG heavy icebreaker / buoy tender",
+   "source": "wikipedia/USCG - USCGC Mackinaw WLBB-30, commissioned 2006, Marinette Marine WI, homeport Cheboygan MI",
+   "facts": [
+    "The modern USCGC Mackinaw (WLBB-30), commissioned in 2006 and homeported in Cheboygan, Michigan, is the Great Lakes' primary heavy icebreaker.",
+    "Built by Marinette Marine in Wisconsin, she can break roughly 42 inches of level ice and also sets and tends navigation buoys.",
+    "She replaced the famous 1944 Mackinaw - now a museum ship in Mackinaw City - which was retired the same day in 2006."
+   ]
+  },
+  {
+   "name": "CLYDE W. FOGG",
+   "fact": "1944 single-screw tug hauling freight to Beaver Island, Lake Michigan",
+   "built": 1944,
+   "lengthFt": 86,
+   "flag": "United States",
+   "type": "Freight / harbor tug",
+   "source": "gltugs.wordpress.com - built 1944 as US Army ST-709, renamed Clyde W. Fogg 2022 by St. James Marine of Charlevoix MI, registered Beaver Island",
+   "facts": [
+    "Built in 1944 as the U.S. Army tug ST-709; she served the Army Corps of Engineers for decades before civilian work.",
+    "Renamed Clyde W. Fogg in 2022 by St. James Marine of Charlevoix, Michigan; registered at Beaver Island, she mainly runs freight out to the island."
+   ]
+  },
+  {
+   "name": "PRENTISS BROWN",
+   "fact": "Cement tug pushing St. Marys barge St. Marys Conquest out of Charlevoix",
+   "built": 1967,
+   "lengthFt": 113,
+   "flag": "United States",
+   "type": "ATB cement tug",
+   "source": "tugboatinformation.com/WMHS - built 1967 TX (ex Betty Culbreath), Port City Marine 2008, deep-notch rebuild 2009; pushes barge St. Marys Conquest",
+   "facts": [
+    "Built in 1967 in Texas, she was rebuilt in 2009 for deep-notch pushing and renamed Prentiss Brown.",
+    "At 4,300 horsepower she pushes the cement barge St. Marys Conquest for St. Marys Cement, loading at Charlevoix, Michigan.",
+    "She is almost certainly named for Prentiss M. Brown, the St. Ignace senator known as the 'father of the Mackinac Bridge.'"
+   ]
+  },
+  {
+   "name": "DONALD J SARTER",
+   "fact": "Great Lakes Towing harbor & ship-assist tug, 3,000 hp, built 1964",
+   "built": 1964,
+   "lengthFt": 88,
+   "flag": "United States",
+   "type": "Harbor / ship-assist tug",
+   "source": "tugboatinformation.com/Great Lakes Group - built 1964 Main Iron Works LA (ex Point Comfort), renamed 2020, acquired by Great Lakes Towing 2022",
+   "facts": [
+    "Built in 1964 in Louisiana as the Point Comfort, she was renamed Donald J. Sarter by Sarter Marine in 2020.",
+    "The Great Lakes Towing Company of Cleveland took her over in 2022; she does harbor towing and ship assist across the Lakes.",
+    "A twin-screw tug rated at about 3,000 horsepower."
+   ]
+  },
+  {
+   "name": "CANDACE ELISE",
+   "fact": "Ashton Marine tug on the tank barge Robert F. Deegan - calcium chloride",
+   "built": 1981,
+   "lengthFt": 100,
+   "flag": "United States",
+   "type": "Tank-barge tug",
+   "source": "tugboatinformation.com/Mason County Press - built 1981 LA (ex Perseverance), Ashton Marine of North Muskegon MI 2015; pairs with barge Robert F. Deegan",
+   "facts": [
+    "Built in 1981 in Louisiana, she was acquired and renamed Candace Elise by Ashton Marine of North Muskegon, Michigan in 2015.",
+    "She pairs with the 225-foot tank barge Robert F. Deegan, hauling liquid calcium chloride for OxyChem's Ludington, Michigan plant.",
+    "Powered by twin Caterpillar diesels at about 2,600 horsepower."
+   ]
+  },
+  {
+   "name": "MEREDITH ASHTON",
+   "fact": "Ashton Marine's 4,000-hp tug, also runs the tank barge Robert F. Deegan",
+   "built": 1999,
+   "lengthFt": 95,
+   "flag": "United States",
+   "type": "Tank-barge tug",
+   "source": "tugboatinformation.com/Mason County Press - built 1999 Thoma-Sea LA (ex Nutmeg State), Ashton Marine of North Muskegon MI; sister to Candace Elise",
+   "facts": [
+    "Built in 1999 in Louisiana, she is Ashton Marine's larger tug at about 4,000 horsepower.",
+    "She also works the tank barge Robert F. Deegan serving the OxyChem plant at Ludington, Michigan.",
+    "A twin-screw tug and sister vessel to the Candace Elise, out of North Muskegon, Michigan."
+   ]
+  },
+  {
+   "name": "KRISTIN JOELLE",
+   "fact": "Ryba Marine construction & towing tug out of Cheboygan, MI (built 1965)",
+   "built": 1965,
+   "lengthFt": 76,
+   "flag": "United States",
+   "type": "Towing / construction tug",
+   "source": "tugboatinformation.com - built 1965 Equitable Equipment LA (ex Vincent J. Robin IV), renamed by Ryba Marine 2017, homeport Cheboygan MI",
+   "facts": [
+    "Built in 1965 in Louisiana, she carried many names before Ryba Marine renamed her Kristin Joelle in 2017.",
+    "Owned by Ryba Marine Construction and homeported in Cheboygan, Michigan - the same port as the icebreaker Mackinaw.",
+    "Repowered with twin Caterpillar diesels at about 2,400 horsepower."
+   ]
+  },
+  {
+   "name": "MATT ALLEN",
+   "fact": "1961 Great Lakes tug of the King Co. of Holland, MI (ex-Mari Beth Andrie)",
+   "built": 1961,
+   "lengthFt": 80,
+   "flag": "United States",
+   "type": "Great Lakes tug",
+   "source": "tugboatinformation.com (USCG Doc 287250) - built 1961 Golden Meadow LA (ex Gladys Bea), King Co./RDK LLC of Holland MI, ex-Mari Beth Andrie",
+   "facts": [
+    "Built in 1961 in Louisiana as the Gladys Bea, she is an 80-foot, 2,200-horsepower twin-screw tug.",
+    "Owned by the King Company of Holland, Michigan; she earlier worked for Andrie Inc. of Muskegon as the Mari Beth Andrie."
+   ]
+  },
+  {
+   "name": "KIMBERLY JOY",
+   "fact": "Ryba Marine's Cheboygan tug - built 1942 as Coast Guard cutter Manitou",
+   "built": 1942,
+   "lengthFt": 105,
+   "flag": "United States",
+   "type": "Great Lakes tug",
+   "source": "tugboatinformation.com - built 1942 as USCGC Manitou (WYT-60), civilian 1984, acquired 2024 by Ryba Marine Construction of Cheboygan MI",
+   "facts": [
+    "Built in 1942 as the U.S. Coast Guard cutter Manitou; she served off Greenland before being sold into civilian work in 1984.",
+    "A 105-foot, 2,200-horsepower tug acquired in 2024 by Ryba Marine Construction of Cheboygan - right at the Straits."
    ]
   }
  ],
