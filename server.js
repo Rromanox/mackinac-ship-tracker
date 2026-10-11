@@ -571,9 +571,10 @@ function trkAim(v, now) {
 let trkHome = null;   // wide view on the bridge (computed lazily: BRIDGE_LAT is defined further down)
 function trkHomeAim() { return trkHome || (trkHome = trkAimAt(BRIDGE_LAT, BRIDGE_LON, TRK_HFOV_WIDE)); }
 
-const trk = { mode: 'idle', targetMmsi: null, target: null, aim: null, sent: null };
+const trk = { mode: 'idle', targetMmsi: null, target: null, aim: null, cam: null, motion: null, cmd: null, lastTick: 0, lastGlideNote: 0 };
 const trkLog = [];        // newest first: { at, kind, text }
-const trkMoveTimes = [];  // timestamps of would-be camera commands (moves per minute)
+const trkCmdTimes = [];   // would-be speed commands sent to the camera (per-minute count)
+const trkSlewTimes = [];  // would-be quick repositions (per-minute count)
 function trkNote(kind, text) { trkLog.unshift({ at: Date.now(), kind: kind, text: text }); if (trkLog.length > 300) trkLog.pop(); }
 
 // Approaching vs departing from the ship's COURSE (is it pointed at the bridge?). The distance-delta
@@ -614,15 +615,52 @@ function trkPick(cands) {
   if (!inPlay(cur)) return best;                       // current one has passed — hand over to the next one in
   return (best.distKm < cur.distKm - 1.5) ? best : cur;
 }
-// Deadband: only "send" a move when the aim drifts ~20% of the frame or the zoom changes ~15%,
-// so the camera glides in steps instead of twitching on every AIS fix.
-function trkNeedsMove(a, s) {
-  if (!s) return true;
-  const dPan = Math.abs(((a.pan - s.pan + 540) % 360) - 180);
-  return dPan > s.hfov * 0.2 || Math.abs(a.tilt - s.tilt) > s.hfov * 0.5625 * 0.2 || Math.abs(a.hfov - s.hfov) / s.hfov > 0.15;
+// ── Smooth "glide" model of the camera ──
+// The real driver will steer the Axis by SPEED (VAPIX continuous pan/tilt/zoom), not by jumping between
+// positions: it turns at the rate the ship crosses the view (feed-forward from the predicted track) plus
+// a gentle centering correction, and only re-sends a speed when it changes noticeably. Here the camera's
+// position is simulated from those speeds, so /tracker shows how it would really move.
+const TRK_KP = 0.15;          // 1/s — closes a centering error over ~7 s, gently
+const TRK_MAX_GLIDE = 3;      // °/s cap while gliding
+const TRK_SLEW_FRAC = 0.6;    // ship more than 60% of a frame off to one side → quick reposition instead of a glide
+const TRK_LEAD_S = 4;         // look-ahead used to measure how fast the ship crosses the view
+function trkWrap(d) { return ((d % 360) + 540) % 360 - 180; }
+function trkClamp(x, m) { return Math.max(-m, Math.min(m, x)); }
+function trkGlide(want, ff, now) {
+  const dt = trk.lastTick ? Math.min((now - trk.lastTick) / 1000, 5) : 1;
+  trk.lastTick = now;
+  const c = trk.cam;
+  const ePan = c ? trkWrap(want.pan - c.pan) : 0;
+  // Returning to the wide view always glides (no sudden cut on stream); only a jump between far-apart ships repositions
+  if (!c || (trk.mode === 'tracking' && Math.abs(ePan) > TRK_SLEW_FRAC * Math.max(c.hfov, want.hfov))) {
+    trk.cam = { pan: want.pan, tilt: want.tilt, hfov: want.hfov };
+    trk.cmd = null; trkSlewTimes.push(now);
+    trk.motion = { state: 'reposition', panRate: 0, tiltRate: 0, zoomRate: 0, offCenterPct: 0 };
+    if (c) trkNote('slew', 'Quick reposition to pan ' + want.pan.toFixed(1) + '°, ≈' + want.zoomX + 'x');
+    return;
+  }
+  const pr = trkClamp(ff.pan + TRK_KP * ePan, TRK_MAX_GLIDE);
+  const tr = trkClamp(ff.tilt + TRK_KP * (want.tilt - c.tilt), TRK_MAX_GLIDE);
+  const zr = trkClamp(ff.zoom + TRK_KP * Math.log(want.hfov / c.hfov), 0.5);   // log field-of-view per second (+ = zooming out)
+  c.pan = (c.pan + pr * dt + 360) % 360;
+  c.tilt += tr * dt;
+  c.hfov = Math.min(TRK_HFOV_WIDE, Math.max(TRK_HFOV_TELE, c.hfov * Math.exp(zr * dt)));
+  // The real camera only gets a new speed command when the speed changes noticeably
+  const p = trk.cmd;
+  if (!p || Math.abs(pr - p.pan) > Math.max(0.01, Math.abs(p.pan) * 0.15) || Math.abs(tr - p.tilt) > 0.01 || Math.abs(zr - p.zoom) > 0.01) {
+    trk.cmd = { pan: pr, tilt: tr, zoom: zr }; trkCmdTimes.push(now);
+  }
+  const still = Math.abs(pr) < 0.005 && Math.abs(zr) < 0.002;
+  trk.motion = { state: still ? 'holding' : 'gliding', panRate: +pr.toFixed(3), tiltRate: +tr.toFixed(3), zoomRate: +(zr * 100).toFixed(1),
+                 offCenterPct: +(trkWrap(want.pan - c.pan) / c.hfov * 100).toFixed(1) };
+  if (!still && trk.mode === 'tracking' && now - trk.lastGlideNote > 30000) {
+    trk.lastGlideNote = now;
+    trkNote('glide', 'Gliding ' + (pr >= 0 ? 'right' : 'left') + ' at ' + Math.abs(pr).toFixed(2) + '°/s' +
+      (Math.abs(zr) >= 0.002 ? ', zooming ' + (zr < 0 ? 'in' : 'out') + ' ' + Math.abs(zr * 100).toFixed(1) + '%/s' : '') +
+      ' — ship ' + Math.abs(trk.motion.offCenterPct) + '% off center');
+  }
 }
-function trkTick() {
-  const now = Date.now();
+function trkTick(now = Date.now()) {
   let mode = 'idle', pick = null, aim;
   if (cameraAimPaused) mode = 'paused';
   else if ((pick = trkPick(trkCandidates(now)))) mode = 'tracking';
@@ -636,11 +674,14 @@ function trkTick() {
   trk.target = pick ? { mmsi: tm, name: pick.name, ferry: pick.ferry, side: pick.side, speedKn: +(pick.speed || 0).toFixed(1),
     cog: pick.cog == null ? null : Math.round(pick.cog), closing: pick.closing !== false,
     distBridgeMi: +(pick.distKm * 0.621371).toFixed(2), fixAgeS: Math.round((now - pick.at) / 1000) } : null;
-  if (trkNeedsMove(aim, trk.sent)) {
-    trk.sent = aim; trkMoveTimes.push(now);
-    trkNote('move', 'pan ' + aim.pan.toFixed(1) + '°, tilt ' + aim.tilt.toFixed(2) + '°, ≈' + aim.zoomX + 'x (' + aim.hfov.toFixed(1) + '° wide)');
+  // Feed-forward: how fast the ship is crossing the view right now (aim now vs a few seconds ahead)
+  let ff = { pan: 0, tilt: 0, zoom: 0 };
+  if (pick) {
+    const ahead = trkAim(pick, now + TRK_LEAD_S * 1000);
+    ff = { pan: trkWrap(ahead.pan - aim.pan) / TRK_LEAD_S, tilt: (ahead.tilt - aim.tilt) / TRK_LEAD_S, zoom: Math.log(ahead.hfov / aim.hfov) / TRK_LEAD_S };
   }
-  while (trkMoveTimes.length && now - trkMoveTimes[0] > 60000) trkMoveTimes.shift();
+  trkGlide(aim, ff, now);
+  [trkCmdTimes, trkSlewTimes].forEach(a => { while (a.length && now - a[0] > 60000) a.shift(); });
 }
 setInterval(() => { try { trkTick(); } catch (e) { console.error('tracker tick:', e.message); } }, 1000);
 
@@ -650,7 +691,9 @@ app.get('/api/tracker', (req, res) => {
     dryRun: true,
     camera: TRK_CAM, lens: { hfovWide: TRK_HFOV_WIDE, hfovTele: TRK_HFOV_TELE, zoomMax: TRK_ZOOM_MAX },
     bridge: { lat: BRIDGE_LAT, lon: BRIDGE_LON },
-    mode: trk.mode, target: trk.target, aim: trk.aim, sent: trk.sent, movesLastMin: trkMoveTimes.length,
+    mode: trk.mode, target: trk.target, aim: trk.aim,
+    cam: trk.cam ? { pan: +trk.cam.pan.toFixed(2), tilt: +trk.cam.tilt.toFixed(2), hfov: +trk.cam.hfov.toFixed(2), zoomX: +trkZoomX(trk.cam.hfov).toFixed(1) } : null,
+    motion: trk.motion, speedCmdsLastMin: trkCmdTimes.length, slewsLastMin: trkSlewTimes.length,
     candidates: trkCandidates(now).slice(0, 10).map(c => { const p = trkPredict(c, now);
       return { mmsi: c.mmsi, name: c.name, ferry: c.ferry, lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5),
                distBridgeMi: +(c.distKm * 0.621371).toFixed(2), speedKn: +(c.speed || 0).toFixed(1) }; }),

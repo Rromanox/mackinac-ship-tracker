@@ -39,14 +39,16 @@
   .lrow .t { color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; min-width:62px; }
   .lrow.target .x { color:var(--amber); font-weight:600; }
   .lrow.home .x { color:var(--muted); }
-  .lrow.move .x { color:#cdd6e0; }
+  .lrow.glide .x { color:#cdd6e0; }
+  .lrow.slew .x { color:var(--accent); }
+  .pill .st { font-weight:600; opacity:.8; }
   .note { color:var(--muted); font-size:.78rem; line-height:1.5; max-width:1200px; margin-top:6px; }
   .empty { color:var(--muted); font-style:italic; }
 </style>
 </head>
 <body>
   <h1>PTZ Tracker — dry run</h1>
-  <div class="sub">Where the new Axis camera <b>would</b> point right now to follow the ship. Nothing is sent to a camera yet — this checks the ship picking, aim and zoom on real passes before install. The shaded cone is the camera's would-be view.</div>
+  <div class="sub">Where the new Axis camera <b>would</b> point right now to follow the ship, moving the way the real camera will: a continuous glide at the ship's pace, not jumps. Nothing is sent to a camera yet — this checks ship picking, aim, zoom and motion on real passes before install. The shaded cone is the camera's would-be view.</div>
 
   <div class="grid">
     <div id="map"></div>
@@ -57,11 +59,11 @@
         <div class="tsub" id="tsub"></div>
         <div class="stats">
           <div class="stat"><div class="k">Pan</div><div class="v" id="pan">—</div></div>
-          <div class="stat"><div class="k">Tilt</div><div class="v" id="tilt">—</div></div>
           <div class="stat"><div class="k">Zoom</div><div class="v" id="zoom">—</div></div>
           <div class="stat"><div class="k">View width</div><div class="v" id="hfov">—</div></div>
-          <div class="stat"><div class="k">From camera</div><div class="v" id="dist">—</div></div>
-          <div class="stat"><div class="k">Moves / min</div><div class="v" id="mpm">—</div></div>
+          <div class="stat"><div class="k">Motion</div><div class="v" id="motion">—</div></div>
+          <div class="stat"><div class="k">Ship off center</div><div class="v" id="off">—</div></div>
+          <div class="stat"><div class="k">Speed changes / min</div><div class="v" id="mpm">—</div></div>
         </div>
       </div>
       <div class="card">
@@ -70,7 +72,7 @@
       </div>
     </div>
   </div>
-  <div class="note">Pan is a true compass bearing from the camera mast (0° = north). Zoom is approximate until the camera's real zoom curve is measured; the north offset and tilt get calibrated on install day. Ship length comes from AIS — "est." means unknown or a tug pushing a barge, so a typical freighter length is used. Departing ships are let go 2 mi past the bridge (sooner if a new one is coming in). Uses the same ship rules as the current camera cue, including the Shepler's before-1-PM rule and the Pause switch on /ptz-log.</div>
+  <div class="note">The camera is steered by <b>speed</b>: it turns at the rate the ship crosses the view, with a gentle correction to keep it centered, and only sends a new speed when it changes noticeably. "Ship off center" is how far the ship sits from the middle of the frame (as % of the frame width). Pan is a true compass bearing from the camera mast (0° = north). Zoom is approximate until the camera's real zoom curve is measured; the north offset and tilt get calibrated on install day. Ship length comes from AIS — "est." means unknown or a tug pushing a barge, so a typical freighter length is used. Departing ships are let go 2 mi past the bridge (sooner if a new one is coming in). Uses the same ship rules as the current camera cue, including the Shepler's before-1-PM rule and the Pause switch on /ptz-log.</div>
 
 <script>
   var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
@@ -98,8 +100,8 @@
       bridgeMk = L.circleMarker([d.bridge.lat, d.bridge.lon], { radius:5, color:'#8aa0b6', fillColor:'#8aa0b6', fillOpacity:0.8 })
         .bindTooltip('Mackinac Bridge (center)').addTo(map);
     }
-    var a = d.aim; if (!a || !d.camera) return;
-    var len = Math.max(1500, a.distMi * 1609.344 * 1.25);
+    var a = d.cam || d.aim; if (!a || !d.camera) return;          // cone = where the (simulated) camera actually is
+    var len = Math.max(1500, ((d.aim && d.aim.distMi) || 1.7) * 1609.344 * 1.25);
     var pts = [[d.camera.lat, d.camera.lon]];
     for (var i = 0; i <= 8; i++) pts.push(dest(d.camera.lat, d.camera.lon, a.pan - a.hfov/2 + a.hfov*i/8, len));
     cone.setLatLngs(pts);
@@ -116,20 +118,28 @@
   function render(d){
     var m = document.getElementById('mode');
     m.className = 'pill ' + d.mode;
-    m.textContent = d.mode==='tracking' ? 'TRACKING' : d.mode==='paused' ? 'PAUSED — HOME VIEW' : 'NO SHIP — HOME VIEW';
-    var t = d.target, a = d.aim || {};
+    var mo = d.motion || {};
+    m.innerHTML = (d.mode==='tracking' ? 'TRACKING' : d.mode==='paused' ? 'PAUSED — HOME VIEW' : 'NO SHIP — HOME VIEW') +
+      (mo.state ? ' <span class="st">· ' + esc(mo.state.toUpperCase()) + '</span>' : '');
+    var t = d.target, a = d.aim || {}, c = d.cam || a;
     document.getElementById('tname').textContent = t ? t.name : 'Wide view on the bridge';
     document.getElementById('tsub').innerHTML = t
       ? (t.ferry ? "Shepler's ferry · " : '') + t.speedKn + ' kn' + (t.cog!=null ? ' heading ' + t.cog + '° ' + cardinal(t.cog) : '') +
         ' · ' + t.distBridgeMi + ' mi from bridge, ' + (t.closing ? 'approaching' : 'departing') +
-        '<br>Ship ' + (a.lenFt ? (a.lenKnown ? '' : 'est. ') + a.lenFt.toLocaleString() + ' ft' : '?') + ' · last AIS fix ' + t.fixAgeS + 's ago'
+        '<br>Ship ' + (a.lenFt ? (a.lenKnown ? '' : 'est. ') + a.lenFt.toLocaleString() + ' ft' : '?') + ' · ' + a.distMi + ' mi from camera · last AIS fix ' + t.fixAgeS + 's ago'
       : 'No ship to follow — it would hold the wide Home view.';
-    document.getElementById('pan').innerHTML  = a.pan!=null ? a.pan.toFixed(1) + '° <small>' + cardinal(a.pan) + '</small>' : '—';
-    document.getElementById('tilt').textContent = a.tilt!=null ? a.tilt.toFixed(2) + '°' : '—';
-    document.getElementById('zoom').textContent = a.zoomX!=null ? '≈' + a.zoomX + 'x' : '—';
-    document.getElementById('hfov').textContent = a.hfov!=null ? a.hfov.toFixed(1) + '°' : '—';
-    document.getElementById('dist').textContent = a.distMi!=null ? a.distMi + ' mi' : '—';
-    document.getElementById('mpm').textContent = d.movesLastMin;
+    document.getElementById('pan').innerHTML  = c.pan!=null ? c.pan.toFixed(1) + '° <small>' + cardinal(c.pan) + '</small>' : '—';
+    document.getElementById('zoom').textContent = c.zoomX!=null ? '≈' + c.zoomX + 'x' : '—';
+    document.getElementById('hfov').textContent = c.hfov!=null ? c.hfov.toFixed(1) + '°' : '—';
+    var parts = [];
+    if (mo.state === 'reposition') parts.push('repositioning');
+    else {
+      if (Math.abs(mo.panRate||0) >= 0.005) parts.push((mo.panRate > 0 ? '→ ' : '← ') + Math.abs(mo.panRate).toFixed(2) + '°/s');
+      if (Math.abs(mo.zoomRate||0) >= 0.2) parts.push((mo.zoomRate < 0 ? 'zoom in ' : 'zoom out ') + Math.abs(mo.zoomRate).toFixed(1) + '%/s');
+    }
+    document.getElementById('motion').innerHTML = parts.length ? parts.join('<br><small>') + (parts.length > 1 ? '</small>' : '') : 'still';
+    document.getElementById('off').textContent = (t && mo.offCenterPct!=null) ? Math.abs(mo.offCenterPct).toFixed(1) + '%' : '—';
+    document.getElementById('mpm').textContent = d.speedCmdsLastMin != null ? d.speedCmdsLastMin : '—';
     var log = d.log || [];
     document.getElementById('log').innerHTML = log.length ? log.map(function(r){
       var tm = new Date(r.at).toLocaleTimeString([], {hour:'numeric', minute:'2-digit', second:'2-digit'});
