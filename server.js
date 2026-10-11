@@ -575,18 +575,25 @@ const trkLog = [];        // newest first: { at, kind, text }
 const trkMoveTimes = [];  // timestamps of would-be camera commands (moves per minute)
 function trkNote(kind, text) { trkLog.unshift({ at: Date.now(), kind: kind, text: text }); if (trkLog.length > 300) trkLog.pop(); }
 
+// Approaching vs departing from the ship's COURSE (is it pointed at the bridge?). The distance-delta
+// `closing` flag in nearBridge flickers because the same fix often arrives twice (cloud AIS + local
+// antenna), and a repeated position reads as "not moving away".
+function trkClosing(v) {
+  if (v.cog == null) return v.closing !== false;
+  return Math.cos((v.cog - trkBearing(v.lat, v.lon, BRIDGE_LAT, BRIDGE_LON)) * Math.PI / 180) > 0;
+}
 // Same eligibility as the preset cue: fresh, moving, in range; Shepler's only near the span and only before 1 PM
 function trkCandidates(now) {
   const list = [];
   Object.keys(nearBridge).forEach(k => {
     const v = nearBridge[k];
-    if (now - v.at <= TRK_FRESH_MS && (v.speed || 0) >= 2) list.push(Object.assign({ mmsi: +k, ferry: false }, v));
+    if (now - v.at <= TRK_FRESH_MS && (v.speed || 0) >= 2) list.push(Object.assign({ mmsi: +k, ferry: false }, v, { closing: trkClosing(v) }));
   });
   if (!list.length && ferryCueActiveNow()) {
     Object.keys(ferryNearBridge).forEach(k => {
       const v = ferryNearBridge[k];
       if (v.lat != null && now - v.at <= TRK_FRESH_MS && (v.speed || 0) >= 2 && v.distKm * 0.621371 <= FERRY_BRIDGE_MI)
-        list.push(Object.assign({ mmsi: +k, ferry: true, name: v.name || "Shepler's ferry" }, v));
+        list.push(Object.assign({ mmsi: +k, ferry: true }, v, { name: v.name || "Shepler's ferry", closing: trkClosing(v) }));
     });
   }
   return list.sort((a, b) => a.distKm - b.distKm);
