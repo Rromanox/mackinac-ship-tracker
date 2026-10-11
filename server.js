@@ -559,14 +559,21 @@ function trkAim(v, now) {
   const p = trkPredict(v, now);
   const distM = haversineKm(TRK_CAM.lat, TRK_CAM.lon, p.lat, p.lon) * 1000;
   const info = staticInfo[v.mmsi] || {};
-  const lenKnown = !!(info.length && !TOW_TYPES.has(info.type));
-  const lenM = lenKnown ? info.length : TRK_DEFAULT_LEN_M;
+  // Length: the ship's own AIS size first, then the curated database, then a typical freighter.
+  // A tug's AIS/database length is just the tug (~100-140 ft), not the barge it pushes, so those
+  // and anything under 300 ft fall through to the default rather than framing a 700-ft unit too tight.
+  const dbLenM = DB_LEN_M[lenKey(v.name)];
+  const isTow = TOW_TYPES.has(info.type);
+  let lenM = TRK_DEFAULT_LEN_M, lenSrc = 'est';
+  if (info.length && !isTow) { lenM = info.length; lenSrc = 'ais'; }
+  else if (!isTow && dbLenM && dbLenM * 3.28084 >= 300) { lenM = dbLenM; lenSrc = 'db'; }
+  const lenKnown = lenSrc !== 'est';
   // How long the ship LOOKS from the mast: full length broadside, much less bow- or stern-on
   const pan = trkBearing(TRK_CAM.lat, TRK_CAM.lon, p.lat, p.lon);
   const aspect = v.cog == null ? 1 : Math.abs(Math.sin((v.cog - pan) * Math.PI / 180));
   const extentM = Math.max(lenM * aspect, TRK_MIN_EXTENT_M);
   const hfov = Math.min(TRK_HFOV_WIDE, Math.max(TRK_HFOV_TELE, 2 * Math.atan((extentM / TRK_FILL) / 2 / Math.max(distM, 1)) * 180 / Math.PI));
-  return Object.assign(trkAimAt(p.lat, p.lon, hfov), { lenFt: Math.round(lenM * 3.28084), lenKnown: lenKnown, pos: { lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5) } });
+  return Object.assign(trkAimAt(p.lat, p.lon, hfov), { lenFt: Math.round(lenM * 3.28084), lenKnown: lenKnown, lenSrc: lenSrc, pos: { lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5) } });
 }
 let trkHome = null;   // wide view on the bridge (computed lazily: BRIDGE_LAT is defined further down)
 function trkHomeAim() { return trkHome || (trkHome = trkAimAt(BRIDGE_LAT, BRIDGE_LON, TRK_HFOV_WIDE)); }
@@ -920,6 +927,10 @@ function factKey(name) {
 
 // Curated facts for the narrator (NAME -> fact), loaded once at startup
 let NARR_FACTS = {};
+// Curated lengths (metres) as a fallback for the PTZ tracker until AIS sends the ship's own size.
+// Keyed loosely (letters/digits only) so "CLYDE S. VANENKEVORT" matches "CLYDE S VANENKEVORT".
+const DB_LEN_M = {};
+function lenKey(name) { return String(name || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 (function loadNarrationFacts() {
   try {
     const f = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'vessel-facts.json'), 'utf8'));
@@ -927,6 +938,7 @@ let NARR_FACTS = {};
     (f.vessels || []).forEach(v => {
       const pool = (Array.isArray(v.facts) && v.facts.length) ? v.facts : (v.fact ? [v.fact] : []);
       if (v.name && pool.length) { NARR_FACTS[factKey(v.name)] = pool; factCount += pool.length; }
+      if (v.name && v.lengthFt > 0) DB_LEN_M[lenKey(v.name)] = v.lengthFt / 3.28084;
     });
     console.log('🎙️ Narrator loaded ' + Object.keys(NARR_FACTS).length + ' vessels / ' + factCount + ' facts');
   } catch (e) { console.error('🎙️ Narration facts load failed:', e.message); }

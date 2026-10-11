@@ -72,7 +72,7 @@
       </div>
     </div>
   </div>
-  <div class="note">The camera is steered by <b>speed</b>: it turns at the rate the ship crosses the view, with a gentle correction to keep it centered, and only sends a new speed when it changes noticeably. "Ship off center" is how far the ship sits from the middle of the frame (as % of the frame width). Pan is a true compass bearing from the camera mast (0° = north). Zoom is approximate until the camera's real zoom curve is measured; the north offset and tilt get calibrated on install day. Ship length comes from AIS — "est." means unknown or a tug pushing a barge, so a typical freighter length is used. Departing ships are let go 2 mi past the bridge (sooner if a new one is coming in). Uses the same ship rules as the current camera cue, including the Shepler's before-1-PM rule and the Pause switch on /ptz-log.</div>
+  <div class="note">The camera is steered by <b>speed</b>: it turns at the rate the ship crosses the view, with a gentle correction to keep it centered, and only sends a new speed when it changes noticeably. "Ship off center" is how far the ship sits from the middle of the frame (as % of the frame width). Pan is a true compass bearing from the camera mast (0° = north). Zoom is approximate until the camera's real zoom curve is measured; the north offset and tilt get calibrated on install day. Ship length comes from AIS, or from your vessel database until AIS sends it; "est." means neither is available (or it's a tug pushing a barge), so a typical freighter length is used. Departing ships are let go 2 mi past the bridge (sooner if a new one is coming in). Uses the same ship rules as the current camera cue, including the Shepler's before-1-PM rule and the Pause switch on /ptz-log.</div>
 
 <script>
   var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
@@ -126,7 +126,7 @@
     document.getElementById('tsub').innerHTML = t
       ? (t.ferry ? "Shepler's ferry · " : '') + t.speedKn + ' kn' + (t.cog!=null ? ' heading ' + t.cog + '° ' + cardinal(t.cog) : '') +
         ' · ' + t.distBridgeMi + ' mi from bridge, ' + (t.closing ? 'approaching' : 'departing') +
-        '<br>Ship ' + (a.lenFt ? (a.lenKnown ? '' : 'est. ') + a.lenFt.toLocaleString() + ' ft' : '?') + ' · ' + a.distMi + ' mi from camera · last AIS fix ' + t.fixAgeS + 's ago'
+        '<br>Ship ' + (a.lenFt ? (a.lenSrc === 'est' ? 'est. ' : '') + a.lenFt.toLocaleString() + ' ft' + (a.lenSrc === 'db' ? ' (from database)' : a.lenSrc === 'ais' ? ' (AIS)' : '') : '?') + ' · ' + a.distMi + ' mi from camera · last AIS fix ' + t.fixAgeS + 's ago'
       : 'No ship to follow — it would hold the wide Home view.';
     document.getElementById('pan').innerHTML  = c.pan!=null ? c.pan.toFixed(1) + '° <small>' + cardinal(c.pan) + '</small>' : '—';
     document.getElementById('zoom').textContent = c.zoomX!=null ? '≈' + c.zoomX + 'x' : '—';
