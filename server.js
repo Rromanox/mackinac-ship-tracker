@@ -1294,7 +1294,8 @@ async function narrateVessel(mmsi, name, direction, speed) {
     const scriptText = text;                  // readable script for the /narrations log (before pronunciation tweaks)
     text = applyPronunciation(text);
     const buffer = await synthesizeVoice(text);
-    narrationCache[mmsi] = { buffer: buffer, at: Date.now() };
+    const narratedAt = Date.now();
+    narrationCache[mmsi] = { buffer: buffer, at: narratedAt, name: name };
     console.log('🎙️ Narration ready: ' + name + '  "' + text.slice(0, 90) + '"');
     recordNarration({
       mmsi: mmsi, name: name, direction: direction || null, at: Date.now(),
@@ -1303,7 +1304,7 @@ async function narrateVessel(mmsi, name, direction, speed) {
       inTok: llmUsage ? (llmUsage.input_tokens || 0) : 0,
       outTok: llmUsage ? (llmUsage.output_tokens || 0) : 0
     }).catch(e => console.error('🎙️ recordNarration:', e.message));
-    broadcastToClients({ type: 'narrate', data: { mmsi: mmsi, name: name, url: '/api/narration/' + mmsi + '?t=' + Date.now() } });
+    broadcastToClients({ type: 'narrate', data: { mmsi: mmsi, name: name, at: narratedAt, url: '/api/narration/' + mmsi + '?t=' + narratedAt } });
   } catch (e) {
     console.error('🎙️ Narration failed (' + name + '):', e.message);
   } finally {
@@ -1338,6 +1339,17 @@ app.get('/api/narration/resume', (req, res) => {
   broadcastToClients({ type: 'narration_state', data: narrationState() });
   console.log('🎙️ Narration RESUMED');
   res.json(narrationState());
+});
+
+// Narrations generated in the last ~90 s. The OBS narration source fetches these whenever it (re)connects,
+// so a clip broadcast while it was disconnected (server restart/deploy, network blip) still plays.
+app.get('/api/narrations/pending', (req, res) => {
+  const cut = Date.now() - 90 * 1000;
+  res.set('Cache-Control', 'no-store');
+  res.json(Object.keys(narrationCache)
+    .filter(k => narrationCache[k].at >= cut)
+    .sort((a, b) => narrationCache[a].at - narrationCache[b].at)
+    .map(k => ({ mmsi: k, name: narrationCache[k].name || null, at: narrationCache[k].at, url: '/api/narration/' + k + '?t=' + narrationCache[k].at })));
 });
 
 // Serve a generated vessel narration clip (kept in memory ~30 min)

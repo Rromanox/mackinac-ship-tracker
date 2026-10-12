@@ -23,9 +23,24 @@ var HTTP_BASE  = isLocal ? 'http://localhost:' + (location.port || 3000) : 'http
 
 var ws = null, reconnectTimer = null, reconnectAttempts = 0;
 var queue = [], audio = null, playing = false;
+var played = [];   // keys of clips already queued (live event + catch-up can both deliver the same one)
 
 // Queue clips so two narrations never overlap.
-function enqueue(d) { if (!d || !d.url) return; queue.push(d); playNext(); }
+function enqueue(d) {
+  if (!d || !d.url) return;
+  var key = d.mmsi + '@' + (d.at || d.url);
+  if (played.indexOf(key) !== -1) return;
+  played.push(key); if (played.length > 50) played.shift();
+  queue.push(d); playNext();
+}
+// On every (re)connect, play anything the server narrated in the last ~90 s that we missed while
+// disconnected (server restart/deploy, network blip) — late is better than never during a pass.
+function catchUp() {
+  fetch(HTTP_BASE + '/api/narrations/pending', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (list) { (list || []).forEach(enqueue); })
+    .catch(function () {});
+}
 function playNext() {
   if (playing || !queue.length) return;
   var d = queue.shift();
@@ -44,6 +59,7 @@ function connect() {
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
   ws = new WebSocket(WS_URL);
+  ws.onopen = function () { reconnectAttempts = 0; catchUp(); };   // reset backoff, or every later reconnect waits 30 s
   ws.onmessage = function (e) {
     try { var m = JSON.parse(e.data); if (m.type === 'narrate') enqueue(m.data); } catch (ex) {}
   };
