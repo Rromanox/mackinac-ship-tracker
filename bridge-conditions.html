@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bridge Conditions — Mackinac Tracker</title>
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; padding:22px; }
+  h1 { font-size:1.35rem; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:.88rem; margin-bottom:18px; max-width:900px; line-height:1.45; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; max-width:900px; margin-bottom:18px; }
+  .lvl { display:inline-block; font-size:.74rem; font-weight:800; padding:4px 11px; border-radius:20px; letter-spacing:.4px; }
+  .l1 { background:rgba(63,191,121,.16); color:#3fbf79; }
+  .l2 { background:rgba(255,209,63,.16); color:#ffd23f; }
+  .l3 { background:rgba(255,150,60,.18); color:#ff963c; }
+  .l4 { background:rgba(255,80,80,.18); color:#ff6b6b; }
+  .status { font-size:1.35rem; font-weight:800; margin:10px 0 4px; }
+  .posted { color:var(--muted); font-size:.85rem; }
+  .para { color:#cdd6e0; font-size:.92rem; line-height:1.55; margin:10px 0 0; }
+  .meta { color:var(--muted); font-size:.78rem; margin-top:12px; }
+  .meta.err { color:#ff6b6b; }
+  h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 10px; font-weight:700; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; font-size:.88rem; }
+  th { color:var(--muted); font-weight:600; font-size:.72rem; text-transform:uppercase; letter-spacing:.4px; }
+  td.when { color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .detail { color:var(--muted); font-size:.8rem; margin-top:3px; line-height:1.45; }
+  .empty { color:var(--muted); font-style:italic; }
+  .note { color:var(--muted); font-size:.78rem; max-width:900px; line-height:1.5; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+  <h1>Bridge Conditions</h1>
+  <div class="sub">The Mackinac Bridge Authority's official condition report, checked every 5 minutes. Every change is saved below, so we can see what wind advisories, escorts and closures actually look like before deciding how the stream uses them. Not shown on stream yet.</div>
+
+  <div class="card">
+    <span class="lvl l1" id="lvl">loading…</span>
+    <div class="status" id="status">—</div>
+    <div class="posted" id="posted"></div>
+    <div id="paras"></div>
+    <div class="meta" id="meta"></div>
+  </div>
+
+  <div class="card">
+    <h2>Change history</h2>
+    <table>
+      <thead><tr><th>Detected</th><th>Level</th><th>Status</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="3" class="empty">loading…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="note">Source: <a href="https://www.mackinacbridge.org/fares-traffic/conditions/" target="_blank" rel="noopener">Mackinac Bridge Authority — Current Bridge Conditions</a>. "Level" is the Bridge Authority's own severity number (1 = all clear); we'll learn what the higher levels mean as they appear.</div>
+
+<script>
+  var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function lvlClass(n){ return 'lvl l' + Math.max(1, Math.min(4, n||1)); }
+  function ago(ms){ if(!ms) return 'never'; var s=Math.round((Date.now()-ms)/1000); return s<60? s+'s ago' : s<3600? Math.round(s/60)+' min ago' : Math.round(s/3600)+' h ago'; }
+  function fmt(ms){ return new Date(ms).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}); }
+  function render(d){
+    var c = d.current;
+    var lv = document.getElementById('lvl');
+    if (c){
+      lv.className = lvlClass(c.level); lv.textContent = 'LEVEL ' + c.level;
+      document.getElementById('status').textContent = c.status;
+      document.getElementById('posted').textContent = c.posted ? 'Posted by the Bridge Authority: ' + c.posted : '';
+      document.getElementById('paras').innerHTML = (c.paragraphs||[]).map(function(p){ return '<p class="para">' + esc(p) + '</p>'; }).join('');
+    } else { lv.className = 'lvl l1'; lv.textContent = 'WAITING'; document.getElementById('status').textContent = 'First check runs ~20 s after the server starts.'; }
+    var m = document.getElementById('meta');
+    m.className = 'meta' + (d.error ? ' err' : '');
+    m.textContent = 'Last checked ' + ago(d.checkedAt) + (d.error ? ' — problem: ' + d.error + ' (last good read ' + ago(d.lastOkAt) + ')' : '');
+    var h = d.history || [];
+    document.getElementById('rows').innerHTML = h.length ? h.map(function(r){
+      return '<tr><td class="when">' + esc(fmt(r.at)) + '</td><td><span class="' + lvlClass(r.level) + '">' + r.level + '</span></td>' +
+        '<td>' + esc(r.status) + '<div class="detail">' + esc((r.paragraphs||[]).join(' · ')) + (r.posted ? '<br>posted ' + esc(r.posted) : '') + '</div></td></tr>';
+    }).join('') : '<tr><td colspan="3" class="empty">No changes recorded yet.</td></tr>';
+  }
+  function load(){ fetch(HTTP_BASE + '/api/bridge-conditions').then(function(r){ return r.json(); }).then(render).catch(function(){}); }
+  load(); setInterval(load, 60000);
+</script>
+</body>
+</html>

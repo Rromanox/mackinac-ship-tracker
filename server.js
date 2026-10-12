@@ -33,6 +33,7 @@ let narrationsCollection = null;
 let ptzLogCollection = null;
 let rangeLogCollection = null;
 let configCollection = null;
+let bridgeCondCollection = null;
 
 // Connect to MongoDB
 async function connectToMongoDB() {
@@ -46,6 +47,7 @@ async function connectToMongoDB() {
     ptzLogCollection = db.collection('ptz_log');
     rangeLogCollection = db.collection('range_log');
     configCollection = db.collection('app_config');
+    bridgeCondCollection = db.collection('bridge_conditions');
 
     // Create indexes for better performance
     await shipsCollection.createIndex({ mmsi: 1 });
@@ -56,6 +58,7 @@ async function connectToMongoDB() {
     await narrationsCollection.createIndex({ at: -1 });
     await ptzLogCollection.createIndex({ at: -1 });
     await rangeLogCollection.createIndex({ at: -1 });
+    await bridgeCondCollection.createIndex({ at: -1 });
     
     console.log('✓ Connected to MongoDB');
     console.log('📊 Database:', DB_NAME);
@@ -1213,6 +1216,71 @@ async function refreshWeather() {
 }
 refreshWeather();
 setInterval(refreshWeather, 10 * 60 * 1000);
+
+// ── Mackinac Bridge Authority conditions — collector only (not shown on stream yet) ──
+// Reads the official "Current Bridge Conditions" page every 5 min and saves each CHANGE (status,
+// severity level, advisory text) to Mongo, so we learn the real wording/levels of wind advisories,
+// escorts and closures before deciding how the stream uses them. Their robots.txt allows this page
+// and asks for ≤1 request / 20 s; every 5 min is far below that. Viewable at /bridge-conditions.
+const MBA_URL = 'https://www.mackinacbridge.org/fares-traffic/conditions/';
+const bridgeCond = { current: null, checkedAt: null, lastOkAt: null, error: null, lastKey: null };
+const bridgeCondMemory = [];   // newest first — fallback if the DB is down
+function mbaText(s) {
+  return String(s || '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&#8217;|&#039;|&rsquo;/g, "'").replace(/&#8220;|&#8221;|&quot;/g, '"')
+    .replace(/&#038;|&amp;/g, '&').replace(/&#8211;|&#8212;/g, '-').replace(/\s+/g, ' ').trim();
+}
+function parseBridgeConditions(html) {
+  const body = html.slice(Math.max(0, html.indexOf('pf-content')));
+  const status = (body.match(/<h3 class="status">([\s\S]*?)<\/h3>/i) || [])[1];
+  const posted = (body.match(/<div class="date">([\s\S]*?)<\/div>/i) || [])[1];
+  const desc = body.match(/<div class="condition-description condition-(\d+)">([\s\S]*?)<\/div>/i);
+  if (!status || !desc) return null;   // page changed shape — don't record garbage
+  const paragraphs = (desc[2].match(/<p[^>]*>[\s\S]*?<\/p>/gi) || []).map(mbaText).filter(Boolean);
+  return { level: parseInt(desc[1], 10), status: mbaText(status), posted: mbaText(posted), paragraphs: paragraphs };
+}
+async function checkBridgeConditions() {
+  bridgeCond.checkedAt = Date.now();
+  try {
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
+    const r = await fetch(MBA_URL, { signal: ac.signal, headers: { 'User-Agent': 'MackinacShipTracker/1.0 (+https://mackinac-ship-tracker.onrender.com; conditions every 5 min)' } });
+    clearTimeout(to);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const c = parseBridgeConditions(await r.text());
+    if (!c) throw new Error('could not read the conditions block (page layout may have changed)');
+    bridgeCond.current = c; bridgeCond.lastOkAt = Date.now(); bridgeCond.error = null;
+    const key = c.level + '|' + c.status + '|' + c.paragraphs.join('|');
+    if (bridgeCond.lastKey === null && bridgeCondCollection) {   // after a restart, don't re-log an unchanged status
+      const last = await bridgeCondCollection.find({}).sort({ at: -1 }).limit(1).toArray().catch(() => []);
+      if (last[0]) bridgeCond.lastKey = last[0].key;
+    }
+    if (key !== bridgeCond.lastKey) {
+      bridgeCond.lastKey = key;
+      const rec = Object.assign({ at: Date.now(), key: key }, c);
+      bridgeCondMemory.unshift(rec); if (bridgeCondMemory.length > 200) bridgeCondMemory.pop();
+      if (bridgeCondCollection) bridgeCondCollection.insertOne(Object.assign({}, rec)).catch(e => console.error('bridge-conditions write:', e.message));
+      console.log('🌉 Bridge conditions: level ' + c.level + ' — ' + c.status);
+    }
+  } catch (e) {
+    bridgeCond.error = e.name === 'AbortError' ? 'timed out' : e.message;
+  }
+}
+setTimeout(checkBridgeConditions, 20 * 1000);
+setInterval(checkBridgeConditions, 5 * 60 * 1000);
+
+app.get('/api/bridge-conditions', async (req, res) => {
+  let history = [];
+  try {
+    if (bridgeCondCollection) history = await bridgeCondCollection.find({}).sort({ at: -1 }).limit(200).toArray();
+  } catch (e) { /* fall back to memory */ }
+  if (!history.length) history = bridgeCondMemory.slice();
+  res.json({
+    source: MBA_URL,
+    current: bridgeCond.current, checkedAt: bridgeCond.checkedAt, lastOkAt: bridgeCond.lastOkAt, error: bridgeCond.error,
+    history: history.map(h => ({ at: h.at, level: h.level, status: h.status, posted: h.posted, paragraphs: h.paragraphs }))
+  });
+});
+app.get('/bridge-conditions', (req, res) => res.sendFile(path.join(__dirname, 'bridge-conditions.html')));
 
 // ── Live narration pause switch (manual, no redeploy) — controlled from /narrations ──
 // Persisted to Mongo (app_config, _id 'narration') so a pause survives restarts and deploys.

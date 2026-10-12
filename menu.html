@@ -60,6 +60,7 @@ var SECTIONS = [
     { path:'/range-log',     tag:'page', name:'Antenna range history',  desc:'How far the local antenna hears vessels over time — a chart that shows the before/after of moving it outside, plus a live distance breakdown.' },
     { path:'/narrations',    tag:'page', name:'Narration log &amp; cost',   desc:'Every vessel the AI voice narrated, the script it read, and the running ElevenLabs cost (today / month / all-time).' },
     { path:'/ptz-log',       tag:'page', name:'Camera movements',        desc:'Every time the camera changed preset and why — freighter at the bridge, tracking west/east, a ferry passing under, or back to Home.' },
+    { path:'/bridge-conditions', tag:'page', name:'Bridge conditions',  desc:'The Bridge Authority\'s official condition report (all clear, wind advisories, escorts, closures), checked every 5 min, with a history of every change. Collector only — not on stream yet.' },
     { path:'/tracker',       tag:'page', name:'PTZ tracker (dry run)',   desc:'Where the new Axis camera <b>would</b> point to follow the current ship — live map with its view cone, pan/tilt/zoom, and every aim decision. Nothing moves a camera yet.' },
     { path:'/missing-facts', tag:'page', name:'Missing facts list',      desc:'Vessels that crossed but have no fun fact yet — the list to fill in so the narrator has something to say about them.' }
   ]},
@@ -82,6 +83,7 @@ var SECTIONS = [
   { title: 'Diagnostics (JSON)', note: 'Raw data for debugging — plain JSON, not pretty pages.', items: [
     { path:'/api/status',       tag:'api', name:'/api/status',       desc:'Health check: connections, database, AIS feeds, and which vessels were heard in the last 10 min.' },
     { path:'/api/ptz-cue',      tag:'api', name:'/api/ptz-cue',      desc:'Which camera zone the system wants right now (home / west / east / bridge). Home Assistant polls this.' },
+    { path:'/api/bridge-conditions', tag:'api', name:'/api/bridge-conditions', desc:'Current Bridge Authority conditions (level, status, advisory text) plus the change history.' },
     { path:'/api/tracker',      tag:'api', name:'/api/tracker',      desc:'Raw dry-run tracker state: target ship, aim (pan/tilt/zoom), candidates and decision log. The future OBS-PC camera driver will read this.' },
     { path:'/api/local-range',  tag:'api', name:'/api/local-range',  desc:'Live snapshot of how far the local antenna is hearing right now (feeds the Range History page).' },
     { path:'/api/traffic',      tag:'api', name:'/api/traffic',      desc:'Raw traffic aggregation behind the traffic report. Add ?days=N.' },
