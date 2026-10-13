@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Concept B: tower emblem. (c) 2026 Kevin Salazar Fernandes. All rights reserved. -->
+  <defs>
+    <radialGradient id="b-bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#132338"/><stop offset="1" stop-color="#08101B"/></radialGradient>
+    <linearGradient id="b-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3D27A"/><stop offset="1" stop-color="#C79A3A"/></linearGradient>
+    <clipPath id="b-clip"><circle cx="256" cy="256" r="222"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#b-bg)"/>
+  <circle cx="256" cy="256" r="226" fill="none" stroke="#C79A3A" stroke-width="3" opacity=".75"/>
+  <circle cx="256" cy="256" r="214" fill="none" stroke="#C79A3A" stroke-width="1" opacity=".35"/>
+  <g clip-path="url(#b-clip)">
+    <!-- main cables sweeping out from the saddles -->
+    <g fill="none" stroke="#C79A3A" stroke-width="3" opacity=".7" stroke-linecap="round">
+      <path d="M190 96 Q120 220 30 300"/><path d="M322 96 Q392 220 482 300"/>
+    </g>
+    <!-- deck truss crossing the tower -->
+    <g stroke="url(#b-gold)" stroke-linecap="round">
+      <path d="M30 352 H482" stroke-width="7"/><path d="M30 374 H482" stroke-width="3" opacity=".7"/>
+    </g>
+    <g stroke="#C79A3A" stroke-width="2" opacity=".45">
+      <path d="M50 352 L72 374 M94 352 L116 374 M138 352 L160 374 M352 352 L374 374 M396 352 L418 374 M440 352 L462 374"/>
+    </g>
+    <!-- tower: tapered legs, cap, struts, X-lattice panels -->
+    <g fill="url(#b-gold)">
+      <path d="M182 88 H208 L204 430 H172 Z"/>
+      <path d="M304 88 H330 L340 430 H308 Z"/>
+      <rect x="174" y="76" width="164" height="16" rx="3"/>
+      <rect x="204" y="160" width="104" height="11" rx="2"/>
+      <rect x="204" y="238" width="104" height="11" rx="2"/>
+      <rect x="204" y="316" width="104" height="11" rx="2"/>
+    </g>
+    <g stroke="url(#b-gold)" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M210 96 L302 158 M302 96 L210 158"/>
+      <path d="M210 173 L302 236 M302 173 L210 236"/>
+      <path d="M210 251 L302 314 M302 251 L210 314"/>
+    </g>
+    <!-- water -->
+    <path d="M60 446 H452" stroke="#7FB8D6" stroke-width="2" opacity=".35"/>
+  </g>
+</svg>
