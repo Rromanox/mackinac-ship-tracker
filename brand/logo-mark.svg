@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Mackinac Straits mark. (c) 2026 Kevin Salazar Fernandes. All rights reserved. -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#15293F"/>
+      <stop offset="1" stop-color="#070E18"/>
+    </radialGradient>
+    <linearGradient id="sea" x1="0" x2="1">
+      <stop offset="0" stop-color="#4FB3D9" stop-opacity=".25"/>
+      <stop offset=".5" stop-color="#4FB3D9"/>
+      <stop offset="1" stop-color="#4FB3D9" stop-opacity=".25"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- water -->
+  <path d="M64 374 Q102 365 140 374 T216 374 T292 374 T368 374 T448 374" stroke="url(#sea)" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M110 398 Q144 390 178 398 T246 398 T314 398 T402 398" stroke="url(#sea)" stroke-width="6" fill="none" stroke-linecap="round" opacity=".6"/>
+
+  <!-- laker under the main span: red hull, white stern cabin -->
+  <path d="M202 338 L308 338 L300 358 L210 358 Z" fill="#E4554F"/>
+  <rect x="204" y="338" width="102" height="4" fill="#F28A80"/>
+  <rect x="284" y="322" width="18" height="16" rx="2.5" fill="#F2F5F8"/>
+  <rect x="290" y="315" width="6" height="8" rx="1" fill="#C9D3DE"/>
+
+  <!-- main cables + hangers -->
+  <g stroke="#3DBE8B" fill="none" stroke-linecap="round">
+    <path d="M48 300 Q110 210 178 124" stroke-width="7"/>
+    <path d="M178 124 Q256 436 334 124" stroke-width="7"/>
+    <path d="M334 124 Q402 210 464 300" stroke-width="7"/>
+    <g stroke-width="2.6" opacity=".65">
+      <path d="M79 255 V311"/><path d="M111 211 V306"/><path d="M144 167 V303"/>
+      <path d="M206 216 V302"/><path d="M231 264 V302"/><path d="M281 264 V302"/><path d="M306 216 V302"/>
+      <path d="M368 167 V303"/><path d="M401 211 V306"/><path d="M433 255 V311"/>
+    </g>
+  </g>
+
+  <!-- towers: two legs, portal struts, X-braced lattice panels -->
+  <g fill="#F2C14E">
+    <rect x="156" y="116" width="12" height="246" rx="2"/><rect x="188" y="116" width="12" height="246" rx="2"/>
+    <rect x="152" y="112" width="52" height="12" rx="3"/>
+    <rect x="156" y="176" width="44" height="9" rx="2"/><rect x="156" y="236" width="44" height="9" rx="2"/>
+    <rect x="312" y="116" width="12" height="246" rx="2"/><rect x="344" y="116" width="12" height="246" rx="2"/>
+    <rect x="308" y="112" width="52" height="12" rx="3"/>
+    <rect x="312" y="176" width="44" height="9" rx="2"/><rect x="312" y="236" width="44" height="9" rx="2"/>
+  </g>
+  <g stroke="#F2C14E" stroke-width="3.2" stroke-linecap="round" opacity=".9">
+    <path d="M168 126 L188 174 M188 126 L168 174"/><path d="M168 187 L188 234 M188 187 L168 234"/>
+    <path d="M324 126 L344 174 M344 126 L324 174"/><path d="M324 187 L344 234 M344 187 L324 234"/>
+  </g>
+
+  <!-- deck -->
+  <path d="M50 322 Q256 296 462 322" stroke="#3DBE8B" stroke-width="14" fill="none" stroke-linecap="round"/>
+  <path d="M50 322 Q256 296 462 322" stroke="#7FE0B7" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55" transform="translate(0 -5)"/>
+</svg>
