@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Mackinac — Banner v4 (modern lower-third)</title>
+<style>
+/* Same OBS source size as banner3 (2560x220) so it's a drop-in swap. The bar floats at the bottom. */
+:root {
+  --bg1: rgba(8, 15, 26, 0.88);
+  --bg2: rgba(13, 27, 42, 0.88);
+  --line: rgba(255, 255, 255, 0.09);
+  --text: #F2F5F8;
+  --muted: #93A4B8;
+  --gold: #F2C14E;      /* bridge towers */
+  --green: #3DBE8B;     /* bridge deck */
+  --water: #4FB3D9;
+  --red: #FF5A5F;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 2560px; height: 220px; overflow: hidden; background: transparent;
+       font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; color: var(--text);
+       -webkit-font-smoothing: antialiased; }
+
+#bar {
+  position: fixed; left: 40px; right: 40px; bottom: 24px; height: 136px;
+  display: flex; align-items: stretch;
+  background: linear-gradient(105deg, var(--bg1), var(--bg2));
+  border: 1px solid var(--line); border-radius: 26px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  overflow: hidden;
+  transform: translateY(170%);
+  transition: transform 1.3s cubic-bezier(.2,.8,.2,1);
+}
+#bar.up { transform: translateY(0); }
+#bar::before {   /* thin gold/green accent along the top edge */
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--green) 45%, var(--water));
+  opacity: .9;
+}
+
+/* ── Brand block ─────────────────────────────────────── */
+.brand { flex: 0 0 380px; padding: 22px 30px; display: flex; flex-direction: column; justify-content: center; gap: 6px;
+         border-right: 1px solid var(--line); }
+.live-pill { display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
+             font-size: 15px; font-weight: 800; letter-spacing: 1.6px; color: #fff;
+             background: rgba(255, 90, 95, .16); border: 1px solid rgba(255, 90, 95, .45);
+             padding: 5px 13px; border-radius: 999px; }
+.live-pill .dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; }
+.live-pill .dot.on { background: var(--red); box-shadow: 0 0 0 0 rgba(255,90,95,.7); animation: ping 2s infinite; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(255,90,95,.7); } 70% { box-shadow: 0 0 0 12px rgba(255,90,95,0); } 100% { box-shadow: 0 0 0 0 rgba(255,90,95,0); } }
+.brand-title { font-size: 31px; font-weight: 800; letter-spacing: -.3px; line-height: 1.05; }
+.brand-sub { font-size: 18px; color: var(--muted); font-weight: 500; display: flex; gap: 10px; white-space: nowrap; }
+.brand-sub b { color: var(--text); font-weight: 600; }
+
+/* ── Stage: views crossfade inside it ───────────────── */
+.stage { position: relative; flex: 1; }
+.view { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 34px;
+        opacity: 0; transform: translateY(16px); filter: blur(6px);
+        transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1), filter .9s ease; pointer-events: none; }
+.view.on { opacity: 1; transform: none; filter: none; }
+
+/* Ships view: hero | meter | queue */
+.hero { flex: 0 0 820px; min-width: 0; padding-right: 30px; transition: opacity .45s ease, transform .45s ease; }
+.hero.swap { opacity: 0; transform: translateX(-12px); }
+.hero-top { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; min-width: 0; }
+.tag { font-size: 14px; font-weight: 800; letter-spacing: 1.5px; padding: 5px 12px; border-radius: 8px; white-space: nowrap; }
+.tag.approach { color: var(--gold); background: rgba(242,193,78,.13); }
+.tag.at { color: #fff; background: var(--red); animation: glow 1.6s ease-in-out infinite; }
+.tag.passed { color: var(--green); background: rgba(61,190,139,.14); }
+.tag.idle { color: var(--muted); background: rgba(255,255,255,.07); }
+@keyframes glow { 0%,100% { box-shadow: 0 0 0 0 rgba(255,90,95,.0); } 50% { box-shadow: 0 0 22px 2px rgba(255,90,95,.55); } }
+.hero-meta { font-size: 18px; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-name { font-size: 46px; font-weight: 800; letter-spacing: -.6px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-fact { margin-top: 7px; font-size: 19px; color: #CFE3F2; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-fact::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--gold); margin-right: 10px; vertical-align: 3px; }
+.hero-fact:empty::before { display: none; }
+
+.meter { flex: 0 0 640px; padding: 0 30px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); height: 100%;
+         display: flex; flex-direction: column; justify-content: center; gap: 12px; transition: opacity .5s; }
+.meter.dim { opacity: .35; }
+.meter-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 1.4px; color: var(--muted); }
+.track { position: relative; height: 10px; border-radius: 999px; background: rgba(255,255,255,.08); }
+.fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; border-radius: 999px;
+        background: linear-gradient(90deg, var(--water), var(--gold)); transition: width 1.4s cubic-bezier(.2,.8,.2,1); }
+.boat { position: absolute; top: 50%; left: 0%; width: 40px; height: 26px; margin-left: -20px; margin-top: -24px;
+        transition: left 1.4s cubic-bezier(.2,.8,.2,1); animation: bob 2.6s ease-in-out infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.bridge-mark { position: absolute; right: -6px; top: 50%; width: 46px; height: 30px; margin-top: -26px; }
+.meter-stats { display: flex; align-items: baseline; gap: 22px; white-space: nowrap; }
+.meter-stats .big { font-size: 34px; font-weight: 800; letter-spacing: -.5px; }
+.meter-stats .sm { font-size: 19px; color: var(--muted); font-weight: 600; }
+.meter-stats .eta { font-size: 21px; font-weight: 700; color: var(--gold); margin-left: auto; }
+
+.queue { flex: 1; min-width: 0; padding-left: 30px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.q-head { font-size: 13px; font-weight: 700; letter-spacing: 1.4px; color: var(--muted); display: flex; justify-content: space-between; }
+.q-more { color: var(--gold); }
+.q-row { display: flex; align-items: center; gap: 12px; font-size: 21px; font-weight: 600; min-width: 0; height: 30px;
+         animation: rowIn .6s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes rowIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.q-ico { width: 18px; text-align: center; flex: none; font-size: 15px; }
+.q-ico.app { color: var(--gold); } .q-ico.pas { color: var(--green); }
+.q-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-val { color: var(--muted); font-size: 18px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.q-row.passed .q-name { color: #C5D0DC; font-weight: 500; }
+.q-empty { color: var(--muted); font-size: 18px; font-weight: 500; }
+
+/* Promo views */
+.promo-text { flex: 1; min-width: 0; }
+.promo-kicker { font-size: 15px; font-weight: 800; letter-spacing: 1.6px; color: var(--gold); margin-bottom: 6px; }
+.promo-title { font-size: 40px; font-weight: 800; letter-spacing: -.5px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.promo-sub { font-size: 20px; color: var(--muted); font-weight: 500; margin-top: 6px; white-space: nowrap; }
+.cta { flex: none; font-size: 20px; font-weight: 800; letter-spacing: .3px; padding: 14px 26px; border-radius: 14px; margin-left: 30px; white-space: nowrap; }
+.cta.red { background: var(--red); color: #fff; }
+.cta.gold { background: var(--gold); color: #1b1405; }
+.qr { flex: none; width: 104px; height: 104px; border-radius: 16px; background: #fff; padding: 7px; margin-right: 28px; }
+.qr img { width: 100%; height: 100%; display: block; }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <div class="brand">
+    <div class="live-pill"><span class="dot" id="liveDot"></span>LIVE</div>
+    <div class="brand-title">Mackinac Straits</div>
+    <div class="brand-sub"><b id="clock">--:--</b><span>·</span><span id="wx">Mackinaw City</span></div>
+  </div>
+
+  <div class="stage">
+    <!-- Ships -->
+    <section class="view" id="view-ships">
+      <div class="hero" id="hero">
+        <div class="hero-top"><span class="tag idle" id="heroTag">WATCHING</span><span class="hero-meta" id="heroMeta"></span></div>
+        <div class="hero-name" id="heroName">Watching the Straits</div>
+        <div class="hero-fact" id="heroFact"></div>
+      </div>
+      <div class="meter dim" id="meter">
+        <div class="meter-labels"><span>10 MI OUT</span><span>MACKINAC BRIDGE</span></div>
+        <div class="track">
+          <div class="fill" id="fill"></div>
+          <svg class="boat" id="boat" viewBox="0 0 40 26" aria-hidden="true">
+            <path d="M3 17 h34 l-4 7 H8 z" fill="#E4554F"/>
+            <rect x="26" y="9" width="8" height="8" rx="1" fill="#F2F5F8"/>
+            <rect x="7" y="13" width="16" height="4" rx="1" fill="#C9D3DE"/>
+          </svg>
+          <svg class="bridge-mark" viewBox="0 0 46 30" aria-hidden="true">
+            <path d="M2 22 Q23 6 44 22" stroke="#3DBE8B" stroke-width="2" fill="none"/>
+            <rect x="12" y="4" width="3" height="22" fill="#F2C14E"/><rect x="31" y="4" width="3" height="22" fill="#F2C14E"/>
+            <rect x="0" y="22" width="46" height="3" fill="#3DBE8B"/>
+          </svg>
+        </div>
+        <div class="meter-stats"><span class="big" id="dist">—</span><span class="sm" id="speed"></span><span class="eta" id="eta"></span></div>
+      </div>
+      <div class="queue" id="queue"></div>
+    </section>
+
+    <!-- Live / subscribe -->
+    <section class="view" id="view-live">
+      <div class="promo-text">
+        <div class="promo-kicker">LIVE 24/7 FROM THE RIVIERA MOTEL</div>
+        <div class="promo-title">Watching the Mighty Mac &amp; every freighter that passes</div>
+        <div class="promo-sub" id="liveSub">Mackinaw City, Michigan · subscribe for more updates</div>
+      </div>
+      <div class="cta red">Subscribe</div>
+    </section>
+
+    <!-- Motel -->
+    <section class="view" id="view-motel">
+      <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://shadowofthebridge.com&bgcolor=ffffff&color=000000&margin=0" alt=""></div>
+      <div class="promo-text">
+        <div class="promo-kicker">NOW OPEN FOR RESERVATIONS</div>
+        <div class="promo-title">Stay at the Riviera Motel, right by the bridge</div>
+        <div class="promo-sub">Book your room at ShadowOfTheBridge.com · scan to book</div>
+      </div>
+      <div class="cta gold">Book Now</div>
+    </section>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  OPTIONS (URL)
+//   ?demo=1          fake ships moving toward the bridge (preview without real traffic)
+//   ?panel=ships|live|motel   pin one view (no cycle) — default in demo is ships
+//   ?cycle=1         run the full show/hide cycle even in demo
+// ═══════════════════════════════════════════════════════════════
+var Q = new URLSearchParams(location.search);
+var DEMO = Q.get('demo') === '1';
+var PIN = Q.get('panel') || (DEMO && Q.get('cycle') !== '1' ? 'ships' : null);
+
+var RENDER_URL = 'mackinac-ship-tracker.onrender.com';
+var isLocal    = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+var WS_URL     = isLocal ? 'ws://localhost:' + (location.port || 3000) : 'wss://' + RENDER_URL;
+var HTTP_BASE  = isLocal ? 'http://localhost:' + (location.port || 3000) : 'https://' + RENDER_URL;
+var BRIDGE_LAT = 45.81169175762412, BRIDGE_LON = -84.72866535186769;
+var MAX_DIST_MI = 100, DEPART_MAX_MI = 15, METER_MI = 10;
+var TZ = 'America/Detroit';
+
+// ── Weather + clock ─────────────────────────────────────────────
+var OWM_KEY = '8d6e0169a641adc002688e82b9ab8ec3';
+function weatherCheck() {
+  fetch('https://api.openweathermap.org/data/2.5/weather?units=imperial&lat=45.7829&lon=-84.7278&appid=' + OWM_KEY)
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d || !d.main) return;
+      var desc = (d.weather && d.weather[0] && d.weather[0].description) || '';
+      document.getElementById('wx').textContent = Math.round(d.main.temp) + '°F ' + desc.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    }).catch(function () {});
+}
+function clockTick() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
+}
+
+// ── Ship data (same logic as banner3) ───────────────────────────
+var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
+var passedShips = [], PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+var BLOCKED_MMSI = { 368165150:1, 367031360:1, 367139210:1, 367349450:1, 367721870:1, 367721930:1, 367721960:1,
+                     367782080:1, 338158987:1, 338926364:1, 367721890:1, 367783160:1 };
+var ALLOWED_MMSI = { 311050300:1 };
+function shouldHide(mmsi) {
+  if (ALLOWED_MMSI[mmsi]) return false;
+  if (BLOCKED_MMSI[mmsi]) return true;
+  var t = staticData[mmsi] && staticData[mmsi].type;
+  return t && t >= 60 && t <= 69;
+}
+function haversine(la1, lo1, la2, lo2) {
+  var R = 6371, dLa = (la2 - la1) * Math.PI / 180, dLo = (lo2 - lo1) * Math.PI / 180;
+  var a = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(la1 * Math.PI / 180) * Math.cos(la2 * Math.PI / 180) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function toMiles(km) { return km * 0.621371; }
+function getDirection(lat, lon, course) {
+  var dLat = lat - BRIDGE_LAT, dLon = (lon - BRIDGE_LON) * Math.cos(BRIDGE_LAT * Math.PI / 180);
+  var tb = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
+  return Math.abs(((course - tb) + 180 + 360) % 360 - 180) < 90 ? 'Approaching' : 'Departing';
+}
+function etaMin(distKm, spd) {
+  if (!spd || spd < 0.5) return null;
+  var m = Math.round(distKm / (spd * 1.852) * 60);
+  return m > 600 ? null : m;
+}
+function fmtMin(m) { return m < 60 ? m + ' min' : Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
+function clockAt(ts) { return new Date(ts).toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' }); }
+function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+var FACTS = {}, GENERAL = [];
+function factKey(name) { return String(name == null ? '' : name).trim().toUpperCase().replace(/^(?:USCGC|USCG|CGC|CG)\s+/, 'CG '); }
+function loadFacts() {
+  fetch(HTTP_BASE + '/api/vessel-facts').then(function (r) { return r.json(); }).then(function (d) {
+    (d && d.vessels ? d.vessels : []).forEach(function (v) { if (v && v.name && v.fact) FACTS[factKey(v.name)] = v.fact; });
+    GENERAL = (d && d.general) ? d.general : [];
+    heroKey = ''; render();
+  }).catch(function () {});
+}
+function typeName(t) {
+  if (!t) return '';
+  if (t >= 70 && t <= 79) return 'Cargo freighter';
+  if (t >= 80 && t <= 89) return 'Tanker';
+  if (t >= 60 && t <= 69) return 'Passenger ship';
+  if (t === 52) return 'Tug';
+  if (t === 31 || t === 32) return 'Tug & barge';
+  if (t === 33) return 'Dredger';
+  if (t === 35) return 'Military';
+  if (t === 51) return 'Search & rescue';
+  return '';
+}
+var MID = { 366:'United States',367:'United States',368:'United States',369:'United States',338:'United States', 316:'Canada',
+  538:'Marshall Islands', 636:'Liberia', 244:'Netherlands',245:'Netherlands',246:'Netherlands', 255:'Portugal',263:'Portugal',
+  305:'Antigua & Barbuda', 308:'Bahamas',309:'Bahamas',311:'Bahamas', 215:'Malta',229:'Malta',248:'Malta',249:'Malta',256:'Malta',
+  209:'Cyprus',210:'Cyprus',212:'Cyprus', 477:'Hong Kong', 563:'Singapore',564:'Singapore',565:'Singapore',566:'Singapore',
+  257:'Norway',258:'Norway',259:'Norway', 351:'Panama',352:'Panama',353:'Panama',354:'Panama',355:'Panama',356:'Panama',357:'Panama',
+  370:'Panama',371:'Panama',372:'Panama',373:'Panama', 211:'Germany',218:'Germany', 261:'Poland', 232:'United Kingdom',233:'United Kingdom',
+  234:'United Kingdom',235:'United Kingdom', 219:'Denmark',220:'Denmark', 230:'Finland', 265:'Sweden',266:'Sweden', 271:'Turkey',
+  240:'Greece',241:'Greece', 247:'Italy', 227:'France',228:'France', 224:'Spain',225:'Spain', 412:'China',413:'China',414:'China',
+  431:'Japan',432:'Japan', 440:'South Korea',441:'South Korea' };
+function flagOf(mmsi) { var s = String(mmsi); return s.length === 9 ? (MID[+s.slice(0, 3)] || '') : ''; }
+function factFor(ship) {
+  var f = FACTS[factKey(ship.name)];
+  if (f) return f;
+  if (GENERAL.length) return GENERAL[Math.abs(parseInt(ship.mmsi, 10) || 0) % GENERAL.length];
+  return '';
+}
+function passedTimeFor(mmsi) { for (var i = 0; i < passedShips.length; i++) if (passedShips[i].mmsi === mmsi) return passedShips[i].passedTime; return null; }
+function boundWord(cog) { return (cog > 0 && cog < 180) ? 'Eastbound' : 'Westbound'; }
+function lakeAhead(cog) { return (cog > 0 && cog < 180) ? 'toward Lake Huron' : 'toward Lake Michigan'; }
+
+function refreshPassedShips() {
+  if (DEMO) return;
+  fetch(HTTP_BASE + '/api/ships/recent?limit=5').then(function (r) { return r.json(); }).then(function (d) {
+    passedShips = (d.ships || []).map(function (s) { return { mmsi: s.mmsi, name: s.name, passedTime: new Date(s.passedTime).getTime() }; });
+    render();
+  }).catch(function () {});
+}
+function pruneStaleShips() {
+  var cut = Date.now() - 600000, changed = false;
+  Object.keys(shipData).forEach(function (k) { if (shipData[k].lastUpdate < cut) { delete shipData[k]; delete staticData[k]; changed = true; } });
+  if (changed) render();
+}
+function processMessage(data) {
+  if (data.MessageType === 'ShipStaticData' && data.Message && data.Message.ShipStaticData) {
+    staticData[data.MetaData.MMSI] = { type: data.Message.ShipStaticData.Type || null };
+    render(); return;
+  }
+  if (data.MessageType === 'PositionReport' && data.Message && data.Message.PositionReport) {
+    var pos = data.Message.PositionReport, meta = data.MetaData;
+    shipData[meta.MMSI] = {
+      mmsi: meta.MMSI, name: (meta.ShipName || 'Unknown').trim(), lat: pos.Latitude, lon: pos.Longitude,
+      speed: pos.Sog || 0, course: pos.Cog || 0, lengthM: meta.VesselLengthM || null, typeCode: meta.VesselType || null,
+      distance: haversine(BRIDGE_LAT, BRIDGE_LON, pos.Latitude, pos.Longitude),
+      direction: getDirection(pos.Latitude, pos.Longitude, pos.Cog || 0), lastUpdate: Date.now()
+    };
+    render();
+  }
+}
+function getVisibleShips() {
+  return Object.keys(shipData).map(function (k) { return shipData[k]; })
+    .filter(function (s) { return s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI && !shouldHide(s.mmsi); });
+}
+function setLive(on) { document.getElementById('liveDot').className = 'dot' + (on ? ' on' : ''); }
+function connect() {
+  if (DEMO) { setLive(true); return; }
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+  setLive(false);
+  ws = new WebSocket(WS_URL);
+  ws.onopen = function () { reconnectAttempts = 0; setLive(true); render(); };
+  ws.onmessage = function (e) {
+    try { var m = JSON.parse(e.data);
+      if (m.type === 'ship_data') processMessage(m.data);
+      else if (m.type === 'bridge_passing') refreshPassedShips();
+    } catch (ex) {}
+  };
+  ws.onerror = function () { setLive(false); };
+  ws.onclose = function () { setLive(false); reconnectAttempts++; reconnectTimer = setTimeout(connect, Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000)); };
+}
+
+// ── Render ──────────────────────────────────────────────────────
+var heroKey = '';
+function setText(id, t) { var el = document.getElementById(id); if (el.textContent !== t) el.textContent = t; }
+function render() {
+  var all = getVisibleShips();
+  var byDist = function (a, b) { return a.distance - b.distance; };
+  var approaching = all.filter(function (s) { return s.direction === 'Approaching'; }).sort(byDist);
+  var departing = all.filter(function (s) { return s.direction !== 'Approaching' && toMiles(s.distance) <= DEPART_MAX_MI; }).sort(byDist);
+  passedShips = passedShips.filter(function (p) { return Date.now() - p.passedTime < PASSED_MAX_AGE_MS; });
+  var hero = approaching[0] || departing[0] || null;
+  renderHero(hero);
+
+  var rows = [], shown = {};
+  if (hero) shown[hero.mmsi] = 1;
+  approaching.forEach(function (s) { if (!shown[s.mmsi] && rows.length < 3) { rows.push({ kind: 'app', s: s }); shown[s.mmsi] = 1; } });
+  var moreCount = approaching.filter(function (s) { return !shown[s.mmsi]; }).length;
+  passedShips.forEach(function (p) { if (!shown[p.mmsi] && rows.length < 3) { rows.push({ kind: 'pas', p: p }); shown[p.mmsi] = 1; } });
+  renderQueue(rows, moreCount, approaching.length > (hero && hero.direction === 'Approaching' ? 1 : 0));
+  checkNearbyDuringHide();
+}
+function renderHero(s) {
+  var heroEl = document.getElementById('hero'), meter = document.getElementById('meter');
+  var key = s ? s.mmsi + s.direction : 'none';
+  var apply = function () {
+    var tag = document.getElementById('heroTag');
+    if (!s) {
+      tag.className = 'tag idle'; tag.textContent = 'WATCHING';
+      var last = passedShips[0];
+      setText('heroMeta', last ? 'Last pass: ' + last.name + ' at ' + clockAt(last.passedTime) : 'Freighters pass here day and night');
+      setText('heroName', 'Watching the Straits');
+      setText('heroFact', GENERAL.length ? GENERAL[Math.floor(Date.now() / 600000) % GENERAL.length] : '');
+      meter.classList.add('dim');
+      document.getElementById('fill').style.width = '0%'; document.getElementById('boat').style.left = '0%';
+      setText('dist', '—'); setText('speed', ''); setText('eta', '');
+      return;
+    }
+    var mi = toMiles(s.distance), meta = [];
+    var tn = typeName(s.typeCode || (staticData[s.mmsi] && staticData[s.mmsi].type)); if (tn) meta.push(tn);
+    if (s.lengthM && s.lengthM > 10) meta.push(Math.round(s.lengthM * 3.28084).toLocaleString() + ' ft');
+    var fl = flagOf(s.mmsi); if (fl) meta.push(fl);
+    meta.push(boundWord(s.course));
+    setText('heroMeta', meta.join('  ·  '));
+    setText('heroName', s.name);
+    setText('heroFact', factFor(s));
+    meter.classList.remove('dim');
+    if (s.direction === 'Approaching') {
+      var at = mi < 0.6;
+      tag.className = 'tag ' + (at ? 'at' : 'approach'); tag.textContent = at ? 'AT THE BRIDGE' : 'APPROACHING';
+      var pct = Math.max(0, Math.min(1, 1 - mi / METER_MI)) * 100;
+      document.getElementById('fill').style.width = pct + '%'; document.getElementById('boat').style.left = pct + '%';
+      setText('dist', mi.toFixed(1) + ' mi');
+      setText('speed', s.speed ? s.speed.toFixed(1) + ' kn' : '');
+      var m = etaMin(s.distance, s.speed);
+      setText('eta', m != null ? (m <= 1 ? 'Arriving now' : 'ETA ' + fmtMin(m) + ' · ' + clockAt(Date.now() + m * 60000)) : '');
+    } else {
+      var pt = passedTimeFor(s.mmsi);
+      tag.className = 'tag passed'; tag.textContent = pt ? 'PASSED ' + clockAt(pt) : 'DEPARTING';
+      document.getElementById('fill').style.width = '100%'; document.getElementById('boat').style.left = '100%';
+      setText('dist', mi.toFixed(1) + ' mi past');
+      setText('speed', s.speed ? s.speed.toFixed(1) + ' kn' : '');
+      setText('eta', 'Heading ' + lakeAhead(s.course));
+    }
+  };
+  if (key !== heroKey) {               // new featured ship: quick fade/slide swap
+    heroKey = key; heroEl.classList.add('swap');
+    setTimeout(function () { apply(); heroEl.classList.remove('swap'); }, 420);
+  } else apply();
+}
+var queueKey = '';
+function renderQueue(rows, more, anyApproaching) {
+  var q = document.getElementById('queue');
+  var key = rows.map(function (r) { return r.kind + (r.s ? r.s.mmsi : r.p.mmsi); }).join(',') + '|' + more;
+  var head = '<div class="q-head"><span>' + (anyApproaching ? 'UP NEXT' : 'RECENTLY PASSED') + '</span>' +
+             (more ? '<span class="q-more">+' + more + ' MORE</span>' : '') + '</div>';
+  var body = rows.length ? rows.map(function (r) {
+    if (r.kind === 'app') {
+      var m = etaMin(r.s.distance, r.s.speed);
+      return '<div class="q-row"><span class="q-ico app">&#9650;</span><span class="q-name">' + escHtml(r.s.name) + '</span>' +
+             '<span class="q-val">' + toMiles(r.s.distance).toFixed(1) + ' mi' + (m != null ? ' · ' + fmtMin(m) : '') + '</span></div>';
+    }
+    return '<div class="q-row passed"><span class="q-ico pas">&#10003;</span><span class="q-name">' + escHtml(r.p.name) + '</span>' +
+           '<span class="q-val">Passed ' + clockAt(r.p.passedTime) + '</span></div>';
+  }).join('') : '<div class="q-empty">Nothing else in range right now</div>';
+  if (key !== queueKey) { queueKey = key; q.innerHTML = head + body; }
+  else {   // same rows: update numbers in place without replaying the row animation
+    var vals = q.querySelectorAll('.q-val'), tmp = document.createElement('div'); tmp.innerHTML = body;
+    var nv = tmp.querySelectorAll('.q-val');
+    for (var i = 0; i < vals.length && i < nv.length; i++) if (vals[i].textContent !== nv[i].textContent) vals[i].textContent = nv[i].textContent;
+  }
+}
+
+// ── Cycle engine (same timing as banner3, crossfades instead of slides) ─────
+var T_LIVE = 30000, T_MOTEL = 30000, T_SHIPS = 90000, T_EXT = 30000, T_HIDE = 240000, ETA_NEAR_MIN = 30;
+var VIEWS = { live: 'view-live', motel: 'view-motel', ships: 'view-ships' };
+var cycleTimer = null, hideTimer = null, inHidePhase = false;
+function showView(name) { Object.keys(VIEWS).forEach(function (k) { document.getElementById(VIEWS[k]).classList.toggle('on', k === name); }); }
+function showBar() { document.getElementById('bar').classList.add('up'); }
+function hideBar() { document.getElementById('bar').classList.remove('up'); }
+function closestApproachingEta() {
+  var v = getVisibleShips().filter(function (s) { return s.direction === 'Approaching'; }).sort(function (a, b) { return a.distance - b.distance; })[0];
+  return v ? etaMin(v.distance, v.speed) : null;
+}
+function shipsPhase(ms) {
+  clearTimeout(cycleTimer);
+  cycleTimer = setTimeout(function () {
+    var eta = closestApproachingEta();
+    if (eta !== null && eta <= ETA_NEAR_MIN) shipsPhase(T_EXT); else outro();
+  }, ms);
+}
+function outro() {
+  showView('live');
+  cycleTimer = setTimeout(function () {
+    showView('motel');
+    cycleTimer = setTimeout(function () {
+      hideBar(); inHidePhase = true;
+      hideTimer = setTimeout(function () { inHidePhase = false; runCycle(); }, T_HIDE);
+    }, T_MOTEL);
+  }, T_LIVE);
+}
+function runCycle() {
+  clearTimeout(cycleTimer); clearTimeout(hideTimer); inHidePhase = false;
+  showBar(); showView('live');
+  cycleTimer = setTimeout(function () {
+    showView('motel');
+    cycleTimer = setTimeout(function () { showView('ships'); shipsPhase(T_SHIPS); }, T_MOTEL);
+  }, T_LIVE);
+}
+function checkNearbyDuringHide() {
+  if (!inHidePhase) return;
+  var eta = closestApproachingEta();
+  if (eta !== null && eta <= ETA_NEAR_MIN) { clearTimeout(hideTimer); inHidePhase = false; runCycle(); }
+}
+
+// ── Demo: a few ships steaming toward the bridge so the design can be judged without traffic ──
+function seedDemo() {
+  var kmLon = 111.32 * Math.cos(BRIDGE_LAT * Math.PI / 180), now = Date.now();
+  var list = [
+    { mmsi: 538001234, name: 'FEDERAL FRASER',  lengthM: 200, typeCode: 70, mi: 2.4,  speed: 13.8, side: 'w' },
+    { mmsi: 366904880, name: 'MESABI MINER',    lengthM: 306, typeCode: 70, mi: 9.1,  speed: 12.9, side: 'e' },
+    { mmsi: 366938780, name: 'JOHN J. BOLAND',  lengthM: 207, typeCode: 70, mi: 16.5, speed: 12.1, side: 'w' },
+    { mmsi: 316003000, name: 'ALGOMA EQUINOX',  lengthM: 225, typeCode: 70, mi: 27.0, speed: 12.5, side: 'e' },
+    { mmsi: 255009000, name: 'POLSTEAM DABIE',  lengthM: 200, typeCode: 70, mi: 41.0, speed: 11.8, side: 'w' }
+  ];
+  list.forEach(function (d) {
+    var lon = BRIDGE_LON + (d.side === 'w' ? -1 : 1) * d.mi * 1.609 / kmLon;
+    d.lon = lon; d.course = d.side === 'w' ? 90 : 270;
+  });
+  passedShips = [{ mmsi: 367050550, name: 'STEWART J CORT', passedTime: now - 35 * 60000 },
+                 { mmsi: 366904950, name: 'ROBERT S. PIERSON', passedTime: now - 2 * 3600000 }];
+  function step() {
+    var t = Date.now();
+    list.forEach(function (d) {
+      d.lon += (d.course === 90 ? 1 : -1) * (d.speed * 1.852 / 3600) / kmLon;   // 1 s of travel
+      shipData[d.mmsi] = { mmsi: d.mmsi, name: d.name, lat: BRIDGE_LAT, lon: d.lon, speed: d.speed, course: d.course,
+        lengthM: d.lengthM, typeCode: d.typeCode, distance: haversine(BRIDGE_LAT, BRIDGE_LON, BRIDGE_LAT, d.lon),
+        direction: getDirection(BRIDGE_LAT, d.lon, d.course), lastUpdate: t };
+    });
+    render();
+  }
+  step(); setInterval(step, 1000);
+}
+
+window.onload = function () {
+  clockTick(); setInterval(clockTick, 5000);
+  weatherCheck(); setInterval(weatherCheck, 10 * 60000);
+  loadFacts(); connect();
+  setInterval(pruneStaleShips, 30000);
+  setInterval(function () { render(); }, 15000);                // keep ETA / "passed" text fresh
+  if (DEMO) seedDemo(); else { refreshPassedShips(); setInterval(refreshPassedShips, 60000); }
+  if (PIN && VIEWS[PIN]) { showBar(); showView(PIN); } else runCycle();
+  render();
+};
+document.addEventListener('visibilitychange', function () { if (!document.hidden && !DEMO && (!ws || ws.readyState === WebSocket.CLOSED)) connect(); });
+</script>
+</body>
+</html>
