@@ -84,7 +84,9 @@ body { width: 2560px; height: 220px; overflow: hidden; background: transparent;
 .hero-fact:empty::before { display: none; }
 
 .meter { flex: 0 0 640px; padding: 0 30px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); height: 100%;
-         display: flex; flex-direction: column; justify-content: center; gap: 12px; transition: opacity .5s; }
+         display: flex; flex-direction: column; justify-content: center; gap: 0; transition: opacity .5s; }
+.meter .meter-stats { margin-bottom: 26px; }   /* room for the ship icon that rides above the track */
+.meter .meter-labels { margin-top: 12px; }
 .meter.dim { opacity: .35; }
 .meter-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 1.4px; color: var(--muted); }
 .track { position: relative; height: 10px; border-radius: 999px; background: rgba(255,255,255,.08); }
@@ -142,7 +144,7 @@ body { width: 2560px; height: 220px; overflow: hidden; background: transparent;
         <div class="hero-fact" id="heroFact"></div>
       </div>
       <div class="meter dim" id="meter">
-        <div class="meter-labels"><span>10 MI OUT</span><span>MACKINAC BRIDGE</span></div>
+        <div class="meter-stats"><span class="big" id="dist">—</span><span class="sm" id="speed"></span><span class="eta" id="eta"></span></div>
         <div class="track">
           <div class="fill" id="fill"></div>
           <svg class="boat" id="boat" viewBox="0 0 40 26" aria-hidden="true">
@@ -156,7 +158,7 @@ body { width: 2560px; height: 220px; overflow: hidden; background: transparent;
             <rect x="0" y="22" width="46" height="3" fill="#3DBE8B"/>
           </svg>
         </div>
-        <div class="meter-stats"><span class="big" id="dist">—</span><span class="sm" id="speed"></span><span class="eta" id="eta"></span></div>
+        <div class="meter-labels"><span>10 MI OUT</span><span>MACKINAC BRIDGE</span></div>
       </div>
       <div class="queue" id="queue"></div>
     </section>
