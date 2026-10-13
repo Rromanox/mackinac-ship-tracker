@@ -371,8 +371,18 @@ app.get('/api/status', async (req, res) => {
 // every ~15s and calls ptz_goto_preset for the returned zone. POSITION-driven
 // (not a timer), so vessel speed doesn't matter — the closest in-range moving
 // vessel wins, and the camera follows it through west → bridge → east zones.
-const PTZ_BRIDGE_IN_MI  = 0.5;    // zoom IN when an APPROACHING vessel is within this of the bridge (perfect entry timing)
-const PTZ_BRIDGE_OUT_MI = 0.15;   // zoom back to Home once a DEPARTING vessel passes this — asymmetric, so it releases ~40 s after the pass instead of lingering ~2.5 min
+const PTZ_BRIDGE_IN_MI  = 0.5;    // zoom IN when an APPROACHING vessel is within this of the bridge LINE (perfect entry timing)
+const PTZ_CLEAR_MARGIN_MI = 0.095; // after the pass, hold until the ship is its own length + ~500 ft past the line (whole ship clear)
+const PTZ_SPAN_ALONG_KM = 2.0;    // only ships within ~1.2 mi of mid-span (north/south) count as "at the bridge"
+// Ship length in miles for the hold: AIS size, else the curated database (≥300 ft), else a typical
+// laker. A tug's own length isn't the barge it pushes, so tug-barge units use a long default.
+function shipLenMi(mmsi, name) {
+  const info = staticInfo[mmsi] || {}, isTow = TOW_TYPES.has(info.type);
+  if (isTow) return 800 / 5280;
+  if (info.length) return info.length * 3.28084 / 5280;
+  const db = DB_LEN_M[lenKey(name)];
+  return (db && db * 3.28084 >= 300) ? db * 3.28084 / 5280 : 700 / 5280;
+}
 const PTZ_FRESH_MS  = 90 * 1000;  // ignore a vessel not heard from in 90 s
 // Current PTZ preset zone, updated every time Home Assistant polls the cue below.
 // Broadcast to overlays so the AIS label overlay shows ONLY while the camera is at
@@ -461,7 +471,10 @@ app.get('/api/ptz-cue', (req, res) => {
   Object.keys(nearBridge).forEach(k => {
     const v = nearBridge[k];
     if (now - v.at > PTZ_FRESH_MS) { delete nearBridge[k]; return; }
-    if (!best || v.distKm < best.distKm) best = Object.assign({ mmsi: +k }, v);
+    // distance that matters to the camera: before/past the bridge line for ships near the span, else plain distance
+    const nearSpan = v.lineKm != null && Math.abs(v.alongKm) <= PTZ_SPAN_ALONG_KM;
+    const camKm = nearSpan ? Math.abs(v.lineKm) : v.distKm;
+    if (!best || camKm < best.camKm) best = Object.assign({ mmsi: +k, camKm: camKm, nearSpan: nearSpan }, v);
   });
   if (!best) {
     const ferry = isFerryAtBridge();   // no freighter in range → cue the bridge if a Shepler's ferry is passing under
@@ -470,13 +483,16 @@ app.get('/api/ptz-cue', (req, res) => {
     reportPtzZone(zone);
     return res.json({ active: ferry, zone: zone, ferry: ferry });
   }
-  const distMi = +(best.distKm * 0.621371).toFixed(2);
-  // Asymmetric: hold the close-up out to 0.5 mi while approaching, but release at just
-  // 0.15 mi once departing — so the camera doesn't linger on empty water after the pass.
-  const threshold = best.closing === false ? PTZ_BRIDGE_OUT_MI : PTZ_BRIDGE_IN_MI;
-  let zone = distMi <= threshold ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
+  const distMi = +(best.camKm * 0.621371).toFixed(2);
+  // Zoom in 0.5 mi before the bridge line; after the pass, hold until the WHOLE ship has cleared
+  // (its length + ~500 ft past the line — the AIS antenna is often near the bow), then back to Home.
+  const departing = best.closing === false;
+  const holdMi = +(shipLenMi(best.mmsi, best.name) + PTZ_CLEAR_MARGIN_MI).toFixed(2);
+  const threshold = departing ? holdMi : PTZ_BRIDGE_IN_MI;
+  let zone = (best.nearSpan && distMi <= threshold) ? 'bridge' : (best.side === 'west' ? 'west' : 'east');
   let reason = zone === 'bridge'
-    ? best.name + ' at the bridge — ' + distMi + ' mi, ' + (best.closing === false ? 'departing' : 'approaching')
+    ? (departing ? best.name + ' clearing the bridge — ' + distMi + ' mi past (holds to ' + holdMi + ' mi: ship length + 500 ft)'
+                 : best.name + ' at the bridge — ' + distMi + ' mi before it, approaching')
     : 'tracking ' + best.name + ' from the ' + best.side + ' — ' + distMi + ' mi out';
   if (zone !== 'bridge' && isFerryAtBridge()) { zone = 'bridge'; reason = "Shepler's ferry passing under (while " + best.name + ' approaches)'; }
   logPtz(zone, reason, { name: best.name, mmsi: best.mmsi, distanceMi: distMi });
@@ -592,7 +608,7 @@ function trkNote(kind, text) { trkLog.unshift({ at: Date.now(), kind: kind, text
 // `closing` flag in nearBridge flickers because the same fix often arrives twice (cloud AIS + local
 // antenna), and a repeated position reads as "not moving away".
 function trkClosing(v) {
-  if (v.cog == null) return v.closing !== false;
+  if (v.lineKm != null || v.cog == null) return v.closing !== false;   // nearBridge entries: already line-based
   return Math.cos((v.cog - trkBearing(v.lat, v.lon, BRIDGE_LAT, BRIDGE_LON)) * Math.PI / 180) > 0;
 }
 // Same eligibility as the preset cue: fresh, moving, in range; Shepler's only near the span and only before 1 PM
@@ -832,6 +848,28 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// ── Where is a ship relative to the bridge LINE (not its center point)? ──
+// Ships don't all cross at mid-span (Munson crossed ~0.25 mi off-center), so "distance to the center"
+// never got small and the camera let go the instant a ship crossed. Instead: lineKm = how far before/past
+// the bridge line (signed, + east, - west), alongKm = how far north/south along the bridge from mid-span.
+// The axis runs through the surveyed south and north pier points from the label-overlay calibration.
+const BRIDGE_AXIS_S = [45.80527, -84.72945], BRIDGE_AXIS_N = [45.82543, -84.72643];
+let bridgeAxisCache = null;
+function bridgeAxis() {
+  if (bridgeAxisCache) return bridgeAxisCache;
+  const kmLat = 111.32, kmLon = 111.32 * Math.cos(BRIDGE_LAT * Math.PI / 180);
+  const ax = (BRIDGE_AXIS_N[1] - BRIDGE_AXIS_S[1]) * kmLon, ay = (BRIDGE_AXIS_N[0] - BRIDGE_AXIS_S[0]) * kmLat;
+  const L = Math.hypot(ax, ay), ux = ax / L, uy = ay / L;               // unit vector along the bridge (≈ north)
+  return (bridgeAxisCache = { kmLat, kmLon, ux, uy, normalBrg: (Math.atan2(uy, -ux) * 180 / Math.PI + 360) % 360 });  // normal points east
+}
+function bridgeFrame(lat, lon) {
+  const a = bridgeAxis(), x = (lon - BRIDGE_LON) * a.kmLon, y = (lat - BRIDGE_LAT) * a.kmLat;
+  return { lineKm: x * a.uy - y * a.ux, alongKm: x * a.ux + y * a.uy };
+}
+function movingTowardLine(lineKm, cog) {           // is the ship's course carrying it toward the bridge line?
+  return lineKm * Math.cos((cog - bridgeAxis().normalBrg) * Math.PI / 180) < 0;
+}
+
 function checkBridgePassing(mmsi, name, lat, lon, speed, cog) {
   if (BLOCKED_MMSI_SERVER.has(mmsi) && !ALLOWED_MMSI_SERVER.has(mmsi)) return;
 
@@ -844,18 +882,19 @@ function checkBridgePassing(mmsi, name, lat, lon, speed, cog) {
   vesselSides[mmsi] = { side, at: Date.now() };
   // Live camera-cue feed: closest in-range moving vessel drives the PTZ preset (see /api/ptz-cue)
   const prevNear = nearBridge[mmsi];
-  // Approaching vs departing. Prefer COURSE (is it pointed at the bridge?): the same fix often arrives
-  // twice (cloud AIS + local antenna), and comparing distances then reads a departing ship as approaching,
-  // which held the bridge close-up to 0.5 mi instead of releasing at PTZ_BRIDGE_OUT_MI.
-  const closing = (typeof cog === 'number' && cog < 360)
-    ? Math.cos((cog - trkBearing(lat, lon, BRIDGE_LAT, BRIDGE_LON)) * Math.PI / 180) > 0
-    : (prevNear ? (distKm <= prevNear.distKm + 0.02) : true); // no course: distance trend (20 m noise margin)
-  nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, cog: (typeof cog === 'number' && cog < 360) ? cog : null, lat: lat, lon: lon, at: Date.now(), closing: closing };
+  // Approaching vs departing = is its COURSE carrying it toward the bridge line? (Comparing distances is
+  // unreliable: the same fix often arrives twice, cloud AIS + local antenna.)
+  const bf = bridgeFrame(lat, lon);
+  const hasCog = typeof cog === 'number' && cog < 360;
+  const closing = hasCog ? movingTowardLine(bf.lineKm, cog)
+    : (prevNear && prevNear.lineKm != null ? Math.abs(bf.lineKm) <= Math.abs(prevNear.lineKm) + 0.02 : true); // no course: distance trend
+  nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, cog: hasCog ? cog : null, lat: lat, lon: lon,
+                       lineKm: bf.lineKm, alongKm: bf.alongKm, at: Date.now(), closing: closing };
 
-  // Narrate as an APPROACHING vessel reaches the bridge (not on the pass), so the
-  // ~5-10s of script + voice generation lands while it's on camera. narrateVessel()
-  // dedupes via its own cooldown, so calling it on each nearing update is safe.
-  if (prevNear && distKm < prevNear.distKm && distKm <= NARRATE_TRIGGER_KM) {
+  // Narrate as an APPROACHING vessel nears the bridge line (not on the pass), so the ~5-10s of script +
+  // voice generation lands while it's on camera. Measured to the LINE, so a ship crossing off mid-span
+  // isn't missed. narrateVessel() dedupes via its own cooldown, so calling it on each update is safe.
+  if (closing && Math.abs(bf.alongKm) <= PTZ_SPAN_ALONG_KM && Math.abs(bf.lineKm) <= NARRATE_TRIGGER_KM) {
     narrateVessel(mmsi, name, side === 'west' ? 'eastbound' : 'westbound', speed)
       .catch(err => console.error('🎙️ narrateVessel(approach) error:', err.message));
   }
