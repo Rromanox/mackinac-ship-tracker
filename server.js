@@ -831,7 +831,10 @@ function shouldHideVessel(mmsi, name, speed = 0) {
 const PASS_TRACK_KM     = 16;                 // only watch vessels within ~10 mi of the bridge
 const PASS_STALE_MS     = 30 * 60 * 1000;     // forget a side observation older than 30 min
 const PASS_COOLDOWN_MS  = 60 * 60 * 1000;     // record at most one pass per vessel per hour
-const NARRATE_TRIGGER_KM  = 0.55;             // ~0.34 mi — fire narration as an APPROACHING vessel nears the bridge, ~30 s earlier than the old 0.35 km (a ~13-kt freighter covers ~0.2 km in 30 s). Distance-based, so slower boats get a touch more lead, faster a touch less.
+const NARRATE_LEAD_S      = 40;               // fire narration when an APPROACHING vessel is ~40 s from the bridge line (from its speed + heading),
+                                              // so after ~5-10 s of generation the voice plays while it slides under the span — and lands inside
+                                              // the Short's clip window (which ends just after the crossing). A fixed distance (was 0.34 mi) fired
+                                              // ~75 s early at 14 kn and ~2.5 min early at 7 kn.
 const NARRATE_COOLDOWN_MS = 60 * 60 * 1000;   // one narration per vessel per hour
 
 const vesselSides         = {}; // mmsi → { side, at }
@@ -891,10 +894,12 @@ function checkBridgePassing(mmsi, name, lat, lon, speed, cog) {
   nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, cog: hasCog ? cog : null, lat: lat, lon: lon,
                        lineKm: bf.lineKm, alongKm: bf.alongKm, at: Date.now(), closing: closing };
 
-  // Narrate as an APPROACHING vessel nears the bridge line (not on the pass), so the ~5-10s of script +
-  // voice generation lands while it's on camera. Measured to the LINE, so a ship crossing off mid-span
-  // isn't missed. narrateVessel() dedupes via its own cooldown, so calling it on each update is safe.
-  if (closing && Math.abs(bf.alongKm) <= PTZ_SPAN_ALONG_KM && Math.abs(bf.lineKm) <= NARRATE_TRIGGER_KM) {
+  // Narrate as an APPROACHING vessel is ~NARRATE_LEAD_S seconds from the bridge line, so the voice plays
+  // over the crossing itself. Time-to-line uses only the part of its speed carrying it toward the line.
+  // narrateVessel() dedupes via its own cooldown, so calling it on each update is safe.
+  const towardMs = (speed || 0) * 0.514444 * (hasCog ? Math.abs(Math.cos((cog - bridgeAxis().normalBrg) * Math.PI / 180)) : 1);
+  const etaToLineS = towardMs > 0.3 ? Math.abs(bf.lineKm) * 1000 / towardMs : Infinity;
+  if (closing && Math.abs(bf.alongKm) <= PTZ_SPAN_ALONG_KM && etaToLineS <= NARRATE_LEAD_S) {
     narrateVessel(mmsi, name, side === 'west' ? 'eastbound' : 'westbound', speed)
       .catch(err => console.error('🎙️ narrateVessel(approach) error:', err.message));
   }
