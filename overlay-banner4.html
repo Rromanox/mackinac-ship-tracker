@@ -545,7 +545,7 @@ function clockTick() {
 var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
 var passedShips = [], PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 var BLOCKED_MMSI = { 368165150:1, 367031360:1, 367139210:1, 367349450:1, 367721870:1, 367721930:1, 367721960:1,
-                     367782080:1, 338158987:1, 338926364:1, 367721890:1, 367783160:1 };
+                     367782080:1, 338158987:1, 338926364:1, 367721890:1, 367783160:1, 366999980:1 };
 var ALLOWED_MMSI = { 311050300:1 };
 function shouldHide(mmsi) {
   if (ALLOWED_MMSI[mmsi]) return false;

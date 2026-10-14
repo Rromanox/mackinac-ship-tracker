@@ -782,6 +782,7 @@ const BLOCKED_MMSI_SERVER = new Set([
   338095227, // TRANQUILLITY
   367532630, // FLAT OUT (pleasure craft, Class A)
   368469170, // FELICITY (Shepler's ferry)
+  366999980, // CG BISCAYNE BAY (Coast Guard cutter based in St. Ignace; comes and goes all day)
   367721390, // SACRE BLEU (Shepler's freight boat)
 ]);
 const ALLOWED_MMSI_SERVER = new Set([
@@ -804,7 +805,7 @@ const staticInfo = {};     // mmsi -> { type, length }  (learned from static mes
 const TOW_TYPES = new Set([31, 32, 52]);
 
 const CG_SMALL_BOATS = new Set(); // runtime: MMSIs of small USCG response boats (AIS name "CG#####")
-// Named cutters ("CG NEAH BAY", "USCGC MACKINAW", "BISCAYNE BAY") have letters, not digits, so they stay visible.
+// Named cutters ("CG NEAH BAY", "USCGC MACKINAW") have letters, not digits, so they stay visible (Biscayne Bay is blocklisted by MMSI).
 function isSmallCoastGuardBoat(name) { return /^(US)?CG\s?\d{4,}$/i.test(String(name || '').trim()); }
 // No Great Lakes freighter, cruise ship, or cutter tops ~17 kn. A vessel sustaining 22+ kn is a
 // go-fast pleasure boat or fast ferry — hide it on speed alone (no static needed). Remember it
