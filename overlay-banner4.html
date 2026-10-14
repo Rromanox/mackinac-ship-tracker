@@ -909,7 +909,8 @@ function maybeMoment(s) {
 }
 
 // ── Cycle engine (same timing as banner3, crossfades instead of slides) ─────
-var T_LIVE = 30000, T_MOTEL = 30000, T_SHIPS = 90000, T_EXT = 30000, T_HIDE = 240000, ETA_NEAR_MIN = 30;
+// Loop: live 45 s → reservations 30 s → ships 120 s → live 45 s (4 min up), then hidden 5 min
+var T_LIVE = 45000, T_MOTEL = 30000, T_SHIPS = 120000, T_EXT = 30000, T_HIDE = 300000, ETA_NEAR_MIN = 30;
 var VIEWS = { live: 'view-live', motel: 'view-motel', ships: 'view-ships' };
 var cycleTimer = null, hideTimer = null, inHidePhase = false;
 function showView(name) {
@@ -932,11 +933,8 @@ function shipsPhase(ms) {
 function outro() {
   showView('live');
   cycleTimer = setTimeout(function () {
-    showView('motel');
-    cycleTimer = setTimeout(function () {
-      hideBar(); inHidePhase = true;
-      hideTimer = setTimeout(function () { inHidePhase = false; runCycle(); }, T_HIDE);
-    }, T_MOTEL);
+    hideBar(); inHidePhase = true;
+    hideTimer = setTimeout(function () { inHidePhase = false; runCycle(); }, T_HIDE);
   }, T_LIVE);
 }
 function runCycle() {
