@@ -34,6 +34,8 @@ let ptzLogCollection = null;
 let rangeLogCollection = null;
 let configCollection = null;
 let bridgeCondCollection = null;
+let mackiCollection = null;      // Macki Bear: memory + show status docs (pushed by the streaming PC)
+let mackiSegCollection = null;   // Macki Bear: every segment he has written
 
 // Connect to MongoDB
 async function connectToMongoDB() {
@@ -48,6 +50,8 @@ async function connectToMongoDB() {
     rangeLogCollection = db.collection('range_log');
     configCollection = db.collection('app_config');
     bridgeCondCollection = db.collection('bridge_conditions');
+    mackiCollection = db.collection('macki');
+    mackiSegCollection = db.collection('macki_segments');
 
     // Create indexes for better performance
     await shipsCollection.createIndex({ mmsi: 1 });
@@ -65,6 +69,7 @@ async function connectToMongoDB() {
     await loadNameCache();
     await loadNarrationState();   // restore a persisted narration pause across restarts
     await loadCameraState();      // restore a persisted ship auto-aim pause across restarts
+    await loadMackiState();       // Macki Bear's last synced memory / status
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
     console.error('⚠️ Running without database - data will not be saved');
@@ -1247,6 +1252,65 @@ app.get('/api/narrations', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/narrations', (req, res) => res.sendFile(path.join(__dirname, 'narrations.html')));
+
+// ── Macki Bear (the animated host, run by macki_live.py on the streaming PC) ──
+// The streaming PC pushes his memory, the segments he writes and the show status here, so they
+// can be seen at /macki and read back from /api/macki. Writes need LOCAL_AIS_KEY. Kept in memory
+// (so the page works even without the database) and saved to MongoDB when it is connected.
+const MACKI_SEG_KEEP = 2000;
+const macki = { memory: null, memoryAt: null, status: null, statusAt: null, host: null, segments: new Map() };
+async function loadMackiState() {
+  if (!mackiCollection) return;
+  try {
+    const [m, s] = await Promise.all([mackiCollection.findOne({ _id: 'memory' }), mackiCollection.findOne({ _id: 'status' })]);
+    if (m) { macki.memory = m.memory; macki.memoryAt = m.at; }
+    if (s) { macki.status = s.status; macki.statusAt = s.at; macki.host = s.host || null; }
+    const segs = await mackiSegCollection.find({}).sort({ _mtime: -1 }).limit(MACKI_SEG_KEEP).toArray();
+    segs.reverse().forEach(d => { const { _id, ...seg } = d; macki.segments.set(_id, seg); });
+    console.log('🐻 Macki: ' + (macki.memory ? (macki.memory.appearances || []).length + ' appearances, ' : '') + macki.segments.size + ' segments loaded');
+  } catch (e) { console.error('Macki load failed:', e.message); }
+}
+app.post('/api/macki/sync', async (req, res) => {
+  if (!LOCAL_AIS_KEY) return res.status(503).json({ error: 'LOCAL_AIS_KEY not configured on server' });
+  if ((req.query.key || req.headers['x-api-key']) !== LOCAL_AIS_KEY) return res.status(403).json({ error: 'Invalid key' });
+  const b = req.body || {}, now = Date.now();
+  let segs = 0;
+  try {
+    if (b.memory && typeof b.memory === 'object' && Array.isArray(b.memory.appearances)) {
+      macki.memory = b.memory; macki.memoryAt = now;
+      if (mackiCollection) await mackiCollection.replaceOne({ _id: 'memory' }, { _id: 'memory', memory: b.memory, at: now }, { upsert: true });
+    }
+    if (b.status && typeof b.status === 'object') {
+      macki.status = b.status; macki.statusAt = now; macki.host = String(b.host || '').slice(0, 80) || null;
+      if (mackiCollection) await mackiCollection.replaceOne({ _id: 'status' }, { _id: 'status', status: b.status, host: macki.host, at: now }, { upsert: true });
+    }
+    for (const s of Array.isArray(b.segments) ? b.segments.slice(0, 200) : []) {
+      if (!s || typeof s.id !== 'string' || !/^[\w.-]{1,120}$/.test(s.id)) continue;
+      const seg = Object.assign({}, s, { syncedAt: now });
+      delete seg._id;
+      macki.segments.delete(s.id); macki.segments.set(s.id, seg);
+      if (mackiSegCollection) await mackiSegCollection.replaceOne({ _id: s.id }, Object.assign({ _id: s.id }, seg), { upsert: true });
+      segs++;
+    }
+    while (macki.segments.size > MACKI_SEG_KEEP) macki.segments.delete(macki.segments.keys().next().value);
+    res.json({ ok: true, segments: segs });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// ?all=1 returns every appearance, fact and segment (default: the recent ones)
+app.get('/api/macki', (req, res) => {
+  const all = req.query.all === '1', m = macki.memory;
+  const apps = m ? (m.appearances || []) : [], facts = m ? (m.facts_shared || []) : [];
+  const segments = Array.from(macki.segments.values()).sort((a, b) => (b._mtime || 0) - (a._mtime || 0));
+  res.json({
+    synced: !!(m || macki.status), memoryAt: macki.memoryAt, statusAt: macki.statusAt, host: macki.host,
+    status: macki.status,
+    memory: m ? { name: m.name, home: m.home, appearancesTotal: apps.length, factsTotal: facts.length, notes: m.notes || [],
+                  appearances: all ? apps : apps.slice(-40), facts_shared: all ? facts : facts.slice(-80) } : null,
+    segmentsTotal: segments.length,
+    segments: all ? segments : segments.slice(0, 40)
+  });
+});
+app.get('/macki', (req, res) => res.sendFile(path.join(__dirname, 'macki.html')));
 
 // ── Live weather (OpenWeatherMap — same source/key as the banner overlay) ──
 const OWM_KEY = process.env.OPENWEATHER_KEY || '8d6e0169a641adc002688e82b9ab8ec3'; // already public in the banner
