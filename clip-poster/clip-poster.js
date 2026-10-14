@@ -30,7 +30,7 @@ const CFG = {
   anthropicKey: process.env.ANTHROPIC_API_KEY || '',
   outDir:     process.env.OUTPUT_DIR  || './clips',
   fontFile:   process.env.FONT_FILE   || 'C:/Windows/Fonts/arialbd.ttf',
-  clipSeconds:  +(process.env.CLIP_SECONDS || 32),
+  clipSeconds:  +(process.env.CLIP_SECONDS || 35),  // length of a clip when the ship had no narration (counted back from the end)
   saveDelayMs:  +(process.env.SAVE_DELAY_MS || 6000),
   trimStart:    +(process.env.CLIP_TRIM_START || 0),   // seconds to skip from the START of each clip (only when there was no narration)
   narrationLead:+(process.env.NARRATION_LEAD_S ?? 2),  // start the clip this many seconds before the narration starts
@@ -221,16 +221,19 @@ function probeSeconds(file) {
 // Returns { height, filters(x, y) } so render() can make room for it.
 const CARD_W = 900, CARD_BOTTOM_LIMIT = 1560;    // narrower than the frame so the Shorts buttons on the right don't cover it,
                                                   // and above the Shorts title at the bottom of a phone
-function cardLayout(card, stamp) {
+// maxH: the room under the video. The fun fact gets two lines, one, or none, whatever fits (a tall
+// zoomed video leaves room for just the tag, the name and the details line).
+function cardLayout(card, stamp, maxH = Infinity) {
   if (!card || !card.name) return null;
   const write = (key, text) => { const p = path.join(tmpDir, `${stamp}-${key}.txt`); fs.writeFileSync(p, text, 'utf8'); return escFilterPath(p); };
-  const lines = card.fact ? wrap(card.fact, 44).split('\n') : [];
-  const fact = lines.length > 2 ? lines.slice(0, 2).join('\n').replace(/[\s,.;:]*$/, '...') : lines.join('\n');
   const nameSize = Math.max(44, Math.min(72, Math.floor((CARD_W - 80) / (0.66 * Math.max(1, card.name.length)))));
-  const factLines = fact ? fact.split('\n').length : 0;
   const metaSize = Math.max(24, Math.min(31, Math.floor((CARD_W - 80) / (0.5 * Math.max(1, (card.meta || '').length)))));
   const yName = 96, yMeta = yName + nameSize + 16, yFact = yMeta + (card.meta ? metaSize + 23 : 6);
-  const height = yFact + (factLines ? factLines * 44 + 30 : 0);
+  const all = card.fact ? wrap(card.fact, 44).split('\n') : [];
+  let factLines = Math.min(2, all.length);
+  while (factLines > 0 && yFact + factLines * 44 + 30 > maxH) factLines--;
+  const fact = factLines ? all.slice(0, factLines).join('\n') + (all.length > factLines ? '...' : '') : '';
+  const height = factLines ? yFact + factLines * 44 + 30 : yFact + (card.meta ? 4 : 20);
   const bold = escFilterPath(CFG.cardFont), reg = escFilterPath(CFG.cardFontReg);
   const files = { tag: write('tag', card.tag), name: write('name', card.name), meta: card.meta && write('meta', card.meta), fact: fact && write('fact', fact) };
   return {
@@ -253,7 +256,7 @@ async function render({ srcVideo, outPath, style, zoom, panX, fromEnd, card }) {
   // crop the 16:9 to fill the whole 9:16 (bigger subject, but the far sides are cut).
   // With a ship card, the video sits higher so the card fits under it (above the phone's Shorts buttons).
   const st = style || CFG.clipStyle;
-  const lay = CFG.nameCard ? cardLayout(card, path.basename(outPath, '.mp4')) : null;
+  let lay = null;
   const place = (fgH) => {                         // top of the video, and of the card under it
     if (!lay) return { top: Math.round((1920 - fgH) / 2) };
     const top = Math.max(250, Math.min(Math.round((1920 - fgH) / 2), CARD_BOTTOM_LIMIT - 30 - lay.height - fgH));
@@ -275,6 +278,7 @@ async function render({ srcVideo, outPath, style, zoom, panX, fromEnd, card }) {
     fgChain = `[0:v]scale=${fgW}:-2[fg]`;
     fgH = Math.round(fgW * 9 / 16 / 2) * 2;
   }
+  if (CFG.nameCard) lay = cardLayout(card, path.basename(outPath, '.mp4'), CARD_BOTTOM_LIMIT - 30 - 250 - fgH);
   const p = place(fgH);
   const vf = [bg, fgChain,
     lay ? `[bg][fg]overlay=(W-w)/2:${p.top}[base];[base]${lay.filters(Math.max(40, Math.round((1080 - fgW) / 2)), p.cardY)}[v]`
@@ -352,6 +356,10 @@ async function handlePassing(data) {
     } else {
       log(`  clip starts ${CFG.narrationLead}s before the narration (${fromEnd.toFixed(1)}s before the end)`);
     }
+  } else {
+    // no narration for this ship (paused, or too fast to catch): the last CLIP_SECONDS, ending at the same spot
+    fromEnd = CFG.clipSeconds;
+    log(`  no narration for this ship: clip is the last ${CFG.clipSeconds}s`);
   }
 
   const fact = pickFact(name);
