@@ -133,7 +133,12 @@ async function load() {
     now.push(state + ' &nbsp;<span class="pill ' + (st.overlay ? 'on' : 'off') + '">' + (st.overlay ? 'overlay connected in OBS' : 'overlay not open in OBS') + '</span>' +
              (st.dry_run ? ' &nbsp;<span class="pill wait">rehearsal mode</span>' : '') + (st.busy ? ' &nbsp;<span class="pill wait">' + escHtml(st.busy) + '…</span>' : ''));
     now.push('<div style="margin-top:12px"><b>Schedule</b> <span class="count">' + (st.schedule_on ? 'on' : 'OFF') + '</span><br>' +
-             (st.slots || []).map(function (x) { return '<span class="slot ' + escHtml(x.state) + '" title="' + escHtml(x.why || '') + '">' + twelve(x.time) + ' ' + (SLOT[x.state] || '') + '</span>'; }).join('') + '</div>');
+             (st.slots || []).map(function (x) { return '<span class="slot ' + escHtml(x.state) + '" title="' + escHtml(x.why || '') + '">' + twelve(x.time) +
+               (x.type && st.kinds ? ' <span class="count">' + escHtml(st.kinds[x.type] || x.type) + '</span>' : '') + ' ' + (SLOT[x.state] || '') + '</span>'; }).join('') + '</div>');
+    var lib = st.library ? Object.keys(st.library) : [];
+    if (lib.length) now.push('<div style="margin-top:12px"><b>Fact library</b> <span class="count">(each fact rests 60 days after he uses it)</span><br>' +
+      lib.map(function (k) { var v = st.library[k]; return '<span class="slot' + (v.available !== null && v.available < 8 ? ' ready' : '') + '">' + escHtml(k) + ': ' +
+        (v.available === null ? v.total + ' dates' : v.available + ' of ' + v.total + ' left') + '</span>'; }).join('') + '</div>');
     if (st.watchers && st.watchers.length) now.push('<div class="count" style="margin-top:8px">' + st.watchers.map(escHtml).join(' · ') + '</div>');
     var ready = st.ready || [];
     now.push('<div style="margin-top:12px"><b>Ready to air</b> <span class="count">(' + ready.length + ')</span>' +
@@ -146,7 +151,8 @@ async function load() {
   document.getElementById('appcount').textContent = m ? '(newest first, ' + apps.length + ' of ' + m.appearancesTotal + ')' : '';
   document.getElementById('apps').innerHTML = apps.length ? apps.map(function (a) {
     var stg = a.staging ? '<span class="tag">in: ' + escHtml(a.staging.enter) + '</span><span class="tag">out: ' + escHtml(a.staging.exit) + '</span>' : '';
-    var cb = a.memory_callback ? '<span class="tag cb" title="' + escHtml(a.memory_callback) + '">memory callback</span>' : '';
+    var cb = (a.angle ? '<span class="tag">angle: ' + escHtml(a.angle) + '</span>' : '') +
+             (a.memory_callback ? '<span class="tag cb" title="' + escHtml(a.memory_callback) + '">memory callback</span>' : '');
     return '<tr><td class="num">' + escHtml(a.n) + '</td><td class="num">' + niceDate(a.date) + (a.time ? '<br>' + escHtml(a.time) : '') + '</td>' +
            '<td>' + escHtml(a.topic) + '<br>' + stg + cb + '</td>' +
            '<td><div class="said">' + (a.lines || []).map(function (l) { return '<span>' + escHtml(l) + '</span>'; }).join('') + '</div>' +
