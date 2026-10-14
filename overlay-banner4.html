@@ -169,6 +169,27 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 .cta { flex: none; font-size: 20px; font-weight: 800; letter-spacing: .3px; padding: 14px 26px; border-radius: 14px; margin-left: 30px; white-space: nowrap; }
 .cta.red { background: var(--red); color: #fff; }
 .cta.gold { background: var(--gold); color: #1b1405; }
+
+/* Wind compass (live view): arrow points where the wind is blowing TO; gentle sway + flowing dashes keep it alive */
+.wind { flex: none; display: flex; align-items: center; gap: 20px; margin-left: 30px; padding-left: 30px; border-left: 1px solid var(--line); }
+.wind-dial { width: 112px; height: 112px; flex: none; }
+.wind-dial .ring { fill: rgba(255,255,255,.03); stroke: rgba(255,255,255,.16); stroke-width: 2; }
+.wind-dial .tick { stroke: rgba(255,255,255,.28); stroke-width: 2; }
+.wind-dial .tick.major { stroke: rgba(255,255,255,.55); stroke-width: 3; }
+.wind-dial text { fill: var(--muted); font: 700 12px Inter, sans-serif; text-anchor: middle; dominant-baseline: central; }
+.wind-dial text.n { fill: var(--gold); }
+.wind-dir { transform-box: view-box; transform-origin: 60px 60px; transition: transform 2.5s cubic-bezier(.2,.8,.2,1); }
+.wind-sway { transform-box: view-box; transform-origin: 60px 60px; animation: sway var(--sway-s, 4.2s) ease-in-out infinite; }
+@keyframes sway { 0%,100% { transform: rotate(calc(var(--sway, 3deg) * -1)); } 50% { transform: rotate(var(--sway, 3deg)); } }
+.wind-shaft { stroke: var(--gold); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 7 7; animation: flow var(--flow-s, 1.6s) linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -14; } }
+.wind-head { fill: var(--gold); }
+.wind-tail { fill: none; stroke: rgba(242,193,78,.55); stroke-width: 3; stroke-linecap: round; }
+.wind-hub { fill: #0B1420; stroke: var(--gold); stroke-width: 2; }
+.wind.calm .wind-dir { opacity: .15; }
+.wind-k { font-size: 14px; font-weight: 800; letter-spacing: 2px; color: var(--gold); }
+.wind-v { font-size: 30px; font-weight: 800; letter-spacing: -.3px; margin-top: 2px; white-space: nowrap; }
+.wind-s { font-size: 17px; color: var(--muted); font-weight: 500; margin-top: 4px; white-space: nowrap; }
 .qr { flex: none; width: 104px; height: 104px; border-radius: 16px; background: #fff; padding: 7px; margin-right: 28px; }
 .qr img { width: 100%; height: 100%; display: block; }
 </style>
@@ -265,7 +286,26 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
         <div class="promo-title">Watching the Mighty Mac &amp; every freighter that passes</div>
         <div class="promo-sub" id="liveSub">Mackinaw City, Michigan · subscribe for more updates</div>
       </div>
-      <div class="cta red">Subscribe</div>
+      <div class="wind calm" id="wind">
+        <svg class="wind-dial" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring" cx="60" cy="60" r="56"/>
+          <g id="windTicks"></g>
+          <text class="n" x="60" y="15">N</text><text x="106" y="60">E</text><text x="60" y="106">S</text><text x="14" y="60">W</text>
+          <g class="wind-dir" id="windDir">
+            <g class="wind-sway">
+              <path class="wind-tail" d="M52 96 L60 88 L68 96"/>
+              <line class="wind-shaft" x1="60" y1="90" x2="60" y2="36"/>
+              <path class="wind-head" d="M60 22 L70 40 L60 35 L50 40 Z"/>
+            </g>
+          </g>
+          <circle class="wind-hub" cx="60" cy="60" r="5"/>
+        </svg>
+        <div>
+          <div class="wind-k">WIND AT THE STRAITS</div>
+          <div class="wind-v" id="windV">—</div>
+          <div class="wind-s" id="windS"></div>
+        </div>
+      </div>
     </section>
 
     <!-- Motel -->
@@ -307,6 +347,31 @@ var TZ = 'America/Detroit';
 
 // ── Weather + clock ─────────────────────────────────────────────
 var OWM_KEY = '8d6e0169a641adc002688e82b9ab8ec3';
+// Wind compass. OpenWeather's wind.deg is where the wind comes FROM; the arrow points where it blows TO.
+function compass16(deg) { return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(((deg % 360) + 360) % 360 / 22.5) % 16]; }
+(function drawTicks() {
+  var g = document.getElementById('windTicks'), out = '';
+  for (var i = 0; i < 16; i++) {
+    var a = i * 22.5 * Math.PI / 180, major = i % 4 === 0, r1 = major ? 44 : 48, r2 = 53;
+    out += '<line class="tick' + (major ? ' major' : '') + '" x1="' + (60 + r1 * Math.sin(a)).toFixed(1) + '" y1="' + (60 - r1 * Math.cos(a)).toFixed(1) +
+           '" x2="' + (60 + r2 * Math.sin(a)).toFixed(1) + '" y2="' + (60 - r2 * Math.cos(a)).toFixed(1) + '"/>';
+  }
+  g.innerHTML = out;
+})();
+function setWind(speed, deg, gust) {
+  var w = document.getElementById('wind'), mph = Math.round(speed || 0), g = gust ? Math.round(gust) : null;
+  if (deg == null || mph < 1) {
+    w.classList.add('calm'); setText('windV', 'Calm'); setText('windS', 'Light and variable'); return;
+  }
+  w.classList.remove('calm');
+  document.getElementById('windDir').style.transform = 'rotate(' + ((deg + 180) % 360) + 'deg)';
+  // gusty air sways the arrow more; stronger wind makes the dashes flow faster
+  w.style.setProperty('--sway', Math.max(2, Math.min(9, 2 + ((g || mph) - mph) * 0.6)) + 'deg');
+  w.style.setProperty('--flow-s', Math.max(0.5, Math.min(2.4, 2.6 - mph / 12)).toFixed(2) + 's');
+  setText('windV', mph + ' mph from the ' + compass16(deg));
+  setText('windS', (g && g > mph + 2 ? 'gusts ' + g + ' mph  ·  ' : '') + 'blowing toward the ' + compass16(deg + 180));
+}
+
 function weatherCheck() {
   fetch('https://api.openweathermap.org/data/2.5/weather?units=imperial&lat=45.7829&lon=-84.7278&appid=' + OWM_KEY)
     .then(function (r) { return r.json(); })
@@ -314,6 +379,7 @@ function weatherCheck() {
       if (!d || !d.main) return;
       var desc = (d.weather && d.weather[0] && d.weather[0].description) || '';
       document.getElementById('wx').textContent = Math.round(d.main.temp) + '°F ' + desc.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+      if (d.wind) setWind(d.wind.speed, d.wind.deg, d.wind.gust);
     }).catch(function () {});
 }
 function clockTick() {
@@ -596,7 +662,7 @@ function renderHero(s) {
 }
 // Queue cycles: pages of 3 through EVERY approaching ship (with ETA), then pages of 3 through the ships
 // that already passed (with the time each went under), then repeats. One page every QUEUE_PAGE_MS.
-var QUEUE_PAGE_MS = 7000, qPages = [], qPage = 0, queueKey = '';
+var QUEUE_PAGE_MS = 12000, qPages = [], qPage = 0, queueKey = '';
 function chunk3(a) { var out = []; for (var i = 0; i < a.length; i += 3) out.push(a.slice(i, i + 3)); return out; }
 function renderQueue(upcoming, passed) {
   var up = chunk3(upcoming), pas = chunk3(passed);
