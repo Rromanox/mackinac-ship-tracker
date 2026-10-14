@@ -129,11 +129,13 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 .meter .meter-stats { margin-bottom: 26px; }   /* room for the ship icon that rides above the track */
 .meter .meter-labels { margin-top: 12px; }
 .meter.dim { opacity: .35; }
-.meter-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 1.4px; color: var(--muted); }
+.meter-labels { display: flex; justify-content: space-between; gap: 18px; font-size: 13px; font-weight: 700; letter-spacing: 1.4px; color: var(--muted); }
+.meter-labels span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meter-labels .from { color: #C9D6E3; }
 .track { position: relative; height: 10px; border-radius: 999px; background: rgba(255,255,255,.08); }
 .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; border-radius: 999px;
         background: linear-gradient(90deg, var(--water), var(--gold)); transition: width 1.4s cubic-bezier(.2,.8,.2,1); }
-.boat { position: absolute; top: 50%; left: 0%; width: 40px; height: 26px; margin-left: -20px; margin-top: -24px;
+.boat { position: absolute; top: 50%; left: 0%; width: 44px; height: 26px; margin-left: -22px; margin-top: -24px;
         transition: left 1.4s cubic-bezier(.2,.8,.2,1); animation: bob 2.6s ease-in-out infinite; }
 @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 .bridge-mark { position: absolute; right: -6px; top: 50%; width: 46px; height: 30px; margin-top: -26px; }
@@ -145,6 +147,10 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 .queue { flex: 1; min-width: 0; padding-left: 30px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
 .q-head { font-size: 13px; font-weight: 700; letter-spacing: 1.4px; color: var(--muted); display: flex; justify-content: space-between; }
 .q-more { color: var(--gold); }
+.q-page { color: var(--text); opacity: .7; margin-left: 8px; }
+.q-dots { display: flex; gap: 5px; align-items: center; }
+.q-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.18); }
+.q-dots i.on { background: var(--gold); }
 .q-row { display: flex; align-items: center; gap: 12px; font-size: 21px; font-weight: 600; min-width: 0; height: 30px;
          animation: rowIn .6s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes rowIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
@@ -233,18 +239,21 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
         <div class="meter-stats"><span class="big" id="dist">—</span><span class="sm" id="speed"></span><span class="eta" id="eta"></span></div>
         <div class="track">
           <div class="fill" id="fill"></div>
-          <svg class="boat" id="boat" viewBox="0 0 40 26" aria-hidden="true">
-            <path d="M3 17 h34 l-4 7 H8 z" fill="#E4554F"/>
-            <rect x="26" y="9" width="8" height="8" rx="1" fill="#F2F5F8"/>
-            <rect x="7" y="13" width="16" height="4" rx="1" fill="#C9D3DE"/>
+          <svg class="boat" id="boat" viewBox="0 0 44 26" aria-hidden="true">
+            <g id="boatG">  <!-- drawn facing RIGHT (bow right, stern cabin left); flipped by JS for westbound -->
+              <path d="M2 15 H35 L43 15 L37 24 H5 Z" fill="#E4554F"/>
+              <rect x="3" y="6" width="10" height="9" rx="1.4" fill="#F2F5F8"/>
+              <rect x="6" y="2" width="3.5" height="4.5" rx=".8" fill="#C9D3DE"/>
+              <rect x="15" y="11.5" width="19" height="3.5" rx="1" fill="#C9D3DE"/>
+            </g>
           </svg>
-          <svg class="bridge-mark" viewBox="0 0 46 30" aria-hidden="true">
+          <svg class="bridge-mark" id="bridgeMark" viewBox="0 0 46 30" aria-hidden="true">
             <path d="M2 22 Q23 6 44 22" stroke="#3DBE8B" stroke-width="2" fill="none"/>
             <rect x="12" y="4" width="3" height="22" fill="#F2C14E"/><rect x="31" y="4" width="3" height="22" fill="#F2C14E"/>
             <rect x="0" y="22" width="46" height="3" fill="#3DBE8B"/>
           </svg>
         </div>
-        <div class="meter-labels"><span>10 MI OUT</span><span>MACKINAC BRIDGE</span></div>
+        <div class="meter-labels"><span id="lblL"></span><span id="lblR">MACKINAC BRIDGE</span></div>
       </div>
       <div class="queue" id="queue"></div>
     </section>
@@ -381,12 +390,44 @@ function factFor(ship) {
   return '';
 }
 function passedTimeFor(mmsi) { for (var i = 0; i < passedShips.length; i++) if (passedShips[i].mmsi === mmsi) return passedShips[i].passedTime; return null; }
+// ── Destination (AIS, crew-typed, often stale) ──────────────────
+// Known Great Lakes ports and which way through the Straits leads there: 'MI' = westbound into Lake
+// Michigan, 'HU' = eastbound into Lake Huron and beyond. A destination that contradicts the ship's
+// heading is hidden (e.g. "westbound toward Drummond Island"); unknown ports are shown as typed.
+var PORTS = [
+  [/CHICAGO|\bCHI\b/, 'Chicago', 'MI'], [/\bGARY\b/, 'Gary', 'MI'], [/BURNS\s*H/, 'Burns Harbor', 'MI'],
+  [/INDIANA\s*H|\bIND\s*H|E\.?\s*CHICAGO|EAST CHICAGO/, 'Indiana Harbor', 'MI'], [/MILWAUKEE|\bMKE\b/, 'Milwaukee', 'MI'],
+  [/GREEN\s*BAY/, 'Green Bay', 'MI'], [/ESCANABA/, 'Escanaba', 'MI'], [/MUSKEGON/, 'Muskegon', 'MI'], [/LUDINGTON/, 'Ludington', 'MI'],
+  [/MANISTEE/, 'Manistee', 'MI'], [/CHARLEVOIX/, 'Charlevoix', 'MI'], [/TRAVERSE/, 'Traverse City', 'MI'], [/P(OR)?T\.?\s*INLAND/, 'Port Inland', 'MI'],
+  [/STURGEON\s*BAY/, 'Sturgeon Bay', 'MI'], [/MANITOWOC/, 'Manitowoc', 'MI'], [/SHEBOYGAN/, 'Sheboygan', 'MI'], [/GRAND\s*HAVEN/, 'Grand Haven', 'MI'],
+  [/ST\.?\s*JOSEPH/, 'St. Joseph', 'MI'],
+  [/DETROIT|\bDET\b/, 'Detroit', 'HU'], [/TOLEDO/, 'Toledo', 'HU'], [/CLEVELAND|\bCLE\b/, 'Cleveland', 'HU'], [/SARNIA|\bSAR\b/, 'Sarnia', 'HU'],
+  [/SAULT|\bSOO\b/, 'Sault Ste. Marie', 'HU'], [/DULUTH/, 'Duluth', 'HU'], [/SUPERIOR/, 'Superior', 'HU'], [/THUNDER\s*BAY/, 'Thunder Bay', 'HU'],
+  [/TWO\s*HARBORS/, 'Two Harbors', 'HU'], [/MARQUETTE/, 'Marquette', 'HU'], [/SILVER\s*BAY/, 'Silver Bay', 'HU'], [/TACONITE/, 'Taconite Harbor', 'HU'],
+  [/ALPENA/, 'Alpena', 'HU'], [/ROGERS\s*CITY|CALCITE/, 'Rogers City', 'HU'], [/STONEPORT/, 'Stoneport', 'HU'], [/DRUMMOND/, 'Drummond Island', 'HU'],
+  [/DE\s*TOUR/, 'DeTour', 'HU'], [/MONTREAL/, 'Montreal', 'HU'], [/QUEBEC/, 'Quebec', 'HU'], [/HAMILTON/, 'Hamilton', 'HU'], [/NANTICOKE/, 'Nanticoke', 'HU'],
+  [/BUFFALO/, 'Buffalo', 'HU'], [/CONNEAUT/, 'Conneaut', 'HU'], [/ASHTABULA/, 'Ashtabula', 'HU'], [/LORAIN/, 'Lorain', 'HU'], [/SAGINAW/, 'Saginaw', 'HU'],
+  [/GODERICH/, 'Goderich', 'HU'], [/OWEN\s*SOUND/, 'Owen Sound', 'HU'], [/WINDSOR/, 'Windsor', 'HU'], [/CHEBOYGAN/, 'Cheboygan', 'HU'],
+  [/MARYSVILLE/, 'Marysville', 'HU'], [/ESSEXVILLE|BAY\s*CITY/, 'Bay City', 'HU']
+];
+function destFor(s) {
+  var raw = staticData[s.mmsi] && staticData[s.mmsi].destination;
+  if (!raw) return null;
+  var d = String(raw).toUpperCase().split('>').pop().trim();              // "CA SAR>US CHI" → "US CHI" (final leg)
+  if (d.length < 3 || /^[\d.\-_/ ]+$/.test(d) || /\b(SEE ORDER|ORDERS|UNKNOWN|N\/A|NONE|TBN|GREAT LAKES|USA|CANADA|FOR ORDERS)\b/.test(d)) return null;
+  var east = s.course > 0 && s.course < 180;
+  for (var i = 0; i < PORTS.length; i++) {
+    if (PORTS[i][0].test(d)) return (PORTS[i][2] === (east ? 'HU' : 'MI')) ? PORTS[i][1] : null;   // contradicts heading → hide
+  }
+  return d.replace(/^(US|CA|USA|CAN)\s+/, '').toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+}
+
 function boundWord(cog) { return (cog > 0 && cog < 180) ? 'Eastbound' : 'Westbound'; }
 function lakeAhead(cog) { return (cog > 0 && cog < 180) ? 'toward Lake Huron' : 'toward Lake Michigan'; }
 
 function refreshPassedShips() {
   if (DEMO) return;
-  fetch(HTTP_BASE + '/api/ships/recent?limit=5').then(function (r) { return r.json(); }).then(function (d) {
+  fetch(HTTP_BASE + '/api/ships/recent?limit=12').then(function (r) { return r.json(); }).then(function (d) {
     passedShips = (d.ships || []).map(function (s) { return { mmsi: s.mmsi, name: s.name, passedTime: new Date(s.passedTime).getTime() }; });
     render();
   }).catch(function () {});
@@ -398,7 +439,8 @@ function pruneStaleShips() {
 }
 function processMessage(data) {
   if (data.MessageType === 'ShipStaticData' && data.Message && data.Message.ShipStaticData) {
-    staticData[data.MetaData.MMSI] = { type: data.Message.ShipStaticData.Type || null };
+    staticData[data.MetaData.MMSI] = { type: data.Message.ShipStaticData.Type || null,
+                                       destination: (data.Message.ShipStaticData.Destination || '').trim() || null };
     render(); return;
   }
   if (data.MessageType === 'PositionReport' && data.Message && data.Message.PositionReport) {
@@ -447,13 +489,44 @@ function render() {
   renderHero(hero);
   maybeMoment(hero);
 
-  var rows = [], shown = {};
-  if (hero) shown[hero.mmsi] = 1;
-  approaching.forEach(function (s) { if (!shown[s.mmsi] && rows.length < 3) { rows.push({ kind: 'app', s: s }); shown[s.mmsi] = 1; } });
-  var moreCount = approaching.filter(function (s) { return !shown[s.mmsi]; }).length;
-  passedShips.forEach(function (p) { if (!shown[p.mmsi] && rows.length < 3) { rows.push({ kind: 'pas', p: p }); shown[p.mmsi] = 1; } });
-  renderQueue(rows, moreCount, approaching.length > (hero && hero.direction === 'Approaching' ? 1 : 0));
+  // Queue: every other approaching ship (by ETA), then every ship that passed in the last few hours
+  var upcoming = approaching.filter(function (s) { return !hero || s.mmsi !== hero.mmsi; });
+  var passed = passedShips.filter(function (p) { return !hero || p.mmsi !== hero.mmsi; });
+  renderQueue(upcoming, passed);
   checkNearbyDuringHide();
+}
+
+// Lay out the distance meter in the ship's real direction of travel, matching the camera view
+// (west on the left, east on the right): the bridge sits at the end it's heading for (or just left),
+// the ship icon faces its way, and the far end says where it came from / is bound.
+function setMeter(o) {
+  var fill = document.getElementById('fill'), boat = document.getElementById('boat'), bm = document.getElementById('bridgeMark');
+  fill.style.left = o.fillFrom === 'left' ? '0' : 'auto';
+  fill.style.right = o.fillFrom === 'right' ? '0' : 'auto';
+  fill.style.width = o.fillPct + '%';
+  fill.style.background = 'linear-gradient(' + (o.bridgeSide === 'right' ? 90 : 270) + 'deg, var(--water), var(--gold))';
+  boat.style.left = o.pos + '%';
+  document.getElementById('boatG').setAttribute('transform', o.faceRight ? '' : 'translate(44 0) scale(-1 1)');
+  bm.style.left = o.bridgeSide === 'left' ? '-6px' : 'auto';
+  bm.style.right = o.bridgeSide === 'right' ? '-6px' : 'auto';
+  var l = document.getElementById('lblL'), r = document.getElementById('lblR');
+  setText('lblL', o.lblL); setText('lblR', o.lblR);
+  l.className = o.bridgeSide === 'right' ? 'from' : ''; r.className = o.bridgeSide === 'left' ? 'from' : '';
+}
+function meterFor(s) {
+  var mi = toMiles(s.distance), east = s.course > 0 && s.course < 180, dest = destFor(s);
+  if (s.direction === 'Approaching') {
+    var fromWest = s.lon < BRIDGE_LON, pct = Math.max(0, Math.min(1, 1 - mi / METER_MI)) * 100;
+    var from = (fromWest ? 'FROM LAKE MICHIGAN' : 'FROM LAKE HURON') + (dest ? '  ·  BOUND FOR ' + dest.toUpperCase() : '');
+    return fromWest
+      ? { bridgeSide: 'right', pos: pct, fillFrom: 'left', fillPct: pct, faceRight: true, lblL: from, lblR: 'MACKINAC BRIDGE' }
+      : { bridgeSide: 'left', pos: 100 - pct, fillFrom: 'right', fillPct: pct, faceRight: false, lblL: 'MACKINAC BRIDGE', lblR: from };
+  }
+  var away = Math.max(0, Math.min(1, mi / METER_MI)) * 100;
+  var to = dest ? 'BOUND FOR ' + dest.toUpperCase() : (east ? 'TO LAKE HURON' : 'TO LAKE MICHIGAN');
+  return east
+    ? { bridgeSide: 'left', pos: away, fillFrom: 'left', fillPct: away, faceRight: true, lblL: 'MACKINAC BRIDGE', lblR: to }
+    : { bridgeSide: 'right', pos: 100 - away, fillFrom: 'right', fillPct: away, faceRight: false, lblL: to, lblR: 'MACKINAC BRIDGE' };
 }
 function renderHero(s) {
   var heroEl = document.getElementById('hero'), meter = document.getElementById('meter');
@@ -467,7 +540,7 @@ function renderHero(s) {
       setText('heroName', 'Watching the Straits');
       setText('heroFact', GENERAL.length ? GENERAL[Math.floor(Date.now() / 600000) % GENERAL.length] : '');
       meter.classList.add('dim');
-      document.getElementById('fill').style.width = '0%'; document.getElementById('boat').style.left = '0%';
+      setMeter({ bridgeSide: 'right', pos: 0, fillFrom: 'left', fillPct: 0, faceRight: true, lblL: '', lblR: 'MACKINAC BRIDGE' });
       setText('dist', '—'); setText('speed', ''); setText('eta', '');
       return;
     }
@@ -483,8 +556,7 @@ function renderHero(s) {
     if (s.direction === 'Approaching') {
       var at = mi < 0.6;
       tag.className = 'tag ' + (at ? 'at' : 'approach'); tag.textContent = at ? 'AT THE BRIDGE' : 'APPROACHING';
-      var pct = Math.max(0, Math.min(1, 1 - mi / METER_MI)) * 100;
-      document.getElementById('fill').style.width = pct + '%'; document.getElementById('boat').style.left = pct + '%';
+      setMeter(meterFor(s));
       setText('dist', mi.toFixed(1) + ' mi');
       setText('speed', s.speed ? s.speed.toFixed(1) + ' kn' : '');
       var m = etaMin(s.distance, s.speed);
@@ -492,7 +564,7 @@ function renderHero(s) {
     } else {
       var pt = passedTimeFor(s.mmsi);
       tag.className = 'tag passed'; tag.textContent = pt ? 'PASSED ' + clockAt(pt) : 'DEPARTING';
-      document.getElementById('fill').style.width = '100%'; document.getElementById('boat').style.left = '100%';
+      setMeter(meterFor(s));
       setText('dist', mi.toFixed(1) + ' mi past');
       setText('speed', s.speed ? s.speed.toFixed(1) + ' kn' : '');
       setText('eta', 'Heading ' + lakeAhead(s.course));
@@ -503,28 +575,44 @@ function renderHero(s) {
     setTimeout(function () { apply(); heroEl.classList.remove('swap'); }, 420);
   } else apply();
 }
-var queueKey = '';
-function renderQueue(rows, more, anyApproaching) {
-  var q = document.getElementById('queue');
-  var key = rows.map(function (r) { return r.kind + (r.s ? r.s.mmsi : r.p.mmsi); }).join(',') + '|' + more;
-  var head = '<div class="q-head"><span>' + (anyApproaching ? 'UP NEXT' : 'RECENTLY PASSED') + '</span>' +
-             (more ? '<span class="q-more">+' + more + ' MORE</span>' : '') + '</div>';
-  var body = rows.length ? rows.map(function (r) {
-    if (r.kind === 'app') {
-      var m = etaMin(r.s.distance, r.s.speed);
-      return '<div class="q-row"><span class="q-ico app">&#9650;</span><span class="q-name">' + escHtml(r.s.name) + '</span>' +
-             '<span class="q-val">' + toMiles(r.s.distance).toFixed(1) + ' mi' + (m != null ? ' · ' + fmtMin(m) : '') + '</span></div>';
+// Queue cycles: pages of 3 through EVERY approaching ship (with ETA), then pages of 3 through the ships
+// that already passed (with the time each went under), then repeats. One page every QUEUE_PAGE_MS.
+var QUEUE_PAGE_MS = 7000, qPages = [], qPage = 0, queueKey = '';
+function chunk3(a) { var out = []; for (var i = 0; i < a.length; i += 3) out.push(a.slice(i, i + 3)); return out; }
+function renderQueue(upcoming, passed) {
+  var up = chunk3(upcoming), pas = chunk3(passed);
+  qPages = up.map(function (rows, i) { return { kind: 'up', rows: rows, n: i + 1, of: up.length }; })
+    .concat(pas.map(function (rows, i) { return { kind: 'pas', rows: rows, n: i + 1, of: pas.length }; }));
+  if (qPage >= qPages.length) qPage = 0;
+  drawQueue();
+}
+function drawQueue() {
+  var q = document.getElementById('queue'), pg = qPages[qPage];
+  if (!pg) {
+    if (queueKey !== 'empty') { queueKey = 'empty'; q.innerHTML = '<div class="q-head"><span>UP NEXT</span></div><div class="q-empty">Nothing else in range right now</div>'; }
+    return;
+  }
+  var dots = qPages.length > 1 ? '<span class="q-dots">' + qPages.map(function (p, i) { return '<i' + (i === qPage ? ' class="on"' : '') + '></i>'; }).join('') + '</span>' : '';
+  var head = '<div class="q-head"><span>' + (pg.kind === 'up' ? 'UP NEXT' : 'PASSED THE BRIDGE') +
+             (pg.of > 1 ? '<span class="q-page">' + pg.n + '/' + pg.of + '</span>' : '') + '</span>' + dots + '</div>';
+  var body = pg.rows.map(function (r) {
+    if (pg.kind === 'up') {
+      var m = etaMin(r.distance, r.speed);
+      return '<div class="q-row"><span class="q-ico app">&#9650;</span><span class="q-name">' + escHtml(r.name) + '</span>' +
+             '<span class="q-val">' + (m != null ? 'ETA ' + fmtMin(m) + ' · ' + clockAt(Date.now() + m * 60000) : toMiles(r.distance).toFixed(1) + ' mi') + '</span></div>';
     }
-    return '<div class="q-row passed"><span class="q-ico pas">&#10003;</span><span class="q-name">' + escHtml(r.p.name) + '</span>' +
-           '<span class="q-val">Passed ' + clockAt(r.p.passedTime) + '</span></div>';
-  }).join('') : '<div class="q-empty">Nothing else in range right now</div>';
+    return '<div class="q-row passed"><span class="q-ico pas">&#10003;</span><span class="q-name">' + escHtml(r.name) + '</span>' +
+           '<span class="q-val">Passed ' + clockAt(r.passedTime) + '</span></div>';
+  }).join('');
+  var key = pg.kind + pg.n + '/' + pg.of + ':' + pg.rows.map(function (r) { return r.mmsi; }).join(',') + '|' + qPage + '/' + qPages.length;
   if (key !== queueKey) { queueKey = key; q.innerHTML = head + body; }
-  else {   // same rows: update numbers in place without replaying the row animation
+  else {   // same page: refresh the numbers in place without replaying the row animation
     var vals = q.querySelectorAll('.q-val'), tmp = document.createElement('div'); tmp.innerHTML = body;
     var nv = tmp.querySelectorAll('.q-val');
     for (var i = 0; i < vals.length && i < nv.length; i++) if (vals[i].textContent !== nv[i].textContent) vals[i].textContent = nv[i].textContent;
   }
 }
+setInterval(function () { if (qPages.length > 1) { qPage = (qPage + 1) % qPages.length; drawQueue(); } }, QUEUE_PAGE_MS);
 
 // ── Bridge moment ───────────────────────────────────────────────
 // When a ship reaches the span the card rises above the bar for ~22 s: name, details and 2-3 badges that
@@ -616,18 +704,24 @@ function checkNearbyDuringHide() {
 function seedDemo() {
   var kmLon = 111.32 * Math.cos(BRIDGE_LAT * Math.PI / 180), now = Date.now();
   var list = [
-    { mmsi: 538001234, name: 'FEDERAL FRASER',  lengthM: 200, typeCode: 70, mi: MOMENT_MODE === 'soon' ? 0.5 : 2.4, speed: 13.8, side: 'w' },
+    { mmsi: 538001234, name: 'FEDERAL FRASER',  lengthM: 200, typeCode: 70, mi: MOMENT_MODE === 'soon' ? 0.5 : (Q.get('lead') === 'east' ? 15 : 2.4), speed: 13.8, side: 'w' },   // ?lead=east → an eastern ship leads
     { mmsi: 366904880, name: 'MESABI MINER',    lengthM: 306, typeCode: 70, mi: 9.1,  speed: 12.9, side: 'e' },
     { mmsi: 366938780, name: 'JOHN J. BOLAND',  lengthM: 207, typeCode: 70, mi: 16.5, speed: 12.1, side: 'w' },
     { mmsi: 316003000, name: 'ALGOMA EQUINOX',  lengthM: 225, typeCode: 70, mi: 27.0, speed: 12.5, side: 'e' },
-    { mmsi: 255009000, name: 'POLSTEAM DABIE',  lengthM: 200, typeCode: 70, mi: 41.0, speed: 11.8, side: 'w' }
+    { mmsi: 255009000, name: 'POLSTEAM DABIE',  lengthM: 200, typeCode: 70, mi: 41.0, speed: 11.8, side: 'w' },
+    { mmsi: 316004000, name: 'CSL NIAGARA',     lengthM: 225, typeCode: 70, mi: 52.0, speed: 12.0, side: 'e' }
   ];
+  var DEST = { 538001234: 'US DET', 366904880: 'GARY IN', 366938780: 'TOLEDO OH', 316003000: 'CA THU>US CHI', 255009000: 'MONTREAL', 316004000: 'MILWAUKEE' };
+  Object.keys(DEST).forEach(function (k) { staticData[k] = { type: 70, destination: DEST[k] }; });
   list.forEach(function (d) {
     var lon = BRIDGE_LON + (d.side === 'w' ? -1 : 1) * d.mi * 1.609 / kmLon;
     d.lon = lon; d.course = d.side === 'w' ? 90 : 270;
   });
   passedShips = [{ mmsi: 367050550, name: 'STEWART J CORT', passedTime: now - 35 * 60000 },
-                 { mmsi: 366904950, name: 'ROBERT S. PIERSON', passedTime: now - 2 * 3600000 }];
+                 { mmsi: 366904950, name: 'ROBERT S. PIERSON', passedTime: now - 2 * 3600000 },
+                 { mmsi: 366971360, name: 'JOHN G MUNSON', passedTime: now - 3 * 3600000 },
+                 { mmsi: 244780000, name: 'MUNTGRACHT', passedTime: now - 4 * 3600000 },
+                 { mmsi: 366906610, name: 'KAYE E. BARKER', passedTime: now - 5 * 3600000 }];
   function step() {
     var t = Date.now();
     list.forEach(function (d) {
