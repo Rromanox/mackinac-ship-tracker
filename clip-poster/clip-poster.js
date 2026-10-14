@@ -49,7 +49,10 @@ const CFG = {
   ytPlaylist: process.env.YT_PLAYLIST || '',
   morningHM:  process.env.MORNING_SLOT || '08:30',
   eveningHM:  process.env.EVENING_SLOT || '18:30',
-  liveUrl:    process.env.LIVE_URL || ''
+  liveUrl:    process.env.LIVE_URL || '',
+  nameCard:   process.env.NAME_CARD !== '0',          // the banner-style ship card under the video (NAME_CARD=0 turns it off)
+  cardFont:   process.env.CARD_FONT || (fs.existsSync('C:/Windows/Fonts/segoeuib.ttf') ? 'C:/Windows/Fonts/segoeuib.ttf' : 'C:/Windows/Fonts/arialbd.ttf'),
+  cardFontReg:process.env.CARD_FONT_REGULAR || (fs.existsSync('C:/Windows/Fonts/segoeui.ttf') ? 'C:/Windows/Fonts/segoeui.ttf' : 'C:/Windows/Fonts/arial.ttf')
 };
 const TEST_MODE = process.argv.includes('--test');
 const POST_NOW  = process.argv.includes('--post-now');
@@ -68,6 +71,7 @@ const staticInfo = {};   // mmsi -> { name, lengthM, flag }
 const narrationUrl = {}; // mmsi -> absolute mp3 url
 const narrationHeardAt = {}; // mmsi -> when (this PC's clock) the server said the narration started
 let factsByName = null;   // normalised vessel name -> [facts]
+const lenFtByName = {};   // normalised vessel name -> length in feet (from the fact list)
 const lastClipAt = {};    // mmsi -> ts (debounce)
 
 const anthropic = CFG.anthropicKey ? new Anthropic({ apiKey: CFG.anthropicKey }) : null;
@@ -80,6 +84,31 @@ const normName = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const MID = { '316':'🇨🇦', '366':'🇺🇸','367':'🇺🇸','368':'🇺🇸','369':'🇺🇸','338':'🇺🇸',
   '311':'🇧🇸','309':'🇧🇸','308':'🇧🇸','305':'🇦🇬','249':'🇲🇹','248':'🇲🇹','draft':'' };
 const flagFromMmsi = m => MID[String(m).slice(0, 3)] || '';
+// the same as words, for the name card (no emojis on video)
+const COUNTRY = { '316': 'Canada', '366': 'United States', '367': 'United States', '368': 'United States', '369': 'United States',
+  '338': 'United States', '311': 'Bahamas', '309': 'Bahamas', '308': 'Bahamas', '305': 'Antigua and Barbuda', '304': 'Antigua and Barbuda',
+  '248': 'Malta', '249': 'Malta', '215': 'Malta', '229': 'Malta', '256': 'Malta', '244': 'Netherlands', '245': 'Netherlands',
+  '246': 'Netherlands', '538': 'Marshall Islands', '636': 'Liberia', '209': 'Cyprus', '210': 'Cyprus', '212': 'Cyprus',
+  '255': 'Portugal', '257': 'Norway', '258': 'Norway', '259': 'Norway', '211': 'Germany', '218': 'Germany', '230': 'Finland',
+  '265': 'Sweden', '266': 'Sweden', '235': 'United Kingdom', '232': 'United Kingdom', '563': 'Singapore', '564': 'Singapore',
+  '565': 'Singapore', '566': 'Singapore', '477': 'Hong Kong', '228': 'France', '247': 'Italy', '224': 'Spain', '225': 'Spain' };
+const countryFromMmsi = m => COUNTRY[String(m).slice(0, 3)] || '';
+function typeName(t) {
+  if (t >= 70 && t <= 79) return 'Cargo freighter';
+  if (t >= 80 && t <= 89) return 'Tanker';
+  if (t === 31 || t === 32) return 'Tug and barge';
+  if (t === 52) return 'Tug';
+  if (t >= 60 && t <= 69) return 'Passenger ship';
+  return '';
+}
+// the card under the video: gold tag, the ship's name, a details line and one fun fact (like the stream banner)
+function nameCard({ mmsi, name, direction, fact }) {
+  const info = staticInfo[mmsi] || {};
+  const ft = lenFtByName[normName(name)] || (info.lengthM ? Math.round(info.lengthM * 3.28084) : 0);
+  const dir = /east/i.test(direction || '') ? 'Eastbound' : /west/i.test(direction || '') ? 'Westbound' : '';
+  const meta = [typeName(info.type), ft ? ft.toLocaleString('en-US') + ' ft' : '', countryFromMmsi(mmsi), dir].filter(Boolean).join(' · ');
+  return { tag: 'UNDER THE MACKINAC BRIDGE', name: String(name).toUpperCase(), meta, fact: noEmoji(fact || '') };
+}
 
 async function loadFacts() {
   try {
@@ -87,7 +116,11 @@ async function loadFacts() {
     const j = await r.json();
     const list = Array.isArray(j) ? j : (j.vessels || Object.values(j));
     factsByName = {};
-    list.forEach(v => { if (v && v.name) factsByName[normName(v.name)] = v.facts || (v.fact ? [v.fact] : []); });
+    list.forEach(v => {
+      if (!v || !v.name) return;
+      factsByName[normName(v.name)] = v.facts || (v.fact ? [v.fact] : []);
+      if (v.lengthFt) lenFtByName[normName(v.name)] = v.lengthFt;
+    });
     log(`loaded facts for ${Object.keys(factsByName).length} vessels`);
   } catch (e) { log('could not load facts:', e.message); factsByName = {}; }
 }
@@ -111,6 +144,7 @@ function connectServer() {
       staticInfo[mmsi].flag = flagFromMmsi(mmsi);
       const sd = d.Message && d.Message.ShipStaticData;
       if (sd && sd.Dimension) staticInfo[mmsi].lengthM = (sd.Dimension.A || 0) + (sd.Dimension.B || 0);
+      if (sd && sd.Type) staticInfo[mmsi].type = sd.Type;
     } else if (m.type === 'narrate' && m.data && m.data.mmsi) {
       narrationUrl[m.data.mmsi] = CFG.serverHttp + m.data.url;
       narrationHeardAt[m.data.mmsi] = Date.now();   // the narration starts playing on the stream about now
@@ -183,12 +217,50 @@ function probeSeconds(file) {
 
 // fromEnd: start the clip this many seconds before the END of the saved replay (used to begin a couple
 // of seconds before the narration); otherwise CLIP_TRIM_START seconds in from the start
-async function render({ srcVideo, outPath, style, zoom, panX, fromEnd }) {
+// The ship card drawn under the video (ffmpeg drawbox/drawtext, same colours as the stream banner).
+// Returns { height, filters(x, y) } so render() can make room for it.
+const CARD_W = 900, CARD_BOTTOM_LIMIT = 1560;    // narrower than the frame so the Shorts buttons on the right don't cover it,
+                                                  // and above the Shorts title at the bottom of a phone
+function cardLayout(card, stamp) {
+  if (!card || !card.name) return null;
+  const write = (key, text) => { const p = path.join(tmpDir, `${stamp}-${key}.txt`); fs.writeFileSync(p, text, 'utf8'); return escFilterPath(p); };
+  const lines = card.fact ? wrap(card.fact, 44).split('\n') : [];
+  const fact = lines.length > 2 ? lines.slice(0, 2).join('\n').replace(/[\s,.;:]*$/, '...') : lines.join('\n');
+  const nameSize = Math.max(44, Math.min(72, Math.floor((CARD_W - 80) / (0.66 * Math.max(1, card.name.length)))));
+  const factLines = fact ? fact.split('\n').length : 0;
+  const metaSize = Math.max(24, Math.min(31, Math.floor((CARD_W - 80) / (0.5 * Math.max(1, (card.meta || '').length)))));
+  const yName = 96, yMeta = yName + nameSize + 16, yFact = yMeta + (card.meta ? metaSize + 23 : 6);
+  const height = yFact + (factLines ? factLines * 44 + 30 : 0);
+  const bold = escFilterPath(CFG.cardFont), reg = escFilterPath(CFG.cardFontReg);
+  const files = { tag: write('tag', card.tag), name: write('name', card.name), meta: card.meta && write('meta', card.meta), fact: fact && write('fact', fact) };
+  return {
+    height,
+    filters: (x, y) => [
+      `drawbox=x=${x}:y=${y}:w=${CARD_W}:h=${height}:color=0x0B1420@0.88:t=fill`,
+      `drawbox=x=${x}:y=${y}:w=${CARD_W}:h=6:color=0xF2C14E@1:t=fill`,
+      `drawtext=fontfile='${bold}':textfile='${files.tag}':fontsize=30:fontcolor=0x1B1405:box=1:boxcolor=0xF2C14E@1:boxborderw=12:x=${x + 44}:y=${y + 36}`,
+      `drawtext=fontfile='${bold}':textfile='${files.name}':fontsize=${nameSize}:fontcolor=white:x=${x + 38}:y=${y + yName}`,
+      files.meta && `drawtext=fontfile='${reg}':textfile='${files.meta}':fontsize=${metaSize}:fontcolor=0xC9D6E3:x=${x + 40}:y=${y + yMeta}`,
+      files.fact && `drawbox=x=${x + 42}:y=${y + yFact + 12}:w=12:h=12:color=0xF2C14E@1:t=fill`,
+      files.fact && `drawtext=fontfile='${reg}':textfile='${files.fact}':fontsize=32:fontcolor=0xCFE3F2:line_spacing=10:x=${x + 70}:y=${y + yFact}`,
+    ].filter(Boolean).join(',')
+  };
+}
+
+async function render({ srcVideo, outPath, style, zoom, panX, fromEnd, card }) {
   // vertical 9:16, keeping the FULL buffer and its ORIGINAL audio (stream audio already carries the
   // live narration at the right moment). Two looks: 'pad' = blur-pad (nothing cropped); 'fill' =
   // crop the 16:9 to fill the whole 9:16 (bigger subject, but the far sides are cut).
+  // With a ship card, the video sits higher so the card fits under it (above the phone's Shorts buttons).
   const st = style || CFG.clipStyle;
-  let vf;
+  const lay = CFG.nameCard ? cardLayout(card, path.basename(outPath, '.mp4')) : null;
+  const place = (fgH) => {                         // top of the video, and of the card under it
+    if (!lay) return { top: Math.round((1920 - fgH) / 2) };
+    const top = Math.max(250, Math.min(Math.round((1920 - fgH) / 2), CARD_BOTTOM_LIMIT - 30 - lay.height - fgH));
+    return { top, cardY: top + fgH + 30 };
+  };
+  const bg = `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`;
+  let fgChain, fgH, fgW = 1080;
   if (st === 'zoom' || st === 'fill') {
     // Zoom in on a BLURRED background (never black): scale the video up by `zoom`, crop the width to
     // the frame. Higher zoom = bigger subject + more side crop; lower = more of the scene + more blur.
@@ -196,19 +268,17 @@ async function render({ srcVideo, outPath, style, zoom, panX, fromEnd }) {
     const fw = Math.round(1080 * zm / 2) * 2;
     const pan = +(panX ?? CFG.clipPanX) || 0;
     const cx = Math.max(0, Math.min(fw - 1080, Math.round((fw - 1080) / 2 - pan)));   // + pan = picture moves right
-    vf = [
-      `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`,
-      `[0:v]scale=${fw}:-2,crop=1080:ih:${cx}:0[fg]`,
-      `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
-    ].join(';');
+    fgChain = `[0:v]scale=${fw}:-2,crop=1080:ih:${cx}:0[fg]`;
+    fgH = Math.round(fw * 9 / 16 / 2) * 2;
   } else {
-    const fgW = Math.round(1080 * CFG.fgWidthPct / 2) * 2;   // inset so phone (Shorts) side-crop eats the margin, not the boat
-    vf = [
-      `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:4,eq=brightness=-0.05[bg]`,
-      `[0:v]scale=${fgW}:-2[fg]`,
-      `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
-    ].join(';');
+    fgW = Math.round(1080 * CFG.fgWidthPct / 2) * 2;   // inset so phone (Shorts) side-crop eats the margin, not the boat
+    fgChain = `[0:v]scale=${fgW}:-2[fg]`;
+    fgH = Math.round(fgW * 9 / 16 / 2) * 2;
   }
+  const p = place(fgH);
+  const vf = [bg, fgChain,
+    lay ? `[bg][fg]overlay=(W-w)/2:${p.top}[base];[base]${lay.filters(Math.max(40, Math.round((1080 - fgW) / 2)), p.cardY)}[v]`
+        : `[bg][fg]overlay=(W-w)/2:${p.top}[v]`].join(';');
   const seek = fromEnd ? ['-sseof', '-' + fromEnd.toFixed(2)] : ['-ss', String(CFG.trimStart)];
   const args = ['-y', ...seek, '-i', srcVideo, '-filter_complex', vf, '-map', '[v]', '-map', '0:a?',
     '-r', '30', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
@@ -290,7 +360,8 @@ async function handlePassing(data) {
   const outPath = path.join(CFG.outDir, `${stamp}_${safe}.mp4`);
 
   try {
-    await render({ srcVideo: saved, outPath, fromEnd });   // audio comes from the raw capture (already has narration)
+    await render({ srcVideo: saved, outPath, fromEnd,        // audio comes from the raw capture (already has narration)
+                   card: nameCard({ mmsi, name, direction: data.direction, fact }) });
   } catch (e) { return log('  ✗ render failed:', e.message); }
 
   const meta = await writeTitle({ name, fact, flag: info.flag, lengthM: info.lengthM });
@@ -404,9 +475,11 @@ async function checkSlots() {
     const nm = (RENDER_NAME || 'Great Lakes Freighter').trim();
     log(`RENDER: "${nm}" from ${RENDER_FILE}`);
     const outPath = path.join(CFG.outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_${normName(nm).slice(0, 24) || 'vessel'}.mp4`);
-    try { await render({ srcVideo: RENDER_FILE, outPath, style: RENDER_STYLE, zoom: RENDER_ZOOM, panX: RENDER_PAN }); }
+    const fct = pickFact(nm);
+    try { await render({ srcVideo: RENDER_FILE, outPath, style: RENDER_STYLE, zoom: RENDER_ZOOM, panX: RENDER_PAN,
+                         card: nameCard({ mmsi: 0, name: nm, direction: argVal('--dir') || '', fact: fct }) }); }
     catch (e) { log('  render failed:', e.message); return process.exit(1); }
-    const meta = await writeTitle({ name: nm, fact: pickFact(nm), flag: '', lengthM: null });
+    const meta = await writeTitle({ name: nm, fact: fct, flag: '', lengthM: null });
     fs.writeFileSync(outPath.replace(/\.mp4$/, '.json'), JSON.stringify(
       { mmsi: 0, name: nm, score: 50, ...meta, video: path.basename(outPath), createdAt: new Date().toISOString(), posted: false }, null, 2));
     log(`  ✅ rendered: ${outPath}`);
