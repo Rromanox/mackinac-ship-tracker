@@ -32,7 +32,8 @@ const CFG = {
   fontFile:   process.env.FONT_FILE   || 'C:/Windows/Fonts/arialbd.ttf',
   clipSeconds:  +(process.env.CLIP_SECONDS || 32),
   saveDelayMs:  +(process.env.SAVE_DELAY_MS || 6000),
-  trimStart:    +(process.env.CLIP_TRIM_START || 0),   // seconds to skip from the START of each clip
+  trimStart:    +(process.env.CLIP_TRIM_START || 0),   // seconds to skip from the START of each clip (only when there was no narration)
+  narrationLead:+(process.env.NARRATION_LEAD_S ?? 2),  // start the clip this many seconds before the narration starts
   fgWidthPct:   +(process.env.FG_WIDTH_PCT || 0.92),   // boat-band width vs full frame; <1 leaves side margin so phones (Shorts) don't crop the boat
   clipStyle:    (process.env.CLIP_STYLE || 'pad'),     // 'pad' = blur-pad (nothing cropped) | 'zoom' = zoomed-in on a blurred bg
   clipZoom:     +(process.env.CLIP_ZOOM || 1.5),       // (zoom style) 1 = full width, higher = bigger subject + more side crop; blur fills the rest
@@ -65,6 +66,7 @@ fs.mkdirSync(tmpDir, { recursive: true });
 // ── shared state populated from the server feed ──────────────────
 const staticInfo = {};   // mmsi -> { name, lengthM, flag }
 const narrationUrl = {}; // mmsi -> absolute mp3 url
+const narrationHeardAt = {}; // mmsi -> when (this PC's clock) the server said the narration started
 let factsByName = null;   // normalised vessel name -> [facts]
 const lastClipAt = {};    // mmsi -> ts (debounce)
 
@@ -111,6 +113,7 @@ function connectServer() {
       if (sd && sd.Dimension) staticInfo[mmsi].lengthM = (sd.Dimension.A || 0) + (sd.Dimension.B || 0);
     } else if (m.type === 'narrate' && m.data && m.data.mmsi) {
       narrationUrl[m.data.mmsi] = CFG.serverHttp + m.data.url;
+      narrationHeardAt[m.data.mmsi] = Date.now();   // the narration starts playing on the stream about now
     } else if (m.type === 'bridge_passing' && m.data) {
       handlePassing(m.data).catch(e => log('passing error:', e.message));
     }
@@ -167,7 +170,20 @@ function wrap(text, n) {
 }
 const escFilterPath = p => p.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-async function render({ srcVideo, outPath, style, zoom, panX }) {
+// length of a saved replay in seconds (null if ffprobe can't tell)
+function probeSeconds(file) {
+  return new Promise(resolve => {
+    const p = spawn('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]);
+    let out = '';
+    p.stdout.on('data', d => { out += d; });
+    p.on('error', () => resolve(null));
+    p.on('close', () => { const s = parseFloat(out); resolve(isFinite(s) ? s : null); });
+  });
+}
+
+// fromEnd: start the clip this many seconds before the END of the saved replay (used to begin a couple
+// of seconds before the narration); otherwise CLIP_TRIM_START seconds in from the start
+async function render({ srcVideo, outPath, style, zoom, panX, fromEnd }) {
   // vertical 9:16, keeping the FULL buffer and its ORIGINAL audio (stream audio already carries the
   // live narration at the right moment). Two looks: 'pad' = blur-pad (nothing cropped); 'fill' =
   // crop the 16:9 to fill the whole 9:16 (bigger subject, but the far sides are cut).
@@ -193,7 +209,8 @@ async function render({ srcVideo, outPath, style, zoom, panX }) {
       `[bg][fg]overlay=(W-w)/2:(H-h)/2[v]`
     ].join(';');
   }
-  const args = ['-y', '-ss', String(CFG.trimStart), '-i', srcVideo, '-filter_complex', vf, '-map', '[v]', '-map', '0:a?',
+  const seek = fromEnd ? ['-sseof', '-' + fromEnd.toFixed(2)] : ['-ss', String(CFG.trimStart)];
+  const args = ['-y', ...seek, '-i', srcVideo, '-filter_complex', vf, '-map', '[v]', '-map', '0:a?',
     '-r', '30', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', outPath];
   await run('ffmpeg', args);
@@ -248,8 +265,24 @@ async function handlePassing(data) {
   await new Promise(r => setTimeout(r, CFG.saveDelayMs)); // let the crossing settle near clip end
 
   let saved;
+  const savedAt = Date.now();                       // the replay ends (about) now
   try { saved = await saveReplay(); } catch (e) { return log('  replay save failed:', e.message); }
   log('  saved replay:', saved);
+
+  // start the clip NARRATION_LEAD_S seconds before the narration began (if it played for this ship)
+  let fromEnd = null;
+  const heard = narrationHeardAt[mmsi];
+  if (heard && savedAt - heard < 150000) {
+    fromEnd = (savedAt - heard) / 1000 + CFG.narrationLead;
+    const len = await probeSeconds(saved);
+    if (len && fromEnd > len) {
+      log(`  ⚠ the replay is only ${len.toFixed(0)}s but the narration started ${(fromEnd - CFG.narrationLead).toFixed(0)}s ago: ` +
+          `raise OBS Settings > Output > Replay Buffer > Maximum Replay Time to at least ${Math.ceil(fromEnd + 10)}s. Using the whole replay.`);
+      fromEnd = null;
+    } else {
+      log(`  clip starts ${CFG.narrationLead}s before the narration (${fromEnd.toFixed(1)}s before the end)`);
+    }
+  }
 
   const fact = pickFact(name);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -257,7 +290,7 @@ async function handlePassing(data) {
   const outPath = path.join(CFG.outDir, `${stamp}_${safe}.mp4`);
 
   try {
-    await render({ srcVideo: saved, outPath });   // audio comes from the raw capture (already has narration)
+    await render({ srcVideo: saved, outPath, fromEnd });   // audio comes from the raw capture (already has narration)
   } catch (e) { return log('  ✗ render failed:', e.message); }
 
   const meta = await writeTitle({ name, fact, flag: info.flag, lengthM: info.lengthM });

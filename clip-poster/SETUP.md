@@ -22,7 +22,9 @@ Phase 1 is about getting great clips on disk so you can eyeball the quality.
 
 **b) Replay Buffer** (the rolling recording we clip from)
 - OBS ▸ **Settings ▸ Output ▸ Replay Buffer** → ✅ Enable
-- **Maximum Replay Time: 40 seconds** (must be ≥ `CLIP_SECONDS`)
+- **Maximum Replay Time: 75 seconds.** The narration starts about 40 seconds before a ship crosses, and the clip is saved a few
+  seconds after, so the buffer has to hold all of that. Each clip starts 2 seconds before the narration (`NARRATION_LEAD_S` in `.env`)
+  and ends a few seconds after the crossing. If the buffer is ever too short, the window says so and how long to make it.
 - Also check **Settings ▸ Output ▸ Recording ▸ Recording Format = mp4** (not mkv) so clips are upload-ready.
 - Click **Start Replay Buffer** (the script also starts it automatically, but do it once to confirm it works).
 

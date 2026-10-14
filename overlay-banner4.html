@@ -733,6 +733,7 @@ function render() {
   var passed = passedShips.filter(function (p) { return !hero || p.mmsi !== hero.mmsi; });
   renderQueue(upcoming, passed);
   checkNearbyDuringHide();
+  keepShipsUp();
 }
 
 // Lay out the distance meter in the ship's real direction of travel, matching the camera view
@@ -912,8 +913,26 @@ function maybeMoment(s) {
 // Loop: live 45 s → reservations 30 s → ships 120 s → live 45 s (4 min up), then hidden 5 min
 var T_LIVE = 45000, T_MOTEL = 30000, T_SHIPS = 120000, T_EXT = 30000, T_HIDE = 300000, ETA_NEAR_MIN = 30;
 var VIEWS = { live: 'view-live', motel: 'view-motel', ships: 'view-ships' };
-var cycleTimer = null, hideTimer = null, inHidePhase = false;
+var cycleTimer = null, hideTimer = null, inHidePhase = false, curView = null;
+// A ship the camera has zoomed in on (same rule as the server's camera cue): from 0.5 mi before the bridge
+// line until it's its own length + ~500 ft past it. While one is in the shot, the ships chip stays up.
+var ZOOM_IN_MI = 0.5;
+function shipInFrame() {
+  return getVisibleShips().some(function (s) {
+    if (clearingBridge(s)) return true;
+    if (s.direction !== 'Approaching' || s.lat == null) return false;
+    var f = bridgeFrame(s.lat, s.lon);
+    return Math.abs(f.alongKm) <= 2.0 && Math.abs(f.lineKm) * 0.621371 <= ZOOM_IN_MI;
+  });
+}
+// jump straight to the ships chip (from any other chip, or out of the hidden break) while a ship is in the shot
+function keepShipsUp() {
+  if (PIN || curView === 'ships' && !inHidePhase || !shipInFrame()) return;
+  clearTimeout(cycleTimer); clearTimeout(hideTimer); inHidePhase = false;
+  showBar(); showView('ships'); shipsPhase(T_EXT);
+}
 function showView(name) {
+  curView = name;
   Object.keys(VIEWS).forEach(function (k) { document.getElementById(VIEWS[k]).classList.toggle('on', k === name); });
   var bar = document.getElementById('bar'); ['live', 'motel', 'ships'].forEach(function (v) { bar.classList.toggle('v-' + v, v === name); });
 }
@@ -927,7 +946,8 @@ function shipsPhase(ms) {
   clearTimeout(cycleTimer);
   cycleTimer = setTimeout(function () {
     var eta = closestApproachingEta();
-    if (eta !== null && eta <= ETA_NEAR_MIN) shipsPhase(T_EXT); else outro();
+    if (shipInFrame()) shipsPhase(10000);              // still in the camera's close-up: check again shortly
+    else if (eta !== null && eta <= ETA_NEAR_MIN) shipsPhase(T_EXT); else outro();
   }, ms);
 }
 function outro() {
