@@ -583,12 +583,33 @@ function getVisibleShips() {
         .filter(function(s) { return s.speed > 0.5 && toMiles(s.distance) <= MAX_DIST_MI && !shouldHide(s.mmsi); });
 }
 
+// ── Keep a just-passed ship on the banner while it's still in frame ──
+// Same rule as the camera close-up: a ship that just went under stays (as the lead chip) until it is its
+// own length + ~500 ft past the bridge LINE — not the instant it crosses. The line runs through the
+// surveyed south/north pier points, so ships crossing off mid-span are measured correctly too.
+var BRIDGE_AXIS_S = [45.80527, -84.72945], BRIDGE_AXIS_N = [45.82543, -84.72643];
+function bridgeFrame(lat, lon) {
+    var kmLat = 111.32, kmLon = 111.32 * Math.cos(BRIDGE_LAT * Math.PI / 180);
+    var ax = (BRIDGE_AXIS_N[1] - BRIDGE_AXIS_S[1]) * kmLon, ay = (BRIDGE_AXIS_N[0] - BRIDGE_AXIS_S[0]) * kmLat;
+    var L = Math.sqrt(ax * ax + ay * ay), ux = ax / L, uy = ay / L;
+    var x = (lon - BRIDGE_LON) * kmLon, y = (lat - BRIDGE_LAT) * kmLat;
+    return { lineKm: x * uy - y * ux, alongKm: x * ux + y * uy };
+}
+function clearingBridge(s) {
+    if (s.direction === 'Approaching' || s.lat == null) return false;
+    var f = bridgeFrame(s.lat, s.lon);
+    if (Math.abs(f.alongKm) > 2.0) return false;                          // not near the main span
+    var t = s.typeCode, ft = (t === 31 || t === 32 || t === 52) ? 800 : (s.lengthM ? s.lengthM * 3.28084 : 700);
+    return Math.abs(f.lineKm) * 0.621371 <= ft / 5280 + 0.095;          // tug-barge units: tug length isn't the barge
+}
+
 function render() {
     var all         = getVisibleShips();
     var approaching = all.filter(function(s) { return s.direction === 'Approaching'; })
                          .sort(function(a,b) { return a.distance - b.distance; });
+    var held        = all.filter(clearingBridge).sort(function(a,b) { return a.distance - b.distance; });
     var active      = approaching.length > 0
-        ? approaching
+        ? held.concat(approaching)     // the ship that just went under stays first while it's still in frame
         : all.filter(function(s) { return toMiles(s.distance) <= DEPART_MAX_MI; })
              .sort(function(a,b) { return a.distance - b.distance; }).slice(0, 3);
 

@@ -479,13 +479,31 @@ function connect() {
 // ── Render ──────────────────────────────────────────────────────
 var heroKey = '';
 function setText(id, t) { var el = document.getElementById(id); if (el.textContent !== t) el.textContent = t; }
+// Keep a just-passed ship featured while it's still in frame — same rule as the camera close-up: until it is its
+// own length + ~500 ft past the bridge LINE (through the surveyed piers), not the instant it crosses.
+var BRIDGE_AXIS_S = [45.80527, -84.72945], BRIDGE_AXIS_N = [45.82543, -84.72643];
+function bridgeFrame(lat, lon) {
+  var kmLat = 111.32, kmLon = 111.32 * Math.cos(BRIDGE_LAT * Math.PI / 180);
+  var ax = (BRIDGE_AXIS_N[1] - BRIDGE_AXIS_S[1]) * kmLon, ay = (BRIDGE_AXIS_N[0] - BRIDGE_AXIS_S[0]) * kmLat;
+  var L = Math.sqrt(ax * ax + ay * ay), ux = ax / L, uy = ay / L;
+  var x = (lon - BRIDGE_LON) * kmLon, y = (lat - BRIDGE_LAT) * kmLat;
+  return { lineKm: x * uy - y * ux, alongKm: x * ux + y * uy };
+}
+function clearingBridge(s) {
+  if (s.direction === 'Approaching' || s.lat == null) return false;
+  var f = bridgeFrame(s.lat, s.lon);
+  if (Math.abs(f.alongKm) > 2.0) return false;
+  var t = s.typeCode, ft = (t === 31 || t === 32 || t === 52) ? 800 : (s.lengthM ? s.lengthM * 3.28084 : 700);
+  return Math.abs(f.lineKm) * 0.621371 <= ft / 5280 + 0.095;
+}
 function render() {
   var all = getVisibleShips();
   var byDist = function (a, b) { return a.distance - b.distance; };
   var approaching = all.filter(function (s) { return s.direction === 'Approaching'; }).sort(byDist);
   var departing = all.filter(function (s) { return s.direction !== 'Approaching' && toMiles(s.distance) <= DEPART_MAX_MI; }).sort(byDist);
   passedShips = passedShips.filter(function (p) { return Date.now() - p.passedTime < PASSED_MAX_AGE_MS; });
-  var hero = approaching[0] || departing[0] || null;
+  var held = all.filter(clearingBridge).sort(byDist);   // just went under, still in frame
+  var hero = held[0] || approaching[0] || departing[0] || null;
   renderHero(hero);
   maybeMoment(hero);
 
@@ -530,7 +548,7 @@ function meterFor(s) {
 }
 function renderHero(s) {
   var heroEl = document.getElementById('hero'), meter = document.getElementById('meter');
-  var key = s ? s.mmsi + s.direction : 'none';
+  var key = s ? String(s.mmsi) : 'none';   // same ship flipping approaching→passed shouldn't replay the swap
   var apply = function () {
     var tag = document.getElementById('heroTag');
     if (!s) {
@@ -563,7 +581,8 @@ function renderHero(s) {
       setText('eta', m != null ? (m <= 1 ? 'Arriving now' : 'ETA ' + fmtMin(m) + ' · ' + clockAt(Date.now() + m * 60000)) : '');
     } else {
       var pt = passedTimeFor(s.mmsi);
-      tag.className = 'tag passed'; tag.textContent = pt ? 'PASSED ' + clockAt(pt) : 'DEPARTING';
+      if (clearingBridge(s)) { tag.className = 'tag at'; tag.textContent = 'PASSING UNDER'; }
+      else { tag.className = 'tag passed'; tag.textContent = pt ? 'PASSED ' + clockAt(pt) : 'DEPARTING'; }
       setMeter(meterFor(s));
       setText('dist', mi.toFixed(1) + ' mi past');
       setText('speed', s.speed ? s.speed.toFixed(1) + ' kn' : '');
