@@ -209,6 +209,32 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 .q-row.passed .q-name { color: #C5D0DC; font-weight: 500; }
 .q-empty { color: var(--muted); font-size: 18px; font-weight: 500; }
 
+/* Large print (?lp=1): status says it in words, times are big and high-contrast, 2 rows per queue page */
+.lp .tag { font-size: 23px; letter-spacing: 1px; padding: 6px 16px; border-radius: 10px; }
+.lp .tag.approach { color: #1b1405; background: var(--gold); }
+.lp .tag.passed { color: #062016; background: var(--green); }
+.lp .tag.idle { font-size: 19px; }
+.lp .hero-top { margin-bottom: 8px; }
+.lp .hero-meta { font-size: 19px; color: #C9D6E3; }
+.lp .hero-name { font-size: 44px; }
+.lp .hero-fact { font-size: 20px; margin-top: 5px; }
+.lp .meter-stats .big { font-size: 32px; }
+.lp .meter-stats .eta { font-size: 30px; font-weight: 800; }
+.lp .meter-stats .eta.dep { font-size: 22px; font-weight: 700; }   /* "Heading toward Lake Huron" is long */
+.lp .meter { min-width: 0; overflow: hidden; }
+.lp .meter-labels { font-size: 15px; }
+.lp .q-head { font-size: 18px; font-weight: 800; letter-spacing: 1.6px; }
+.lp .q-head.up { color: var(--gold); } .lp .q-head.pas { color: var(--green); }
+.lp .q-page { color: var(--muted); opacity: 1; }
+.lp .q-dots i { width: 9px; height: 9px; }
+.lp .queue { gap: 8px; }
+.lp .q-row { font-size: 28px; font-weight: 700; height: 40px; gap: 14px; }
+.lp .q-row.passed .q-name { color: #E2E9F0; font-weight: 600; }
+.lp .q-ico { font-size: 19px; width: 22px; }
+.lp .q-val { font-size: 28px; font-weight: 800; color: var(--gold); }
+.lp .q-row.passed .q-val { color: var(--green); }
+.lp .q-empty { font-size: 22px; }
+
 /* Promo views */
 .promo-text { flex: 1; min-width: 0; }
 .promo-kicker { font-size: 15px; font-weight: 800; letter-spacing: 1.6px; color: var(--gold); margin-bottom: 6px; }
@@ -389,6 +415,8 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 //   ?fit=1&bg=1      preview in a normal browser: scale to the window width, water-coloured backdrop
 var Q = new URLSearchParams(location.search);
 var DEMO = Q.get('demo') === '1';
+var LP = Q.get('lp') !== '0';                  // large print (default): bigger status / ETA / queue for older viewers; ?lp=0 = old look
+if (LP) document.documentElement.classList.add('lp');
 var MOMENT_MODE = Q.get('moment');            // '1' | 'soon' | null
 var MOMENT_ENABLED = DEMO;                    // PREVIEW ONLY — not shown on the live stream until approved
 var PIN = Q.get('panel') || (DEMO && Q.get('cycle') !== '1' ? 'ships' : null);
@@ -766,20 +794,25 @@ function renderHero(s) {
     meter.classList.remove('dim');
     if (s.direction === 'Approaching') {
       var at = mi < 0.6;
-      tag.className = 'tag ' + (at ? 'at' : 'approach'); tag.textContent = at ? 'AT THE BRIDGE' : 'APPROACHING';
+      var m = etaMin(s.distance, s.speed);
+      tag.className = 'tag ' + (at ? 'at' : 'approach');
+      tag.textContent = at ? (LP ? 'AT THE BRIDGE NOW' : 'AT THE BRIDGE')
+                           : (LP && m != null ? (m <= 1 ? 'ARRIVING NOW' : 'COMING · ' + fmtMin(m).toUpperCase()) : 'APPROACHING');
       setMeter(meterFor(s));
+      document.getElementById('eta').classList.remove('dep');
       setText('dist', mi.toFixed(1) + ' mi');
       setText('speed', s.speed ? s.speed.toFixed(1) + ' kn' : '');
-      var m = etaMin(s.distance, s.speed);
-      setText('eta', m != null ? (m <= 1 ? 'Arriving now' : 'ETA ' + fmtMin(m) + ' · ' + clockAt(Date.now() + m * 60000)) : '');
+      setText('eta', m != null ? (m <= 1 ? 'Arriving now' : LP ? 'Arrives ' + clockAt(Date.now() + m * 60000)
+                                                                : 'ETA ' + fmtMin(m) + ' · ' + clockAt(Date.now() + m * 60000)) : '');
     } else {
       var pt = passedTimeFor(s.mmsi);
-      if (clearingBridge(s)) { tag.className = 'tag at'; tag.textContent = 'PASSING UNDER'; }
-      else { tag.className = 'tag passed'; tag.textContent = pt ? 'PASSED ' + clockAt(pt) : 'DEPARTING'; }
+      if (clearingBridge(s)) { tag.className = 'tag at'; tag.textContent = LP ? 'PASSING UNDER NOW' : 'PASSING UNDER'; }
+      else { tag.className = 'tag passed'; tag.textContent = pt ? 'PASSED ' + (LP ? 'AT ' : '') + clockAt(pt) : 'DEPARTING'; }
       setMeter(meterFor(s));
       setText('dist', mi.toFixed(1) + ' mi past');
       setText('speed', s.speed ? s.speed.toFixed(1) + ' kn' : '');
       setText('eta', 'Heading ' + lakeAhead(s.course));
+      document.getElementById('eta').classList.add('dep');
     }
   };
   if (key !== heroKey) {               // new featured ship: quick fade/slide swap
@@ -790,12 +823,15 @@ function renderHero(s) {
 // Queue cycles: pages of 3 through EVERY approaching ship (with ETA), then pages of 3 through the ships
 // that already passed (with the time each went under), then repeats. One page every QUEUE_PAGE_MS.
 var QUEUE_PAGE_MS = 12000, qPages = [], qPage = 0, queueKey = '';
-function chunk3(a) { var out = []; for (var i = 0; i < a.length; i += 3) out.push(a.slice(i, i + 3)); return out; }
+function chunk3(a) { var n = LP ? 2 : 3, out = []; for (var i = 0; i < a.length; i += n) out.push(a.slice(i, i + n)); return out; }
 function renderQueue(upcoming, passed) {
   var up = chunk3(upcoming), pas = chunk3(passed);
   qPages = up.map(function (rows, i) { return { kind: 'up', rows: rows, n: i + 1, of: up.length }; })
     .concat(pas.map(function (rows, i) { return { kind: 'pas', rows: rows, n: i + 1, of: pas.length }; }));
   if (qPage >= qPages.length) qPage = 0;
+  if (DEMO && Q.get('qp') === 'pas' && !renderQueue.jumped) {   // preview: open on the "passed" page
+    for (var i = 0; i < qPages.length; i++) if (qPages[i].kind === 'pas') { qPage = i; renderQueue.jumped = true; break; }
+  }
   drawQueue();
 }
 function drawQueue() {
@@ -805,16 +841,18 @@ function drawQueue() {
     return;
   }
   var dots = qPages.length > 1 ? '<span class="q-dots">' + qPages.map(function (p, i) { return '<i' + (i === qPage ? ' class="on"' : '') + '></i>'; }).join('') + '</span>' : '';
-  var head = '<div class="q-head"><span>' + (pg.kind === 'up' ? 'UP NEXT' : 'PASSED THE BRIDGE') +
+  var head = '<div class="q-head ' + pg.kind + '"><span>' + (pg.kind === 'up' ? (LP ? 'COMING NEXT' : 'UP NEXT') : (LP ? 'ALREADY PASSED' : 'PASSED THE BRIDGE')) +
              (pg.of > 1 ? '<span class="q-page">' + pg.n + '/' + pg.of + '</span>' : '') + '</span>' + dots + '</div>';
   var body = pg.rows.map(function (r) {
     if (pg.kind === 'up') {
-      var m = etaMin(r.distance, r.speed);
+      var m = etaMin(r.distance, r.speed), val;
+      if (LP) val = m == null ? toMiles(r.distance).toFixed(1) + ' mi away' : 'at ' + clockAt(Date.now() + m * 60000);
+      else val = m != null ? 'ETA ' + fmtMin(m) + ' · ' + clockAt(Date.now() + m * 60000) : toMiles(r.distance).toFixed(1) + ' mi';
       return '<div class="q-row"><span class="q-ico app">&#9650;</span><span class="q-name">' + escHtml(r.name) + '</span>' +
-             '<span class="q-val">' + (m != null ? 'ETA ' + fmtMin(m) + ' · ' + clockAt(Date.now() + m * 60000) : toMiles(r.distance).toFixed(1) + ' mi') + '</span></div>';
+             '<span class="q-val">' + val + '</span></div>';
     }
     return '<div class="q-row passed"><span class="q-ico pas">&#10003;</span><span class="q-name">' + escHtml(r.name) + '</span>' +
-           '<span class="q-val">Passed ' + clockAt(r.passedTime) + '</span></div>';
+           '<span class="q-val">' + (LP ? 'at ' : 'Passed ') + clockAt(r.passedTime) + '</span></div>';
   }).join('');
   var key = pg.kind + pg.n + '/' + pg.of + ':' + pg.rows.map(function (r) { return r.mmsi; }).join(',') + '|' + qPage + '/' + qPages.length;
   if (key !== queueKey) { queueKey = key; q.innerHTML = head + body; }
@@ -932,11 +970,16 @@ function seedDemo() {
     var lon = BRIDGE_LON + (d.side === 'w' ? -1 : 1) * d.mi * 1.609 / kmLon;
     d.lon = lon; d.course = d.side === 'w' ? 90 : 270;
   });
-  passedShips = [{ mmsi: 367050550, name: 'STEWART J CORT', passedTime: now - 35 * 60000 },
+  if (Q.get('lead') === 'passed') {   // ?lead=passed → the lead ship went under a few minutes ago, heading east
+    list[0].lon = BRIDGE_LON + 0.9 * 1.609 / kmLon; list[0].course = 90;
+    list.length = 1;                  // nobody else inbound, so the passed ship stays featured
+  }
+  passedShips = (Q.get('lead') === 'passed' ? [{ mmsi: 538001234, name: 'FEDERAL FRASER', passedTime: now - 4 * 60000 }] : []).concat([
+                 { mmsi: 367050550, name: 'STEWART J CORT', passedTime: now - 35 * 60000 },
                  { mmsi: 366904950, name: 'ROBERT S. PIERSON', passedTime: now - 2 * 3600000 },
                  { mmsi: 366971360, name: 'JOHN G MUNSON', passedTime: now - 3 * 3600000 },
                  { mmsi: 244780000, name: 'MUNTGRACHT', passedTime: now - 4 * 3600000 },
-                 { mmsi: 366906610, name: 'KAYE E. BARKER', passedTime: now - 5 * 3600000 }];
+                 { mmsi: 366906610, name: 'KAYE E. BARKER', passedTime: now - 5 * 3600000 }]);
   function step() {
     var t = Date.now();
     list.forEach(function (d) {
