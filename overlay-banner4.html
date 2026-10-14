@@ -89,6 +89,34 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 .brand { flex: 0 0 450px; padding: 0 26px 0 22px; display: flex; align-items: center; gap: 18px;
          border-right: 1px solid var(--line); }
 .brand-mark { width: 92px; height: 92px; flex: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+
+/* ── Live weather scene behind the brand section (kept dim + slow so the text stays readable) ── */
+.brand { position: relative; overflow: hidden; }
+.brand > *:not(.wx-scene) { position: relative; z-index: 1; }
+.wx-scene { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; transition: opacity 1.5s; }
+.wx-scene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,15,26,.1), rgba(8,15,26,.32)); }
+.wx-scene i, .wx-scene b { position: absolute; display: block; }
+.wx-scene .sun { right: -50px; top: -70px; width: 240px; height: 240px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,214,120,.38), rgba(255,214,120,.1) 42%, transparent 68%); animation: wxGlow 8s ease-in-out infinite; }
+@keyframes wxGlow { 50% { transform: scale(1.08); opacity: .75; } }
+.wx-scene .moon { right: 34px; top: 16px; width: 30px; height: 30px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 38%, rgba(245,243,228,.6), rgba(245,243,228,.3) 58%, transparent 61%); box-shadow: 0 0 34px 12px rgba(210,225,255,.09); }
+.wx-scene .star { width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: .55; animation: wxTwinkle 3.6s ease-in-out infinite; }
+@keyframes wxTwinkle { 50% { opacity: .1; } }
+.wx-scene .cloud { height: 46px; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(205,218,232,.24), rgba(205,218,232,0) 70%);
+  animation: wxDrift linear infinite; }
+.wx-scene.dark .cloud { background: radial-gradient(ellipse at center, rgba(140,155,175,.32), rgba(140,155,175,0) 70%); }
+@keyframes wxDrift { from { transform: translateX(-260px); } to { transform: translateX(520px); } }
+.wx-scene .drop { top: -24px; width: 1.6px; height: 17px; background: linear-gradient(rgba(170,205,235,0), rgba(170,205,235,.6)); animation: wxFall linear infinite; }
+@keyframes wxFall { from { transform: translate(0, 0) rotate(14deg); } to { transform: translate(-42px, 176px) rotate(14deg); } }
+.wx-scene .flake { top: -12px; border-radius: 50%; background: rgba(255,255,255,.78); animation: wxSnow linear infinite; }
+@keyframes wxSnow { 0% { transform: translate(0, 0); } 50% { transform: translate(12px, 80px); } 100% { transform: translate(-8px, 170px); } }
+.wx-scene .flash { inset: 0; animation: wxFlash 11s infinite; }
+@keyframes wxFlash { 0%, 91%, 100% { background: rgba(220,230,255,0); } 92% { background: rgba(220,230,255,.24); } 93% { background: rgba(220,230,255,0); }
+                     94.5% { background: rgba(220,230,255,.14); } 95.5% { background: rgba(220,230,255,0); } }
+.wx-scene .fog { left: -50%; width: 200%; height: 50px; border-radius: 50%; background: radial-gradient(ellipse, rgba(205,213,222,.26), transparent 70%);
+  animation: wxFog ease-in-out infinite alternate; }
+@keyframes wxFog { from { transform: translateX(-14%); } to { transform: translateX(14%); } }
 .brand-text { display: flex; flex-direction: column; justify-content: center; gap: 6px; min-width: 0; }
 .live-pill { display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
              font-size: 15px; font-weight: 800; letter-spacing: 1.6px; color: #fff;
@@ -207,6 +235,7 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 
 <div id="bar">
   <div class="brand">
+    <div class="wx-scene" id="wxScene"></div>
     <svg class="brand-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
       <!-- Concept A: line art. (c) 2026 Kevin Salazar Fernandes. All rights reserved. -->
       <defs>
@@ -372,6 +401,49 @@ function setWind(speed, deg, gust) {
   setText('windS', (g && g > mph + 2 ? 'gusts ' + g + ' mph  ·  ' : '') + 'blowing toward the ' + compass16(deg + 180));
 }
 
+// ── Weather scene behind the brand section, from OpenWeather's condition id + sunrise/sunset ──
+// Preview any condition with ?wx=clear|clouds|overcast|drizzle|rain|storm|snow|fog (&night=1, &heavy=1).
+var WX_PREVIEW = Q.get('wx');
+function sceneForId(id) {
+  if (id >= 200 && id < 300) return 'storm';
+  if (id >= 300 && id < 400) return 'drizzle';
+  if (id >= 500 && id < 600) return 'rain';
+  if (id >= 600 && id < 700) return 'snow';
+  if (id >= 700 && id < 800) return 'fog';
+  if (id === 800) return 'clear';
+  return id <= 802 ? 'clouds' : 'overcast';
+}
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function buildWeatherScene(kind, night, heavy) {
+  var el = document.getElementById('wxScene'), key = kind + (night ? '-n' : '-d') + (heavy ? '-h' : '');
+  if (el.getAttribute('data-key') === key) return;              // unchanged: don't restart the animation
+  el.setAttribute('data-key', key);
+  var dark = kind === 'overcast' || kind === 'rain' || kind === 'storm' || kind === 'drizzle';
+  el.className = 'wx-scene' + (dark ? ' dark' : '');
+  var h = '', i;
+  if (kind === 'clear' || kind === 'clouds') h += night ? '<b class="moon"></b>' : '<b class="sun"></b>';
+  if (night && (kind === 'clear' || kind === 'clouds'))
+    for (i = 0; i < 22; i++) h += '<i class="star" style="left:' + rnd(2, 98).toFixed(1) + '%;top:' + rnd(4, 90).toFixed(1) + '%;animation-delay:-' + rnd(0, 4).toFixed(1) + 's"></i>';
+  var clouds = { clouds: 2, overcast: 4, drizzle: 3, rain: 4, storm: 4, snow: 3 }[kind] || 0;
+  for (i = 0; i < clouds; i++)
+    h += '<i class="cloud" style="top:' + rnd(-6, 70).toFixed(0) + 'px;width:' + rnd(170, 260).toFixed(0) + 'px;animation-duration:' + rnd(55, 95).toFixed(0) +
+         's;animation-delay:-' + rnd(0, 90).toFixed(0) + 's"></i>';
+  var drops = kind === 'drizzle' ? 22 : kind === 'rain' ? (heavy ? 60 : 38) : kind === 'storm' ? 60 : 0;
+  for (i = 0; i < drops; i++) {
+    var dur = kind === 'drizzle' ? rnd(1.6, 2.2) : rnd(0.7, 1.05);
+    h += '<i class="drop" style="left:' + rnd(-5, 110).toFixed(1) + '%;animation-duration:' + dur.toFixed(2) + 's;animation-delay:-' + rnd(0, 2).toFixed(2) + 's' +
+         (kind === 'drizzle' ? ';height:9px;opacity:.7' : '') + '"></i>';
+  }
+  if (kind === 'snow')
+    for (i = 0; i < 28; i++) { var sz = rnd(2.5, 5.5).toFixed(1);
+      h += '<i class="flake" style="left:' + rnd(-2, 100).toFixed(1) + '%;width:' + sz + 'px;height:' + sz + 'px;animation-duration:' + rnd(6, 11).toFixed(1) +
+           's;animation-delay:-' + rnd(0, 11).toFixed(1) + 's"></i>'; }
+  if (kind === 'storm') h += '<b class="flash"></b>';
+  if (kind === 'fog') h += '<i class="fog" style="top:18px;animation-duration:14s"></i><i class="fog" style="top:62px;animation-duration:19s;animation-delay:-7s"></i>' +
+                          '<i class="fog" style="top:98px;animation-duration:16s;animation-delay:-3s;opacity:.7"></i>';
+  el.innerHTML = h;
+}
+
 function weatherCheck() {
   fetch('https://api.openweathermap.org/data/2.5/weather?units=imperial&lat=45.7829&lon=-84.7278&appid=' + OWM_KEY)
     .then(function (r) { return r.json(); })
@@ -380,6 +452,11 @@ function weatherCheck() {
       var desc = (d.weather && d.weather[0] && d.weather[0].description) || '';
       document.getElementById('wx').textContent = Math.round(d.main.temp) + '°F ' + desc.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
       if (d.wind) setWind(d.wind.speed, d.wind.deg, d.wind.gust);
+      if (!WX_PREVIEW) {
+        var id = (d.weather && d.weather[0] && d.weather[0].id) || 800, now = Date.now() / 1000;
+        var night = d.sys && d.sys.sunrise ? (now < d.sys.sunrise || now > d.sys.sunset) : false;
+        buildWeatherScene(sceneForId(id), night, id >= 502 && id < 600);
+      }
     }).catch(function () {});
 }
 function clockTick() {
@@ -830,6 +907,7 @@ function previewFit() {   // ?fit=1: scale the 2560-wide overlay to any browser 
 window.addEventListener('resize', previewFit);
 window.onload = function () {
   previewFit();
+  if (WX_PREVIEW) buildWeatherScene(WX_PREVIEW, Q.get('night') === '1', Q.get('heavy') === '1');
   clockTick(); setInterval(clockTick, 5000);
   weatherCheck(); setInterval(weatherCheck, 10 * 60000);
   loadFacts(); connect();
