@@ -221,6 +221,7 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 /* Wind compass (live view): arrow points where the wind is blowing TO; gentle sway + flowing dashes keep it alive */
 .wind { flex: none; display: flex; align-items: center; gap: 20px; margin-left: 30px; padding-left: 30px; border-left: 1px solid var(--line); }
 .wind-dial { width: 112px; height: 112px; flex: none; }
+.wx-now { padding-right: 28px; margin-right: 6px; border-right: 1px solid var(--line); }   /* big, readable weather beside the compass */
 .wind-dial .ring { fill: rgba(255,255,255,.03); stroke: rgba(255,255,255,.16); stroke-width: 2; }
 .wind-dial .tick { stroke: rgba(255,255,255,.28); stroke-width: 2; }
 .wind-dial .tick.major { stroke: rgba(255,255,255,.55); stroke-width: 3; }
@@ -337,6 +338,11 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
         <div class="promo-sub" id="liveSub">Mackinaw City, Michigan · subscribe for more updates</div>
       </div>
       <div class="wind calm" id="wind">
+        <div class="wx-now">
+          <div class="wind-k">WEATHER</div>
+          <div class="wind-v" id="wxNowV">—</div>
+          <div class="wind-s" id="wxNowS"></div>
+        </div>
         <svg class="wind-dial" viewBox="0 0 120 120" aria-hidden="true">
           <circle class="ring" cx="60" cy="60" r="56"/>
           <g id="windTicks"></g>
@@ -493,6 +499,9 @@ function weatherCheck() {
       var desc = (d.weather && d.weather[0] && d.weather[0].description) || '';
       document.getElementById('wx').textContent = Math.round(d.main.temp) + '°F ' + desc.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
       if (d.wind) setWind(d.wind.speed, d.wind.deg, d.wind.gust);
+      var t = Math.round(d.main.temp), fl = d.main.feels_like != null ? Math.round(d.main.feels_like) : null;
+      setText('wxNowV', t + '°F');
+      setText('wxNowS', (desc ? desc.charAt(0).toUpperCase() + desc.slice(1) : '') + (fl != null && Math.abs(fl - t) >= 2 ? '  ·  feels like ' + fl + '°' : ''));
       if (!WX_PREVIEW) {
         var id = (d.weather && d.weather[0] && d.weather[0].id) || 800, now = Date.now() / 1000;
         var night = d.sys && d.sys.sunrise ? (now < d.sys.sunrise || now > d.sys.sunset) : false;
