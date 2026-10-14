@@ -1853,17 +1853,24 @@ function aisCatcherToStreamMessage(m) {
 
 // Connect to AISStream
 function connectToAISStream() {
-  if (isConnecting) return;
+  // One attempt at a time. A banner client connecting during the reconnect backoff used to start a
+  // second socket while the scheduled retry also fired; when the OLD socket then closed it nulled
+  // aisConnection out from under the new one, and the new one's 'open' crashed the whole server.
+  if (isConnecting || (aisConnection && aisConnection.readyState === WebSocket.OPEN)) return;
+  if (reconnectTimeout) { clearTimeout(reconnectTimeout); reconnectTimeout = null; }
   isConnecting = true;
 
   console.log('Connecting to AISStream...');
-  
+
   // rejectUnauthorized: false works around expired/untrusted TLS cert on Render's container
-  aisConnection = new WebSocket('wss://stream.aisstream.io/v0/stream', [], {
+  const sock = new WebSocket('wss://stream.aisstream.io/v0/stream', [], {
     rejectUnauthorized: false
   });
-  
-  aisConnection.on('open', () => {
+  aisConnection = sock;
+  const isCurrent = () => aisConnection === sock;   // handlers of a superseded socket must not touch shared state
+
+  sock.on('open', () => {
+    if (!isCurrent()) { try { sock.close(); } catch (e) {} return; }
     console.log('✓ Connected to AISStream');
     isConnecting = false;
     reconnectAttempts = 0;
@@ -1879,7 +1886,7 @@ function connectToAISStream() {
       // No FilterMessageTypes - get all message types including ShipStaticData
     };
     
-    aisConnection.send(JSON.stringify(subscription));
+    sock.send(JSON.stringify(subscription));
     console.log('✓ Subscribed to Mackinac Bridge area');
     
     // Broadcast connection status to all clients
@@ -1890,7 +1897,8 @@ function connectToAISStream() {
     });
   });
   
-  aisConnection.on('message', (data) => {
+  sock.on('message', (data) => {
+    if (!isCurrent()) return;
     resetWatchdog(); // any incoming message proves the connection is alive
     lastAisMessageAt = Date.now();
     aisMessagesTotal++;
@@ -1902,7 +1910,8 @@ function connectToAISStream() {
     }
   });
   
-  aisConnection.on('error', (error) => {
+  sock.on('error', (error) => {
+    if (!isCurrent()) return;
     console.error('AISStream error:', error);
     isConnecting = false;
     
@@ -1913,7 +1922,8 @@ function connectToAISStream() {
     });
   });
   
-  aisConnection.on('close', () => {
+  sock.on('close', () => {
+    if (!isCurrent()) return;   // a stale socket closing must not clobber the current one or schedule a retry
     console.log('AISStream connection closed');
     isConnecting = false;
     aisConnection = null;
@@ -1929,7 +1939,9 @@ function connectToAISStream() {
     reconnectAttempts++;
     const delay = Math.min(5000 * Math.pow(2, reconnectAttempts - 1), 60000);
     console.log(`Reconnecting to AISStream in ${delay / 1000}s (attempt ${reconnectAttempts})...`);
+    if (reconnectTimeout) clearTimeout(reconnectTimeout);
     reconnectTimeout = setTimeout(() => {
+      reconnectTimeout = null;
       connectToAISStream();
     }, delay);
   });
