@@ -50,7 +50,7 @@ const CFG = {
   morningHM:  process.env.MORNING_SLOT || '08:30',
   eveningHM:  process.env.EVENING_SLOT || '18:30',
   liveUrl:    process.env.LIVE_URL || '',
-  nameCard:   process.env.NAME_CARD !== '0',          // the banner-style ship card under the video (NAME_CARD=0 turns it off)
+  nameCard:   process.env.NAME_CARD === '1',          // a banner-style ship card under the video: off (the stream's own banner is in the clip); NAME_CARD=1 turns it on
   cardFont:   process.env.CARD_FONT || (fs.existsSync('C:/Windows/Fonts/segoeuib.ttf') ? 'C:/Windows/Fonts/segoeuib.ttf' : 'C:/Windows/Fonts/arialbd.ttf'),
   cardFontReg:process.env.CARD_FONT_REGULAR || (fs.existsSync('C:/Windows/Fonts/segoeui.ttf') ? 'C:/Windows/Fonts/segoeui.ttf' : 'C:/Windows/Fonts/arial.ttf')
 };
