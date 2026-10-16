@@ -177,6 +177,15 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 .meter .meter-stats { margin-bottom: 26px; }   /* room for the ship icon that rides above the track */
 .meter .meter-labels { margin-top: 12px; }
 .meter.dim { opacity: .35; }
+/* No ship in range: the meter makes room for a short notice instead of an empty track */
+.meter-idle { display: none; }
+.meter.idle .meter-stats, .meter.idle .track, .meter.idle .meter-labels { display: none; }
+.meter.idle .meter-idle { display: block; }
+.mi-main { font-size: 30px; font-weight: 800; letter-spacing: -.3px; display: flex; align-items: center; gap: 14px; white-space: nowrap; }
+.mi-main::before { content: ''; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--water);
+                   animation: scan 2.4s ease-out infinite; }
+@keyframes scan { 0% { box-shadow: 0 0 0 0 rgba(79,179,217,.55); } 100% { box-shadow: 0 0 0 14px rgba(79,179,217,0); } }
+.mi-sub { margin-top: 8px; font-size: 19px; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meter-labels { display: flex; justify-content: space-between; gap: 18px; font-size: 13px; font-weight: 700; letter-spacing: 1.4px; color: var(--muted); }
 .meter-labels span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meter-labels .from { color: #C9D6E3; }
@@ -333,7 +342,9 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
         <div class="hero-name" id="heroName">Watching the Straits</div>
         <div class="hero-fact" id="heroFact"></div>
       </div>
-      <div class="meter dim" id="meter">
+      <div class="meter idle" id="meter">
+        <div class="meter-idle"><div class="mi-main" id="idleMain">No ships within 15 miles</div>
+          <div class="mi-sub" id="idleSub">None headed this way right now</div></div>
         <div class="meter-stats"><span class="big" id="dist">—</span><span class="sm" id="speed"></span><span class="eta" id="eta"></span></div>
         <div class="track">
           <div class="fill" id="fill"></div>
@@ -543,7 +554,7 @@ function clockTick() {
 
 // ── Ship data (same logic as banner3) ───────────────────────────
 var shipData = {}, staticData = {}, ws, reconnectTimer, reconnectAttempts = 0;
-var passedShips = [], PASSED_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+var passedShips = [], PASSED_MAX_AGE_MS = 12 * 60 * 60 * 1000;   // 12 h = how far back viewers can rewind the YouTube stream
 var BLOCKED_MMSI = { 368165150:1, 367031360:1, 367139210:1, 367349450:1, 367721870:1, 367721930:1, 367721960:1,
                      367782080:1, 338158987:1, 338926364:1, 367721890:1, 367783160:1, 366999980:1 };
 var ALLOWED_MMSI = { 311050300:1 };
@@ -610,6 +621,18 @@ function factFor(ship) {
   if (GENERAL.length) return GENERAL[Math.abs(parseInt(ship.mmsi, 10) || 0) % GENERAL.length];
   return '';
 }
+// The most recent ship under the bridge, kept even after it ages out of the 12-hour "passed" list, so the
+// banner can show it when nothing is in range ("LAST SHIP · Passed under the bridge yesterday at 9:14 PM").
+var lastPassed = null;
+function noteLastPassed(list) {
+  list.forEach(function (p) { if (!lastPassed || p.passedTime > lastPassed.passedTime) lastPassed = p; });
+}
+function whenAt(ts) {
+  var day = function (t) { return new Date(t).toLocaleDateString('en-US', { timeZone: TZ }); };
+  if (day(ts) === day(Date.now())) return 'at ' + clockAt(ts);
+  if (day(ts) === day(Date.now() - 86400000)) return 'yesterday at ' + clockAt(ts);
+  return 'on ' + new Date(ts).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' }) + ' at ' + clockAt(ts);
+}
 function passedTimeFor(mmsi) { for (var i = 0; i < passedShips.length; i++) if (passedShips[i].mmsi === mmsi) return passedShips[i].passedTime; return null; }
 // ── Destination (AIS, crew-typed, often stale) ──────────────────
 // Known Great Lakes ports and which way through the Straits leads there: 'MI' = westbound into Lake
@@ -648,8 +671,9 @@ function lakeAhead(cog) { return (cog > 0 && cog < 180) ? 'toward Lake Huron' : 
 
 function refreshPassedShips() {
   if (DEMO) return;
-  fetch(HTTP_BASE + '/api/ships/recent?limit=12').then(function (r) { return r.json(); }).then(function (d) {
+  fetch(HTTP_BASE + '/api/ships/recent?limit=50').then(function (r) { return r.json(); }).then(function (d) {
     passedShips = (d.ships || []).map(function (s) { return { mmsi: s.mmsi, name: s.name, passedTime: new Date(s.passedTime).getTime() }; });
+    noteLastPassed(passedShips);
     render();
   }).catch(function () {});
 }
@@ -729,8 +753,11 @@ function render() {
   maybeMoment(hero);
 
   // Queue: every other approaching ship (by ETA), then every ship that passed in the last few hours
+  // (without the one already featured: the hero ship, or with nothing in range, the last ship shown there)
+  var featured = hero ? hero.mmsi : lastPassed && lastPassed.mmsi;
+  idleNow = !hero;
   var upcoming = approaching.filter(function (s) { return !hero || s.mmsi !== hero.mmsi; });
-  var passed = passedShips.filter(function (p) { return !hero || p.mmsi !== hero.mmsi; });
+  var passed = passedShips.filter(function (p) { return p.mmsi !== featured; });
   renderQueue(upcoming, passed);
   checkNearbyDuringHide();
   keepShipsUp();
@@ -773,17 +800,17 @@ function renderHero(s) {
   var key = s ? String(s.mmsi) : 'none';   // same ship flipping approaching→passed shouldn't replay the swap
   var apply = function () {
     var tag = document.getElementById('heroTag');
-    if (!s) {
-      tag.className = 'tag idle'; tag.textContent = 'WATCHING';
-      var last = passedShips[0];
-      setText('heroMeta', last ? 'Last pass: ' + last.name + ' at ' + clockAt(last.passedTime) : 'Freighters pass here day and night');
-      setText('heroName', 'Watching the Straits');
-      setText('heroFact', GENERAL.length ? GENERAL[Math.floor(Date.now() / 600000) % GENERAL.length] : '');
-      meter.classList.add('dim');
-      setMeter({ bridgeSide: 'right', pos: 0, fillFrom: 'left', fillPct: 0, faceRight: true, lblL: '', lblR: 'MACKINAC BRIDGE' });
-      setText('dist', '—'); setText('speed', ''); setText('eta', '');
+    if (!s) {                          // nothing in range: feature the last ship that passed, plus a notice
+      var last = lastPassed;
+      tag.className = 'tag idle'; tag.textContent = last ? 'LAST SHIP' : 'WATCHING';
+      setText('heroMeta', last ? 'Passed under the bridge ' + whenAt(last.passedTime) : 'Freighters pass here day and night');
+      setText('heroName', last ? last.name : 'Watching the Straits');
+      setText('heroFact', last ? factFor(last) : GENERAL.length ? GENERAL[Math.floor(Date.now() / 600000) % GENERAL.length] : '');
+      meter.classList.remove('dim'); meter.classList.add('idle');
+      setText('idleMain', 'No ships within ' + DEPART_MAX_MI + ' miles');
       return;
     }
+    meter.classList.remove('idle');
     var mi = toMiles(s.distance), meta = [];
     var tn = typeName(s.typeCode || (staticData[s.mmsi] && staticData[s.mmsi].type)); if (tn) meta.push(tn);
     if (s.lengthM && s.lengthM > 10) meta.push(Math.round(s.lengthM * 3.28084).toLocaleString() + ' ft');
@@ -823,7 +850,7 @@ function renderHero(s) {
 }
 // Queue cycles: pages of 3 through EVERY approaching ship (with ETA), then pages of 3 through the ships
 // that already passed (with the time each went under), then repeats. One page every QUEUE_PAGE_MS.
-var QUEUE_PAGE_MS = 12000, qPages = [], qPage = 0, queueKey = '';
+var QUEUE_PAGE_MS = 12000, qPages = [], qPage = 0, queueKey = '', idleNow = false;
 function chunk3(a) { var n = LP ? 2 : 3, out = []; for (var i = 0; i < a.length; i += n) out.push(a.slice(i, i + n)); return out; }
 function renderQueue(upcoming, passed) {
   var up = chunk3(upcoming), pas = chunk3(passed);
@@ -838,7 +865,12 @@ function renderQueue(upcoming, passed) {
 function drawQueue() {
   var q = document.getElementById('queue'), pg = qPages[qPage];
   if (!pg) {
-    if (queueKey !== 'empty') { queueKey = 'empty'; q.innerHTML = '<div class="q-head"><span>UP NEXT</span></div><div class="q-empty">Nothing else in range right now</div>'; }
+    var ek = idleNow ? 'empty-idle' : 'empty';   // with nothing in range the notice already says so: talk about earlier
+    if (queueKey !== ek) {
+      queueKey = ek;
+      q.innerHTML = idleNow ? '<div class="q-head pas"><span>' + (LP ? 'ALREADY PASSED' : 'PASSED THE BRIDGE') + '</span></div><div class="q-empty">No other ships in the last 12 hours</div>'
+                            : '<div class="q-head"><span>UP NEXT</span></div><div class="q-empty">Nothing else in range right now</div>';
+    }
     return;
   }
   var dots = qPages.length > 1 ? '<span class="q-dots">' + qPages.map(function (p, i) { return '<i' + (i === qPage ? ' class="on"' : '') + '></i>'; }).join('') + '</span>' : '';
@@ -998,6 +1030,15 @@ function seedDemo() {
                  { mmsi: 366971360, name: 'JOHN G MUNSON', passedTime: now - 3 * 3600000 },
                  { mmsi: 244780000, name: 'MUNTGRACHT', passedTime: now - 4 * 3600000 },
                  { mmsi: 366906610, name: 'KAYE E. BARKER', passedTime: now - 5 * 3600000 }]);
+  if (Q.get('lead') === 'none') {     // ?lead=none → nothing in range (&old=1: the last ship passed yesterday; &many=1: and a few before it)
+    list.length = 0;
+    passedShips = Q.get('old') === '1' ? [] : [{ mmsi: 366906000, name: 'INDIANA HARBOR', passedTime: now - 1.4 * 3600000 }].concat(Q.get('many') === '1' ? [
+                   { mmsi: 366904950, name: 'ROBERT S. PIERSON', passedTime: now - 2.5 * 3600000 },
+                   { mmsi: 366971360, name: 'JOHN G MUNSON', passedTime: now - 3.6 * 3600000 },
+                   { mmsi: 244780000, name: 'MUNTGRACHT', passedTime: now - 4.8 * 3600000 }] : []);
+    if (Q.get('old') === '1') lastPassed = { mmsi: 366906000, name: 'INDIANA HARBOR', passedTime: now - 22 * 3600000 };
+  }
+  noteLastPassed(passedShips);
   function step() {
     var t = Date.now();
     list.forEach(function (d) {
