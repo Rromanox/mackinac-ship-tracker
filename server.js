@@ -729,7 +729,9 @@ app.get('/api/tracker', (req, res) => {
     candidates: trkCandidates(now).slice(0, 10).map(c => { const p = trkPredict(c, now);
       return { mmsi: c.mmsi, name: c.name, ferry: c.ferry, lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5),
                distBridgeMi: +(c.distKm * 0.621371).toFixed(2), speedKn: +(c.speed || 0).toFixed(1) }; }),
-    log: trkLog.slice(0, 150)
+    // the decision log is ~18 KB: only the /tracker debug page asks for it (?log=1). Macki and the chatbot poll
+    // this every 8-15 s, and sending it to them used up Render's 5 GB/month of bandwidth (Oct 2026)
+    ...(req.query.log ? { log: trkLog.slice(0, 150) } : {})
   });
 });
 app.get('/tracker', (req, res) => res.sendFile(path.join(__dirname, 'tracker.html')));

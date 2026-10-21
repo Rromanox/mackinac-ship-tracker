@@ -147,7 +147,7 @@
     }).join('') : '<span class="empty">No decisions yet.</span>';
     drawMap(d);
   }
-  function load(){ fetch(HTTP_BASE + '/api/tracker').then(function(r){ return r.json(); }).then(render).catch(function(){}); }
+  function load(){ fetch(HTTP_BASE + '/api/tracker?log=1').then(function(r){ return r.json(); }).then(render).catch(function(){}); }
   load();
   setInterval(load, 1000);
 </script>
