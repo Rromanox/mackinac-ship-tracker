@@ -118,6 +118,7 @@ app.get('/overlay/banner',    (req, res) => res.sendFile(path.join(__dirname, 'o
 app.get('/overlay/banner2',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner2.html')));
 app.get('/overlay/banner3',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner3.html')));
 app.get('/overlay/banner4',   (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner4.html'))); // modern redesign candidate (?demo=1 to preview)
+app.get('/overlay/banner4-winter', (req, res) => res.sendFile(path.join(__dirname, 'overlay-banner4-winter.html'))); // banner4 with a subscribe chip instead of the motel chip (motels closed for the season)
 app.get('/overlay/narration', (req, res) => res.sendFile(path.join(__dirname, 'overlay-narration.html'))); // audio-only vessel narration player
 app.get('/overlay/labels',    (req, res) => res.sendFile(path.join(__dirname, 'overlay-labels.html')));   // AIS-anchored on-screen ship labels (add ?cal=1 to calibrate)
 app.get('/missing-facts',     (req, res) => res.sendFile(path.join(__dirname, 'missing-facts.html'))); // human-readable fact-gap list
