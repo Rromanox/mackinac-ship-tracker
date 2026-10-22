@@ -713,6 +713,7 @@ function trkTick(now = Date.now()) {
     const ahead = trkAim(pick, now + TRK_LEAD_S * 1000);
     ff = { pan: trkWrap(ahead.pan - aim.pan) / TRK_LEAD_S, tilt: (ahead.tilt - aim.tilt) / TRK_LEAD_S, zoom: Math.log(ahead.hfov / aim.hfov) / TRK_LEAD_S };
   }
+  trk.ff = ff;
   trkGlide(aim, ff, now);
   [trkCmdTimes, trkSlewTimes].forEach(a => { while (a.length && now - a[0] > 60000) a.shift(); });
 }
@@ -725,6 +726,9 @@ app.get('/api/tracker', (req, res) => {
     camera: TRK_CAM, lens: { hfovWide: TRK_HFOV_WIDE, hfovTele: TRK_HFOV_TELE, zoomMax: TRK_ZOOM_MAX },
     bridge: { lat: BRIDGE_LAT, lon: BRIDGE_LON },
     mode: trk.mode, target: trk.target, aim: trk.aim,
+    // how fast the aim is moving right now (deg/s, log field of view per s): the Axis driver on the streaming PC
+    // turns at these rates so the camera glides with the ship between its 2-second polls
+    rates: trk.ff ? { pan: +trk.ff.pan.toFixed(4), tilt: +trk.ff.tilt.toFixed(4), zoom: +trk.ff.zoom.toFixed(5) } : null,
     cam: trk.cam ? { pan: +trk.cam.pan.toFixed(2), tilt: +trk.cam.tilt.toFixed(2), hfov: +trk.cam.hfov.toFixed(2), zoomX: +trkZoomX(trk.cam.hfov).toFixed(1) } : null,
     motion: trk.motion, speedCmdsLastMin: trkCmdTimes.length, slewsLastMin: trkSlewTimes.length,
     candidates: trkCandidates(now).slice(0, 10).map(c => { const p = trkPredict(c, now);
