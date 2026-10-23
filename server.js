@@ -546,7 +546,7 @@ app.get('/api/ptz/resume', (req, res) => {
 // Later, a small driver on the OBS PC reads /api/tracker and turns pan/tilt/hfov into VAPIX
 // commands using its own calibration (north offset, zoom curve).
 const TRK_CAM = { lat: 45.78712606267091, lon: -84.72825497388841, heightM: 9.1 }; // label-overlay mast, ~30 ft up
-const TRK_HFOV_WIDE = 58.5, TRK_HFOV_TELE = 2.3, TRK_ZOOM_MAX = 31; // Q6358-LE datasheet
+const TRK_HFOV_WIDE = 58.5, TRK_HFOV_TELE = 2.17, TRK_ZOOM_MAX = 27; // Q6358-LE: 27x optical (past that is digital)
 const TRK_FILL = 0.5;            // ship spans ~half the frame: room ahead of the bow, and tolerant of where
                                  // its AIS antenna sits (stern on salties, bow on old lakers)
 const TRK_AIM_HEIGHT_M = 8;      // aim at mid-superstructure, not the waterline
