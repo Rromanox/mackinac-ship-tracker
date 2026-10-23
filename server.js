@@ -581,10 +581,20 @@ function trkAimAt(lat, lon, hfov) {
            tilt: +(Math.atan2(TRK_AIM_HEIGHT_M - TRK_CAM.heightM, Math.max(distM, 1)) * 180 / Math.PI).toFixed(2),
            hfov: +hfov.toFixed(2), zoomX: +trkZoomX(hfov).toFixed(1), distMi: +(distM / 1609.344).toFixed(2) };
 }
+// AIS positions are the GPS antenna, A m behind the bow and B m ahead of the stern: often near the stern on salties,
+// at the bow on old lakers. Aim at the middle of the hull instead, (A - B) / 2 m forward along the course. Not for
+// tows: the AIS size is the tug's, and where the barge's middle is isn't known.
+function trkHullCenter(v, p, info) {
+  const a = info.toBow, b = info.toStern;
+  if (!(a > 0 && b > 0) || v.cog == null || TOW_TYPES.has(info.type)) return p;
+  const d = (a - b) / 2, c = v.cog * Math.PI / 180, R = 6371000;
+  return { lat: p.lat + (d * Math.cos(c) / R) * 180 / Math.PI,
+           lon: p.lon + (d * Math.sin(c) / (R * Math.cos(p.lat * Math.PI / 180))) * 180 / Math.PI, shiftM: Math.round(d) };
+}
 function trkAim(v, now) {
-  const p = trkPredict(v, now);
-  const distM = haversineKm(TRK_CAM.lat, TRK_CAM.lon, p.lat, p.lon) * 1000;
   const info = staticInfo[v.mmsi] || {};
+  const p = trkHullCenter(v, trkPredict(v, now), info);
+  const distM = haversineKm(TRK_CAM.lat, TRK_CAM.lon, p.lat, p.lon) * 1000;
   // Length: the ship's own AIS size first, then the curated database, then a typical freighter.
   // A tug's AIS/database length is just the tug (~100-140 ft), not the barge it pushes, so those
   // and anything under 300 ft fall through to the default rather than framing a 700-ft unit too tight.
@@ -599,7 +609,7 @@ function trkAim(v, now) {
   const aspect = v.cog == null ? 1 : Math.abs(Math.sin((v.cog - pan) * Math.PI / 180));
   const extentM = Math.max(lenM * aspect, TRK_MIN_EXTENT_M);
   const hfov = Math.min(TRK_HFOV_WIDE, Math.max(TRK_HFOV_TELE, 2 * Math.atan((extentM / TRK_FILL) / 2 / Math.max(distM, 1)) * 180 / Math.PI));
-  return Object.assign(trkAimAt(p.lat, p.lon, hfov), { lenFt: Math.round(lenM * 3.28084), lenKnown: lenKnown, lenSrc: lenSrc, pos: { lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5) } });
+  return Object.assign(trkAimAt(p.lat, p.lon, hfov), { lenFt: Math.round(lenM * 3.28084), lenKnown: lenKnown, lenSrc: lenSrc, pos: { lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5) }, hullShiftM: p.shiftM || 0 });
 }
 let trkHome = null;   // wide view on the bridge (computed lazily: BRIDGE_LAT is defined further down)
 function trkHomeAim() { return trkHome || (trkHome = trkAimAt(BRIDGE_LAT, BRIDGE_LON, TRK_HFOV_WIDE)); }
@@ -1817,6 +1827,8 @@ function processAisMessage(message, source) {
       length: length || null,
       destination: (sd.Destination || '').trim() || prev.destination || null,
       draughtM: sd.MaximumStaticDraught || prev.draughtM || null,   // metres, ~how loaded she is
+      toBow: dim.A || prev.toBow || null,                           // metres from the GPS antenna to the bow / stern:
+      toStern: dim.B || prev.toStern || null,                       // the PTZ tracker aims at the middle of the hull
       eta: sd.Eta || prev.eta || null                               // { Month, Day, Hour, Minute }
     };
   }
