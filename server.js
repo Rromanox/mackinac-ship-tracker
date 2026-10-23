@@ -886,7 +886,17 @@ function movingTowardLine(lineKm, cog) {           // is the ship's course carry
   return lineKm * Math.cos((cog - bridgeAxis().normalBrg) * Math.PI / 180) < 0;
 }
 
-function checkBridgePassing(mmsi, name, lat, lon, speed, cog) {
+// When an AIS fix was made. The local antenna's reports arrive within ~5 s (AIS-catcher posts every 5 s), so
+// receipt time is right for them. AISStream stamps its own receive time (time_utc); trust it only within the
+// last minute (clock sanity).
+function aisFixAt(meta, source, now = Date.now()) {
+  if (source === 'local' || !meta || typeof meta.time_utc !== 'string') return now;
+  const t = Date.parse(meta.time_utc.slice(0, 19).replace(' ', 'T') + 'Z');
+  return (t > now - 60000 && t <= now) ? t : now;
+}
+const TRK_LOCAL_WINS_MS = 30 * 1000;   // while the local antenna hears a ship, its fixes drive the aim
+
+function checkBridgePassing(mmsi, name, lat, lon, speed, cog, source = 'local', fixAt = Date.now()) {
   if (BLOCKED_MMSI_SERVER.has(mmsi) && !ALLOWED_MMSI_SERVER.has(mmsi)) return;
 
   const distKm = haversineKm(lat, lon, BRIDGE_LAT, BRIDGE_LON);
@@ -904,8 +914,14 @@ function checkBridgePassing(mmsi, name, lat, lon, speed, cog) {
   const hasCog = typeof cog === 'number' && cog < 360;
   const closing = hasCog ? movingTowardLine(bf.lineKm, cog)
     : (prevNear && prevNear.lineKm != null ? Math.abs(bf.lineKm) <= Math.abs(prevNear.lineKm) + 0.02 : true); // no course: distance trend
-  nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, cog: hasCog ? cog : null, lat: lat, lon: lon,
-                       lineKm: bf.lineKm, alongKm: bf.alongKm, at: Date.now(), closing: closing };
+  // The same fix often arrives twice, the cloud copy seconds later. Stamping that copy as new pulled the
+  // dead-reckoned aim back to where the ship had been, so the Axis trailed it (LAKE ERIE, Oct 2026). Keep the
+  // newest fix: the local antenna's while it hears the ship, and an identical position keeps its first time.
+  const dupe = prevNear && Math.abs(prevNear.lat - lat) < 2e-5 && Math.abs(prevNear.lon - lon) < 2e-5;
+  const localHasIt = prevNear && source !== 'local' && prevNear.src === 'local' && fixAt - prevNear.at < TRK_LOCAL_WINS_MS;
+  if (!(prevNear && (dupe || localHasIt || fixAt < prevNear.at)))
+    nearBridge[mmsi] = { name: name, distKm: distKm, side: side, speed: speed, cog: hasCog ? cog : null, lat: lat, lon: lon,
+                         lineKm: bf.lineKm, alongKm: bf.alongKm, at: fixAt, closing: closing, src: source };
 
   // Narrate as an APPROACHING vessel is ~NARRATE_LEAD_S seconds from the bridge line, so the voice plays
   // over the crossing itself. Time-to-line uses only the part of its speed carrying it toward the line.
@@ -1833,7 +1849,7 @@ function processAisMessage(message, source) {
 
     // Detect bridge passings (side-of-bridge crossing)
     const pos = message.Message.PositionReport;
-    checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog);
+    checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog, source, aisFixAt(message.MetaData, source));
 
     // Save to database (async, don't wait)
     saveShipToDatabase(shipInfo).catch(err =>
