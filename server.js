@@ -1208,6 +1208,7 @@ async function narrationScriptLLM(v) {
     'Today is ' + (localDateStr() || 'unknown') + '\n' +
     'Time of day: ' + localTimeOfDay();
   const res = await fetch('https://api.anthropic.com/v1/messages', {
+    signal: AbortSignal.timeout(30000),             // a stalled request must not hold the narration
     method: 'POST',
     headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
     body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 300, system, messages: [{ role: 'user', content: user }] })
@@ -1222,6 +1223,7 @@ async function narrationScriptLLM(v) {
 async function synthesizeVoice(text) {
   const url = 'https://api.elevenlabs.io/v1/text-to-speech/' + ELEVEN_VOICE + '?output_format=mp3_44100_128';
   const res = await fetch(url, {
+    signal: AbortSignal.timeout(45000),             // a stalled request must not hold the narration
     method: 'POST',
     headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
     body: JSON.stringify({ text, model_id: ELEVEN_MODEL, voice_settings: { stability: 0.4, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true } })
@@ -1231,6 +1233,7 @@ async function synthesizeVoice(text) {
 }
 
 const narrationCache = {};        // mmsi -> { buffer, at }
+const narrationErrors = [];       // newest first, last 20 failed tries (shown in /api/narration/state)
 const narrationInFlight = new Set();
 
 // ── Narration cost logging ─────────────────────────────────────
@@ -1474,7 +1477,8 @@ function narrationState() {
   return {
     on: NARRATION_ON,
     paused: narrationPaused,
-    secondsLeft: narrationPauseUntil ? Math.max(0, Math.round((narrationPauseUntil - Date.now()) / 1000)) : null
+    secondsLeft: narrationPauseUntil ? Math.max(0, Math.round((narrationPauseUntil - Date.now()) / 1000)) : null,
+    errors: narrationErrors.slice(0, 10)
   };
 }
 
@@ -1526,6 +1530,11 @@ async function narrateVessel(mmsi, name, direction, speed) {
     broadcastToClients({ type: 'narrate', data: { mmsi: mmsi, name: name, at: narratedAt, url: '/api/narration/' + mmsi + '?t=' + narratedAt } });
   } catch (e) {
     console.error('🎙️ Narration failed (' + name + '):', e.message);
+    // A failed try doesn't count as narrated: the next trigger (the bridge crossing after the approach) tries
+    // again (Oct 2026: DOROTHY ANN + POLSTEAM LEBSKO got no narration after one failure each).
+    delete lastNarratedAt[mmsi];
+    narrationErrors.unshift({ at: Date.now(), name: name, error: String(e.message || e).slice(0, 200) });
+    narrationErrors.length = Math.min(narrationErrors.length, 20);
   } finally {
     narrationInFlight.delete(mmsi);
   }
