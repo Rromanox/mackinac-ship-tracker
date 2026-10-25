@@ -1234,6 +1234,8 @@ async function synthesizeVoice(text) {
 
 const narrationCache = {};        // mmsi -> { buffer, at }
 const narrationErrors = [];       // newest first, last 20 failed tries (shown in /api/narration/state)
+const narrationFails = {};        // mmsi -> failed tries (reset by a success)
+const NARRATE_RETRY_MS = 60 * 1000, NARRATE_MAX_TRIES = 2;
 const narrationInFlight = new Set();
 
 // ── Narration cost logging ─────────────────────────────────────
@@ -1518,6 +1520,7 @@ async function narrateVessel(mmsi, name, direction, speed) {
     text = applyPronunciation(text);
     const buffer = await synthesizeVoice(text);
     const narratedAt = Date.now();
+    delete narrationFails[mmsi];
     narrationCache[mmsi] = { buffer: buffer, at: narratedAt, name: name };
     console.log('🎙️ Narration ready: ' + name + '  "' + text.slice(0, 90) + '"');
     recordNarration({
@@ -1532,7 +1535,10 @@ async function narrateVessel(mmsi, name, direction, speed) {
     console.error('🎙️ Narration failed (' + name + '):', e.message);
     // A failed try doesn't count as narrated: the next trigger (the bridge crossing after the approach) tries
     // again (Oct 2026: DOROTHY ANN + POLSTEAM LEBSKO got no narration after one failure each).
-    delete lastNarratedAt[mmsi];
+    // ...but only after a short wait, and at most a few times per ship: a refused request (e.g. out of
+    // ElevenLabs credits) must not repeat on every AIS update.
+    narrationFails[mmsi] = (narrationFails[mmsi] || 0) + 1;
+    if (narrationFails[mmsi] <= NARRATE_MAX_TRIES) lastNarratedAt[mmsi] = Date.now() - NARRATE_COOLDOWN_MS + NARRATE_RETRY_MS;
     narrationErrors.unshift({ at: Date.now(), name: name, error: String(e.message || e).slice(0, 200) });
     narrationErrors.length = Math.min(narrationErrors.length, 20);
   } finally {
