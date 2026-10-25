@@ -646,17 +646,25 @@ function trkCandidates(now) {
   }
   return list.sort((a, b) => a.distKm - b.distKm);
 }
-// Pick the ship nearest the bridge that is still coming in (or just passing). Stay on the current ship
-// until it has passed and is heading off (~0.5 mi out), or another ship is much closer — prevents
-// ping-ponging. A departing ship is followed until TRK_RELEASE_MI unless a new one is coming in.
+// Pick which ship the camera follows. Ships coming in come first, soonest to the bridge line first. Stay on the
+// current one while it's coming in (another must reach the line 3+ min sooner to take over: no ping-pong). Once it
+// has passed, it yields as soon as it's TRK_PASSED_MI past the line if another ship is coming in within
+// TRK_NEXT_MI, so that ship's approach is filmed (Oct 2026: DOROTHY ANN, a slow tug-barge leaving, kept the camera
+// while POLSTEAM LEBSKO made her whole approach). Otherwise a departing ship is kept until TRK_RELEASE_MI.
+const TRK_PASSED_MI = 0.3;
+const TRK_NEXT_MI = 3;
+function trkLineMi(c) { return (c.lineKm != null ? Math.abs(c.lineKm) : c.distKm) * 0.621371; }
+function trkEtaS(c) { const ms = (c.speed || 0) * 0.514444; return ms > 0.3 ? trkLineMi(c) * 1609.344 / ms : Infinity; }
 function trkPick(cands) {
   if (!cands.length) return null;
-  const inPlay = c => c.closing || c.distKm <= 0.8;
-  const best = cands.find(inPlay) || cands[0];
+  const coming = cands.filter(c => c.closing).sort((a, b) => trkEtaS(a) - trkEtaS(b));
+  const first = coming[0];
   const cur = cands.find(c => c.mmsi === trk.targetMmsi);
-  if (!cur || best.mmsi === cur.mmsi) return best;
-  if (!inPlay(cur)) return best;                       // current one has passed — hand over to the next one in
-  return (best.distKm < cur.distKm - 1.5) ? best : cur;
+  if (cur && cur.closing)
+    return (first && first.mmsi !== cur.mmsi && trkEtaS(first) < trkEtaS(cur) - 180) ? first : cur;
+  if (cur)                                             // passed the bridge, heading off
+    return (first && trkLineMi(first) <= TRK_NEXT_MI && trkLineMi(cur) >= TRK_PASSED_MI) ? first : cur;
+  return first || cands[0];
 }
 // ── Smooth "glide" model of the camera ──
 // The real driver will steer the Axis by SPEED (VAPIX continuous pan/tilt/zoom), not by jumping between
