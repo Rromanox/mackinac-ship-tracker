@@ -425,6 +425,8 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 //   ?moment=1        (demo) show the bridge-moment card right away and keep it up — for screenshots
 //   ?moment=soon     (demo) start the lead ship just short of the bridge so the moment plays in ~30 s
 //   ?fit=1&bg=1      preview in a normal browser: scale to the window width, water-coloured backdrop
+//   ?theme=auto      seasonal look by month (decorations on the banner only); or a fixed one: winter, valentine,
+//                    stpatrick, spring, may, lilac, july4, summer, bridgewalk, halloween, thanksgiving, christmas
 var Q = new URLSearchParams(location.search);
 var DEMO = Q.get('demo') === '1';
 var LP = Q.get('lp') !== '0';                  // large print (default): bigger status / ETA / queue for older viewers; ?lp=0 = old look
@@ -1074,6 +1076,587 @@ window.onload = function () {
   render();
 };
 document.addEventListener('visibilitychange', function () { if (!document.hidden && !DEMO && (!ws || ws.readyState === WebSocket.CLOSED)) connect(); });
+</script>
+<!-- ── Seasonal themes (?theme=halloween | thanksgiving | christmas | auto). Only colours and decorations that sit ON the banner change;
+     the layout, data and timing are banner 4's own. Decorations live in #thDeco, a frame laid exactly over #bar
+     that slides in and out with it, so nothing floats over the camera picture. ── -->
+<style>
+#thDeco { position: fixed; left: 40px; right: 40px; bottom: 24px; height: 136px; pointer-events: none; z-index: 3;
+          transform: translateY(170%); transition: transform 1.3s cubic-bezier(.2,.8,.2,1); }
+#thDeco.up { transform: none; }
+#thDeco > * { position: absolute; }
+#moment { z-index: 6; }                        /* the bridge-moment card covers any decoration under it */
+
+/* Halloween: night purple and pumpkin orange */
+html[data-theme="halloween"] { --bg1: rgba(20, 8, 30, .9); --bg2: rgba(38, 12, 44, .9); --gold: #FF8A1F; --green: #A66BFF; --water: #FFB347;
+  --line: rgba(255, 150, 60, .14); }
+html[data-theme="halloween"] #bar { border-color: rgba(255, 138, 31, .45);
+  box-shadow: 0 18px 50px rgba(0,0,0,.5), 0 0 30px rgba(255,122,24,.2), inset 0 1px 0 rgba(255,255,255,.06); }
+html[data-theme="thanksgiving"] { --bg1: rgba(34, 18, 9, .9); --bg2: rgba(52, 28, 12, .9); --gold: #F2A33A; --green: #D4553A; --water: #E8C15A;
+  --line: rgba(242, 163, 58, .14); }
+html[data-theme="thanksgiving"] #bar { border-color: rgba(242, 163, 58, .4); }
+html[data-theme="thanksgiving"] #bar::before { height: 4px; background: linear-gradient(90deg, #E8C15A, #F2A33A 35%, #D4553A 70%, #8E3B22); }
+html[data-theme="christmas"] { --bg1: rgba(6, 22, 22, .9); --bg2: rgba(10, 26, 44, .9); --gold: #F5C451; --green: #E5484D; --water: #7FD3A0;
+  --line: rgba(255, 255, 255, .1); }
+html[data-theme="christmas"] #bar { border-color: rgba(127, 211, 160, .35); }
+html[data-theme="christmas"] #bar::before { height: 4px; background: repeating-linear-gradient(90deg, #E5484D 0 40px, #F4F4F4 40px 80px, #2FA36B 80px 120px, #F4F4F4 120px 160px); opacity: .85; }
+.bulb { animation: twinkle 2.4s ease-in-out infinite; }
+@keyframes twinkle { 50% { opacity: .4; } }
+html[data-theme="winter"] { --bg1: rgba(10, 22, 38, .9); --bg2: rgba(16, 34, 56, .9); --gold: #BFE6FF; --green: #7FB8E8; --water: #E6F4FF; --line: rgba(200, 235, 255, .14); }
+html[data-theme="winter"] #bar { border-color: rgba(191, 230, 255, .45); }
+html[data-theme="winter"] #bar::before { height: 4px; background: linear-gradient(90deg, #E6F4FF, #7FB8E8 50%, #E6F4FF); }
+html[data-theme="valentine"] { --bg1: rgba(40, 8, 20, .9); --bg2: rgba(60, 12, 30, .9); --gold: #FF6F91; --green: #FF3B5C; --water: #FFC2D1; --line: rgba(255, 111, 145, .14); }
+html[data-theme="valentine"] #bar { border-color: rgba(255, 111, 145, .45); }
+html[data-theme="valentine"] #bar::before { height: 4px; background: linear-gradient(90deg, #FFC2D1, #FF3B5C 50%, #FFC2D1); }
+html[data-theme="stpatrick"] { --bg1: rgba(6, 30, 18, .9); --bg2: rgba(10, 44, 26, .9); --gold: #F5C451; --green: #2FBF71; --water: #8FE3B0; --line: rgba(47, 191, 113, .14); }
+html[data-theme="stpatrick"] #bar { border-color: rgba(47, 191, 113, .45); }
+html[data-theme="stpatrick"] #bar::before { height: 4px; background: linear-gradient(90deg, #2FBF71, #F5C451 50%, #2FBF71); }
+html[data-theme="spring"] { --bg1: rgba(30, 24, 46, .9); --bg2: rgba(26, 38, 56, .9); --gold: #FFD36E; --green: #9BE7A8; --water: #F7A8C8; --line: rgba(247, 168, 200, .14); }
+html[data-theme="spring"] #bar { border-color: rgba(247, 168, 200, .4); }
+html[data-theme="spring"] #bar::before { height: 4px; background: linear-gradient(90deg, #F7A8C8, #FFD36E 33%, #9BE7A8 66%, #B794F4); }
+html[data-theme="may"] { --bg1: rgba(14, 30, 20, .9); --bg2: rgba(20, 40, 28, .9); --gold: #FFD84D; --green: #7ED957; --water: #FFF4B0; --line: rgba(126, 217, 87, .14); }
+html[data-theme="may"] #bar { border-color: rgba(255, 216, 77, .4); }
+html[data-theme="may"] #bar::before { height: 4px; background: linear-gradient(90deg, #7ED957, #FFD84D 50%, #7ED957); }
+html[data-theme="lilac"] { --bg1: rgba(26, 16, 40, .9); --bg2: rgba(36, 22, 54, .9); --gold: #C9A3FF; --green: #8DD17A; --water: #E7D5FF; --line: rgba(201, 163, 255, .14); }
+html[data-theme="lilac"] #bar { border-color: rgba(201, 163, 255, .45); }
+html[data-theme="lilac"] #bar::before { height: 4px; background: linear-gradient(90deg, #8DD17A, #C9A3FF 50%, #8DD17A); }
+html[data-theme="july4"] { --bg1: rgba(10, 16, 40, .9); --bg2: rgba(14, 22, 56, .9); --gold: #FF5A5F; --green: #F4F4F4; --water: #5B8CFF; --line: rgba(255, 255, 255, .12); }
+html[data-theme="july4"] #bar { border-color: rgba(91, 140, 255, .45); }
+html[data-theme="july4"] #bar::before { height: 4px; background: repeating-linear-gradient(90deg, #C8102E 0 40px, #F4F4F4 40px 80px, #1E3A8A 80px 120px); }
+html[data-theme="summer"] { --bg1: rgba(8, 30, 46, .9); --bg2: rgba(10, 44, 64, .9); --gold: #FFC94D; --green: #3FC1C9; --water: #FFE8A3; --line: rgba(63, 193, 201, .14); }
+html[data-theme="summer"] #bar { border-color: rgba(255, 201, 77, .4); }
+html[data-theme="summer"] #bar::before { height: 4px; background: linear-gradient(90deg, #3FC1C9, #FFC94D 50%, #3FC1C9); }
+html[data-theme="bridgewalk"] { --bg1: rgba(30, 22, 10, .9); --bg2: rgba(40, 30, 14, .9); --gold: #F2C14E; --green: #3DBE8B; --water: #E08A3C; --line: rgba(242, 193, 78, .14); }
+html[data-theme="bridgewalk"] #bar { border-color: rgba(242, 193, 78, .4); }
+html[data-theme="bridgewalk"] #bar::before { height: 4px; background: linear-gradient(90deg, #F2C14E, #3DBE8B 50%, #E08A3C); }
+html[data-theme="halloween"] #bar::before { height: 4px; background: linear-gradient(90deg, #FF8A1F, #A66BFF 50%, #FF8A1F); }
+.jack .glow { animation: candle 2.6s ease-in-out infinite; }
+@keyframes candle { 0%, 100% { opacity: 1; } 40% { opacity: .78; } 55% { opacity: .95; } 70% { opacity: .82; } }
+.perch svg { animation: fold 3.4s ease-in-out infinite; transform-origin: 50% 70%; }
+@keyframes fold { 0%, 86%, 100% { transform: scaleX(1); } 90%, 95% { transform: scaleX(1.18); } }
+</style>
+<script>
+(function () {
+  var THEMES = ['winter', 'valentine', 'stpatrick', 'spring', 'may', 'lilac', 'july4', 'summer', 'bridgewalk', 'halloween', 'thanksgiving', 'christmas'];
+  var Qt = new URLSearchParams(location.search), t = Qt.get('theme');
+  if (t === 'auto') {
+    var d = new Date(), m = d.getMonth() + 1;
+    t = THEMES[m - 1];                          // one theme per month, January first
+  }
+  if (THEMES.indexOf(t) < 0) return;
+  document.documentElement.setAttribute('data-theme', t);
+  var bar = document.getElementById('bar');
+  var wrap = document.createElement('div');
+  wrap.id = 'thDeco';
+  document.body.appendChild(wrap);
+  function sync() { wrap.classList.toggle('up', bar.classList.contains('up')); }
+  new MutationObserver(sync).observe(bar, { attributes: true, attributeFilter: ['class'] });
+  sync();
+  function put(svg, css) { var e = document.createElement('div'); e.innerHTML = svg; e.style.cssText = css; wrap.appendChild(e); return e; }
+
+  // a carved pumpkin: w px wide; face 0 = classic, 1 = grin, 2 = surprised
+  function jack(w, face) {
+    var faces = [
+      '<path d="M30 40l9-11 9 11zM62 40l9-11 9 11z"/><path d="M50 49l5-7 5 7z"/><path d="M27 58q28 20 56 0l-6 3-4-5-5 6-6-6-5 6-6-6-5 6-5-6-4 5z"/>',
+      '<path d="M28 38q10-8 20 2zM62 40q10-10 20-2z"/><path d="M51 50l4-6 4 6z"/><path d="M26 55q29 26 58 0q-29 12-58 0z"/>',
+      '<circle cx="39" cy="38" r="6"/><circle cx="71" cy="38" r="6"/><path d="M51 49l4-6 4 6z"/><ellipse cx="55" cy="64" rx="9" ry="10"/>'][face];
+    return '<svg class="jack" viewBox="0 0 110 92" width="' + w + '" height="' + Math.round(w * 92 / 110) + '">' +
+      '<path d="M55 16c2-8 6-13 12-15" stroke="#4b6b2a" stroke-width="6" fill="none" stroke-linecap="round"/>' +
+      '<path d="M62 6c10-6 20-2 22 4-8-2-15 0-22-4z" fill="#5d8a32"/>' +
+      '<ellipse cx="32" cy="52" rx="28" ry="36" fill="#E8701A"/><ellipse cx="78" cy="52" rx="28" ry="36" fill="#E8701A"/>' +
+      '<ellipse cx="55" cy="52" rx="30" ry="38" fill="#F7871F"/>' +
+      '<path d="M40 20q-8 32 0 64M70 20q8 32 0 64" stroke="#C85A10" stroke-width="2.5" fill="none" opacity=".7"/>' +
+      '<g class="glow" fill="#FFD35A" style="filter:drop-shadow(0 0 4px #FFB000)">' + faces + '</g></svg>';
+  }
+  function bat(w) {
+    return '<svg viewBox="0 0 64 30" width="' + w + '" height="' + Math.round(w * 30 / 64) + '"><path fill="#140818" stroke="#FF8A1F" stroke-width="1.1" stroke-opacity=".6" d="M32 10c-2-5-6-6-6-6 1 3 0 5-2 6-4-6-12-7-24-2 7 2 10 6 10 12 4-3 9-3 12 1 2-3 5-4 8-3 3-1 6 0 8 3 3-4 8-4 12-1 0-6 3-10 10-12-12-5-20-4-24 2-2-1-3-3-2-6 0 0-4 1-6 6z"/><circle cx="29.5" cy="11" r="1.1" fill="#FFB347"/><circle cx="34.5" cy="11" r="1.1" fill="#FFB347"/></svg>';
+  }
+  function leaf(w, c, rot) {
+    return '<svg viewBox="0 0 40 40" width="' + w + '" height="' + w + '" style="transform:rotate(' + rot + 'deg)"><path fill="' + c + '" d="M20 2l3 8 7-4-2 8 8 1-6 6 5 5-8 1 1 8-6-5-2 8-2-8-6 5 1-8-8-1 5-5-6-6 8-1-2-8 7 4z"/><path stroke="#6a2c08" stroke-width="1.3" d="M20 14v24"/></svg>';
+  }
+  // a corner web hanging from the bar's top edge and draping over its corner: a fan of threads from the corner
+  // down and across (flip = right corner). Kept faint so the text under it stays readable.
+  function web(r, flip, spider) {
+    var n = 6, spokes = '', rings = '';
+    for (var i = 0; i <= n; i++) {
+      var a = Math.PI / 2 * i / n;
+      spokes += 'M0 0L' + (Math.cos(a) * r).toFixed(1) + ' ' + (Math.sin(a) * r).toFixed(1);
+    }
+    [0.3, 0.52, 0.74, 0.96].forEach(function (k) {
+      var d = '', rr = r * k;
+      for (var i = 0; i <= n; i++) {
+        var a = Math.PI / 2 * i / n, x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+        if (i === 0) { d += 'M' + x.toFixed(1) + ' ' + y.toFixed(1); continue; }
+        var am = Math.PI / 2 * (i - 0.5) / n, rm = rr * 0.86;
+        d += 'Q' + (Math.cos(am) * rm).toFixed(1) + ' ' + (Math.sin(am) * rm).toFixed(1) + ' ' + x.toFixed(1) + ' ' + y.toFixed(1);
+      }
+      rings += d;
+    });
+    var sp = spider ? '<g transform="translate(' + (r * 0.12) + ' ' + (r * 0.84) + ') scale(.8)"><path d="M-5-2l-8-6M-5 1h-9M-5 4l-8 6M5-2l8-6M5 1h9M5 4l8 6" stroke="#FF8A1F" stroke-opacity=".8" stroke-width="1.4"/>' +
+      '<ellipse rx="5.5" ry="6.5" cy="2" fill="#120614" stroke="#FF8A1F" stroke-opacity=".7" stroke-width=".9"/><circle cy="-6" r="3.6" fill="#120614" stroke="#FF8A1F" stroke-opacity=".5" stroke-width=".7"/></g>' : '';
+    return '<svg viewBox="-2 -2 ' + (r + 4) + ' ' + (r + 4) + '" width="' + (r + 4) + '" height="' + (r + 4) + '"' +
+           (flip ? ' style="transform:scaleX(-1)"' : '') + '><g fill="none" stroke="rgba(240,230,255,.38)" stroke-width="1.1">' +
+           '<path d="' + spokes + '"/><path d="' + rings + '"/></g>' + sp + '</svg>';
+  }
+  // Positions are relative to the bar (0,0 = its top-left corner; the bar is 2480 x 136).
+  if (t === 'halloween') {
+  // top-left corner: a big pumpkin with a leaf pile, sitting on the bar's top edge
+  put(leaf(46, '#E8752A', -30), 'left:-14px;top:-30px');
+  put(leaf(40, '#C8402A', 20), 'left:22px;top:-34px');
+  put(jack(92, 0), 'left:150px;top:-70px');
+  put(leaf(36, '#F2A33A', 50), 'left:232px;top:-24px');
+  // the bridge-moment card rises over the left 1500 px, so the middle and right decorations start after it
+  put(bat(70), 'left:1540px;top:-44px').classList.add('perch');
+  put(leaf(34, '#E8752A', 15), 'left:1650px;top:-22px');
+  put(jack(64, 1), 'left:1700px;top:-50px');
+  put(leaf(30, '#C8402A', -40), 'left:1758px;top:-20px');
+  put(bat(56), 'left:2050px;top:-38px').classList.add('perch');
+  // top-right corner: pumpkin pair and leaves
+  put(leaf(38, '#F2A33A', -10), 'right:150px;top:-26px');
+  put(jack(72, 2), 'right:84px;top:-56px');
+  put(jack(92, 0), 'right:-6px;top:-70px');
+  put(leaf(44, '#C8402A', 35), 'right:-22px;top:-12px');
+  // webs draping over the bar's two top corners
+  put(web(96, false, true), 'left:4px;top:4px');
+  put(web(66, true, false), 'right:4px;top:4px');
+  // bottom corners: a few leaves tucked under the bar's edge
+  put(leaf(34, '#E8752A', 70), 'left:-16px;bottom:-14px');
+  put(leaf(30, '#F2A33A', -60), 'right:-14px;bottom:-12px');
+  }
+
+  // ── Thanksgiving ──
+  function pumpkin(w, c, c2) {           // a plain (uncarved) pumpkin
+    return '<svg viewBox="0 0 110 92" width="' + w + '" height="' + Math.round(w * 92 / 110) + '">' +
+      '<path d="M55 16c2-8 6-13 12-15" stroke="#5a4a22" stroke-width="6" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="32" cy="54" rx="28" ry="34" fill="' + c2 + '"/><ellipse cx="78" cy="54" rx="28" ry="34" fill="' + c2 + '"/>' +
+      '<ellipse cx="55" cy="54" rx="30" ry="36" fill="' + c + '"/>' +
+      '<path d="M40 22q-8 32 0 64M70 22q8 32 0 64" stroke="rgba(0,0,0,.18)" stroke-width="2.5" fill="none"/></svg>';
+  }
+  function wheat(h, rot) {
+    var g = '';
+    for (var i = 0; i < 7; i++) {
+      var cx = i % 2 ? 13 : 7, cy = 6 + i * 6;
+      g += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="3.4" ry="6" fill="#E8C15A" transform="rotate(' + (i % 2 ? 25 : -25) + ' ' + cx + ' ' + cy + ')"/>';
+    }
+    return '<svg viewBox="0 0 20 100" width="' + (h / 5) + '" height="' + h + '" style="transform:rotate(' + rot + 'deg);transform-origin:50% 100%">' +
+      '<path d="M10 44V100" stroke="#C9A24A" stroke-width="2"/>' + g + '</svg>';
+  }
+  function acorn(w) {
+    return '<svg viewBox="0 0 30 34" width="' + w + '" height="' + Math.round(w * 34 / 30) + '"><ellipse cx="15" cy="22" rx="9" ry="11" fill="#B9752F"/>' +
+      '<path d="M4 14q11-10 22 0q-11 6-22 0z" fill="#6B4320"/><path d="M15 6v-5" stroke="#6B4320" stroke-width="2.5"/></svg>';
+  }
+  function turkey(w) {
+    var tail = '', cols = ['#8E3B22', '#D4553A', '#F2A33A', '#E8C15A', '#F2A33A', '#D4553A', '#8E3B22'];
+    for (var i = 0; i < 7; i++) {
+      tail += '<ellipse cx="60" cy="18" rx="10" ry="30" fill="' + cols[i] + '" transform="rotate(' + (-60 + i * 20) + ' 60 52)"/>';
+    }
+    return '<svg viewBox="0 0 120 100" width="' + w + '" height="' + Math.round(w * 100 / 120) + '">' + tail +
+      '<ellipse cx="60" cy="62" rx="24" ry="26" fill="#6B4320"/><ellipse cx="60" cy="68" rx="15" ry="16" fill="#8A5A2E"/>' +
+      '<circle cx="60" cy="36" r="12" fill="#7a4d26"/><circle cx="55" cy="33" r="3.2" fill="#fff"/><circle cx="65" cy="33" r="3.2" fill="#fff"/>' +
+      '<circle cx="55.6" cy="33.5" r="1.6" fill="#1a1a1a"/><circle cx="64.4" cy="33.5" r="1.6" fill="#1a1a1a"/>' +
+      '<path d="M56 38l4 6 4-6z" fill="#F2A33A"/><path d="M61 42q5 4 2 11q-4-3-2-11z" fill="#D9342B"/>' +
+      '<path d="M52 86v10M68 86v10M48 96h8M64 96h8" stroke="#E8952A" stroke-width="3" stroke-linecap="round"/></svg>';
+  }
+  function cornucopia(w) {
+    return '<svg viewBox="0 0 150 90" width="' + w + '" height="' + Math.round(w * 90 / 150) + '" style="transform:scaleX(-1)">' +
+      '<path d="M8 30q-6 18 10 30q30 26 80 22l6-46q-46-12-80-20q-10 2-16 14z" fill="#B47A3A"/>' +
+      '<path d="M22 22q4 22 0 44M40 24q5 24 0 50M58 27q4 26 0 50M76 30q4 24 0 48" stroke="#7d4f22" stroke-width="3" fill="none"/>' +
+      '<path d="M8 30q-10-6-6-16q8 6 12 2" fill="none" stroke="#B47A3A" stroke-width="7" stroke-linecap="round"/>' +
+      '<ellipse cx="104" cy="56" rx="12" ry="30" fill="#5c3a19"/>' +
+      '<circle cx="112" cy="40" r="13" fill="#D9342B"/><path d="M112 27q2-6 6-7" stroke="#5a4a22" stroke-width="2" fill="none"/>' +
+      '<g fill="#6E3FA8"><circle cx="118" cy="64" r="6"/><circle cx="128" cy="62" r="6"/><circle cx="123" cy="72" r="6"/><circle cx="133" cy="71" r="6"/><circle cx="128" cy="80" r="6"/></g>' +
+      '<ellipse cx="136" cy="44" rx="10" ry="13" fill="#E8C15A"/><ellipse cx="128" cy="52" rx="9" ry="8" fill="#F2A33A"/></svg>';
+  }
+  if (t === 'thanksgiving') {
+    var LC = ['#E8752A', '#C8402A', '#F2A33A', '#B5532B', '#E8C15A'];
+    // top-left corner: pumpkin patch with wheat and leaves
+    put(wheat(78, -18), 'left:6px;top:-74px');
+    put(wheat(70, 10), 'left:24px;top:-66px');
+    put(leaf(44, LC[0], -30), 'left:-14px;top:-28px');
+    put(pumpkin(90, '#F2A33A', '#D9822B'), 'left:44px;top:-68px');
+    put(pumpkin(58, '#F2E6C8', '#DCCBA6'), 'left:124px;top:-44px');
+    put(acorn(22), 'left:180px;top:-24px');
+    put(leaf(34, LC[1], 40), 'left:196px;top:-22px');
+    // middle: the turkey standing on the edge, acorns and leaves
+    put(leaf(32, LC[2], -20), 'left:1580px;top:-20px');
+    put(turkey(96), 'left:1620px;top:-78px');
+    put(acorn(22), 'left:1716px;top:-24px');
+    put(acorn(18), 'left:1740px;top:-20px');
+    put(leaf(30, LC[3], 25), 'left:2060px;top:-20px');
+    // top-right corner: the cornucopia with leaves and wheat
+    put(wheat(74, 16), 'right:16px;top:-70px');
+    put(leaf(38, LC[4], -10), 'right:186px;top:-24px');
+    put(cornucopia(150), 'right:24px;top:-84px');
+    put(leaf(44, LC[1], 35), 'right:-22px;top:-12px');
+    // bottom corners
+    put(leaf(34, LC[0], 70), 'left:-16px;bottom:-14px');
+    put(leaf(30, LC[2], -60), 'right:-14px;bottom:-12px');
+  }
+
+  // ── Christmas ──
+  function lights(w) {                    // a string of bulbs along the bar's top edge, w px long
+    var n = Math.floor(w / 70), cols = ['#E5484D', '#2FA36B', '#F5C451', '#4FB3D9'], b = '', wire = 'M0 2';
+    for (var i = 0; i <= n; i++) {
+      var x = i * w / n;
+      if (i) wire += 'Q' + (x - w / n / 2).toFixed(1) + ' 12 ' + x.toFixed(1) + ' 2';
+      b += '<rect x="' + (x - 3).toFixed(1) + '" y="0" width="6" height="6" rx="1" fill="#2b2b2b"/>' +
+           '<ellipse class="bulb" style="animation-delay:' + ((i * 0.37) % 2.4).toFixed(2) + 's" cx="' + x.toFixed(1) + '" cy="13" rx="6" ry="9" fill="' + cols[i % 4] + '"/>';
+    }
+    return '<svg viewBox="-8 -2 ' + (w + 16) + ' 26" width="' + (w + 16) + '" height="26"><path d="' + wire + '" fill="none" stroke="#2b2b2b" stroke-width="2"/>' + b + '</svg>';
+  }
+  function garland(w, flip) {             // pine garland draping over a top corner, with a red bow and baubles
+    var needles = '';
+    for (var i = 0; i < 26; i++) {
+      var k = i / 25, x = k * w, y = 4 + Math.sin(k * Math.PI) * 14;
+      needles += '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" rx="13" ry="7" fill="' + (i % 2 ? '#1F6B3A' : '#2E8A4C') +
+                 '" transform="rotate(' + (i * 37 % 60 - 30) + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')"/>';
+    }
+    var balls = [[0.14, '#E5484D'], [0.3, '#F5C451'], [0.46, '#4FB3D9']].map(function (q) {
+      var x = q[0] * w, y = 4 + Math.sin(q[0] * Math.PI) * 14 + 12;
+      return '<path d="M' + x.toFixed(1) + ' ' + (y - 10).toFixed(1) + 'v5" stroke="#999" stroke-width="1"/><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) +
+             '" r="6" fill="' + q[1] + '"/><circle cx="' + (x - 2).toFixed(1) + '" cy="' + (y - 2).toFixed(1) + '" r="1.8" fill="#fff" opacity=".6"/>';
+    }).join('');
+    var bow = '<g transform="translate(6 6)"><path d="M0 0q-18-14-20 2q2 10 20-2zM0 0q18-14 20 2q-2 10-20-2z" fill="#D9342B"/>' +
+              '<path d="M0 0l-8 22 6-3 2 6zM0 0l8 22-6-3-2 6z" fill="#B82A22"/><circle r="5" fill="#E5484D"/></g>';
+    return '<svg viewBox="-24 -14 ' + (w + 40) + ' 60" width="' + (w + 40) + '" height="60"' + (flip ? ' style="transform:scaleX(-1)"' : '') + '>' +
+           needles + balls + bow + '</svg>';
+  }
+  function presents() {
+    return '<svg viewBox="0 0 130 84" width="130" height="84">' +
+      '<rect x="4" y="30" width="58" height="52" rx="3" fill="#D9342B"/><rect x="28" y="30" width="10" height="52" fill="#F5C451"/><rect x="4" y="50" width="58" height="9" fill="#F5C451"/>' +
+      '<path d="M33 30q-14-16-18-4q4 6 18 4zM33 30q14-16 18-4q-4 6-18 4z" fill="#F5C451"/>' +
+      '<rect x="62" y="44" width="44" height="38" rx="3" fill="#2E8A4C"/><rect x="80" y="44" width="8" height="38" fill="#E5484D"/><rect x="62" y="58" width="44" height="7" fill="#E5484D"/>' +
+      '<path d="M84 44q-11-12-14-3q3 5 14 3zM84 44q11-12 14-3q-3 5-14 3z" fill="#E5484D"/>' +
+      '<rect x="96" y="60" width="30" height="22" rx="2" fill="#F5C451"/><rect x="108" y="60" width="6" height="22" fill="#4FB3D9"/></svg>';
+  }
+  function tree(h) {
+    return '<svg viewBox="0 0 72 100" width="' + Math.round(h * 0.72) + '" height="' + h + '">' +
+      '<rect x="31" y="84" width="10" height="14" fill="#6B4320"/>' +
+      '<path d="M36 10L8 52h12L4 86h64L52 52h12z" fill="#1F6B3A"/><path d="M36 10L20 36h10L14 62h44L42 36h10z" fill="#2E8A4C"/>' +
+      '<path d="M36 1l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z" fill="#F5C451"/>' +
+      '<circle cx="28" cy="46" r="3.5" fill="#E5484D"/><circle cx="44" cy="58" r="3.5" fill="#F5C451"/><circle cx="24" cy="72" r="3.5" fill="#4FB3D9"/>' +
+      '<circle cx="48" cy="76" r="3.5" fill="#E5484D"/><circle cx="38" cy="34" r="3" fill="#4FB3D9"/></svg>';
+  }
+  function cane(h, rot, id) {
+    return '<svg viewBox="0 0 30 90" width="' + Math.round(h / 3) + '" height="' + h + '" style="transform:rotate(' + rot + 'deg);transform-origin:50% 100%">' +
+      '<defs><pattern id="' + id + '" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="10" fill="#F6F6F6"/><rect width="5" height="10" fill="#D9342B"/></pattern></defs>' +
+      '<path d="M20 88V22q0-14-10-14T2 20" fill="none" stroke="url(#' + id + ')" stroke-width="7" stroke-linecap="round"/></svg>';
+  }
+  function holly(w, rot) {
+    return '<svg viewBox="0 0 50 34" width="' + w + '" height="' + Math.round(w * 34 / 50) + '" style="transform:rotate(' + rot + 'deg)">' +
+      '<path d="M25 18q-10-16-24-12q6 4 4 8q6 0 6 6q6-4 14-2z" fill="#1F6B3A"/><path d="M25 18q10-16 24-12q-6 4-4 8q-6 0-6 6q-6-4-14-2z" fill="#2E8A4C"/>' +
+      '<circle cx="21" cy="21" r="4" fill="#D9342B"/><circle cx="29" cy="21" r="4" fill="#E5484D"/><circle cx="25" cy="27" r="4" fill="#D9342B"/></svg>';
+  }
+  if (t === 'christmas') {
+    put(lights(1400), 'left:478px;top:-4px');            // over the ship section only, clear of the labels at both ends
+    // top-left: presents on the edge, garland draping over the corner
+    put(presents(), 'left:118px;top:-82px');
+    put(garland(220, false), 'left:-18px;top:-12px');
+    // middle: crossed candy canes and holly
+    put(cane(64, -12, 'cs1'), 'left:1640px;top:-60px');
+    put(cane(58, 14, 'cs2'), 'left:1664px;top:-54px');
+    put(holly(46, 0), 'left:1690px;top:-26px');
+    // top-right: the little tree and a present, garland over the corner
+    put(tree(96), 'right:176px;top:-94px');
+    put('<svg viewBox="0 0 44 38" width="44" height="38"><rect x="2" y="6" width="40" height="30" rx="3" fill="#4FB3D9"/><rect x="18" y="6" width="8" height="30" fill="#F5C451"/>' +
+        '<path d="M22 6q-9-10-12-2q3 4 12 2zM22 6q9-10 12-2q-3 4-12 2z" fill="#F5C451"/></svg>', 'right:126px;top:-38px');
+    put(garland(200, true), 'right:-18px;top:-12px');
+    // bottom corners: holly tucked under the edge
+    put(holly(46, 160), 'left:-14px;bottom:-16px');
+    put(holly(42, -160), 'right:-12px;bottom:-14px');
+  }
+
+  // ── January: Winter on the Straits ──
+  function icicles(w) {                   // a row of icicles hanging under the bar's bottom edge
+    var d = '', x = 0, i = 0;
+    while (x < w) { var len = 8 + (i * 7) % 14, wd = 8 + (i * 5) % 6; d += 'M' + x + ' 0L' + (x + wd / 2) + ' ' + len + 'L' + (x + wd) + ' 0z'; x += wd + 6 + (i * 3) % 10; i++; }
+    return '<svg viewBox="0 0 ' + w + ' 24" width="' + w + '" height="24"><path d="' + d + '" fill="rgba(214,238,255,.85)"/><path d="M0 0H' + w + '" stroke="#EAF6FF" stroke-width="3"/></svg>';
+  }
+  function icebreaker(w) {               // a red-hulled Coast Guard icebreaker, like the Mackinaw
+    return '<svg viewBox="0 0 160 70" width="' + w + '" height="' + Math.round(w * 70 / 160) + '">' +
+      '<path d="M6 46h148l-14 22H24z" fill="#C8102E"/><path d="M6 46h148v4H6z" fill="#F4F4F4"/>' +
+      '<path d="M44 30h70v16H44z" fill="#F4F4F4"/><path d="M56 16h44v14H56z" fill="#F4F4F4"/><path d="M60 19h36v5H60z" fill="#2a3a4a"/>' +
+      '<path d="M104 20h14v26h-14z" fill="#E0B865"/><path d="M104 20h14v5h-14z" fill="#1a1a1a"/><path d="M76 4v12M70 8h12" stroke="#ddd" stroke-width="2"/>' +
+      '<path d="M18 52l10 0M130 52l12 0" stroke="#fff" stroke-width="3"/><text x="80" y="62" font-size="9" font-family="Arial" font-weight="700" fill="#fff" text-anchor="middle">83</text>' +
+      '<path d="M0 68q20-6 40 0t40 0t40 0t40 0" stroke="#EAF6FF" stroke-width="3" fill="none"/></svg>';
+  }
+  function mittens(w) {                  // two mittens on a string, draped over a top corner
+    var m = function (x, c, r) { return '<g transform="translate(' + x + ' 30) rotate(' + r + ')"><path d="M-12 -6q0-16 12-16t12 16v20q0 8-12 8t-12-8z" fill="' + c + '"/><path d="M-12 -4q-10-2-10 6t10 6z" fill="' + c + '"/><path d="M-12 18h24" stroke="#fff" stroke-width="5"/><path d="M-6 0h12M-6 6h12" stroke="#fff" stroke-opacity=".45" stroke-width="2"/></g>'; };
+    return '<svg viewBox="0 0 ' + w + ' 70" width="' + w + '" height="70"><path d="M0 4Q' + (w / 2) + ' 34 ' + w + ' 4" stroke="#EAF6FF" stroke-width="2" fill="none"/>' +
+      m(w * 0.32, '#D9342B', -10) + m(w * 0.68, '#2E6FD1', 10) + '</svg>';
+  }
+  function scarf(w, flip) {              // a striped knit scarf draped over a top corner
+    var st = '';
+    for (var i = 0; i < 9; i++) st += '<path d="M' + (i * w / 9) + ' ' + (6 + Math.sin(i / 8 * Math.PI) * 12) + 'v16" stroke="' + (i % 2 ? '#F4F4F4' : '#D9342B') + '" stroke-width="' + (w / 9) + '"/>';
+    return '<svg viewBox="0 0 ' + w + ' 70" width="' + w + '" height="70"' + (flip ? ' style="transform:scaleX(-1)"' : '') + '>' + st +
+      '<path d="M8 10v44M16 10v50M24 10v42" stroke="#D9342B" stroke-width="7" stroke-linecap="round"/><path d="M6 54v8M14 60v8M22 52v8" stroke="#F4F4F4" stroke-width="3"/></svg>';
+  }
+  function frost(r, flip) {              // a faint frost crystal pattern in a corner
+    var d = '';
+    for (var i = 0; i <= 6; i++) { var a = Math.PI / 2 * i / 6, x = Math.cos(a) * r, y = Math.sin(a) * r;
+      d += 'M0 0L' + x.toFixed(1) + ' ' + y.toFixed(1);
+      [0.45, 0.7].forEach(function (k) { var px = x * k, py = y * k, s = r * 0.12;
+        d += 'M' + px.toFixed(1) + ' ' + py.toFixed(1) + 'l' + (Math.cos(a + 0.7) * s).toFixed(1) + ' ' + (Math.sin(a + 0.7) * s).toFixed(1) +
+             'M' + px.toFixed(1) + ' ' + py.toFixed(1) + 'l' + (Math.cos(a - 0.7) * s).toFixed(1) + ' ' + (Math.sin(a - 0.7) * s).toFixed(1); }); }
+    return '<svg viewBox="-2 -2 ' + (r + 4) + ' ' + (r + 4) + '" width="' + (r + 4) + '" height="' + (r + 4) + '"' + (flip ? ' style="transform:scaleX(-1)"' : '') +
+      '><path d="' + d + '" stroke="rgba(225,245,255,.4)" stroke-width="1.2" fill="none"/></svg>';
+  }
+  function beanie(w) {                  // a knit hat with a pom-pom, sitting on the edge
+    var rib = '';
+    for (var i = 0; i < 9; i++) rib += '<path d="M' + (12 + i * 7) + ' 48v12" stroke="#B82A22" stroke-width="2"/>';
+    return '<svg viewBox="0 0 90 70" width="' + w + '" height="' + Math.round(w * 70 / 90) + '">' +
+      '<circle cx="45" cy="12" r="10" fill="#F4F4F4"/><path d="M14 50q0-38 31-38t31 38z" fill="#D9342B"/>' +
+      '<path d="M20 34h50M18 42h54" stroke="#F4F4F4" stroke-width="4"/><path d="M26 26l6 6 6-6 6 6 6-6 6 6 6-6" stroke="#F4F4F4" stroke-width="2" fill="none"/>' +
+      '<rect x="8" y="48" width="74" height="14" rx="6" fill="#E5484D"/>' + rib + '</svg>';
+  }
+  if (t === 'winter') {
+    put(mittens(170), 'left:30px;top:-26px');
+    put(frost(78, false), 'left:4px;top:4px');
+    put(icebreaker(170), 'left:1620px;top:-70px');
+    put(frost(64, true), 'right:4px;top:4px');
+    put(beanie(84), 'right:60px;top:-62px');
+    put(icicles(2440), 'left:20px;bottom:-24px');
+  }
+
+  // ── February: Valentine's ──
+  function heart(w, c, rot) {
+    return '<svg viewBox="0 0 40 36" width="' + w + '" height="' + Math.round(w * 0.9) + '" style="transform:rotate(' + (rot || 0) + 'deg)"><path d="M20 34Q2 22 2 11Q2 2 11 2q6 0 9 6q3-6 9-6q9 0 9 9q0 11-18 23z" fill="' + c + '"/>' +
+      '<ellipse cx="12" cy="10" rx="4" ry="3" fill="#fff" opacity=".35"/></svg>';
+  }
+  function ribbon(w, flip) {             // a satin ribbon draped over a top corner with a bow
+    return '<svg viewBox="0 0 ' + (w + 40) + ' 60" width="' + (w + 40) + '" height="60"' + (flip ? ' style="transform:scaleX(-1)"' : '') + '>' +
+      '<path d="M20 14Q' + (w / 2 + 20) + ' 40 ' + (w + 40) + ' 8" stroke="#FF6F91" stroke-width="7" fill="none"/>' +
+      '<g transform="translate(22 14)"><path d="M0 0q-20-16-22 2q2 12 22-2zM0 0q20-16 22 2q-2 12-22-2z" fill="#FF3B5C"/><path d="M0 0l-9 24 6-3 3 6zM0 0l9 24-6-3-3 6z" fill="#D81B45"/><circle r="5.5" fill="#FF6F91"/></g></svg>';
+  }
+  function chocolates(w) {
+    var dots = '';
+    [[36, 26], [52, 22], [68, 26], [44, 40], [60, 40], [52, 54]].forEach(function (p) { dots += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="6" fill="#5a2e16"/><circle cx="' + (p[0] - 2) + '" cy="' + (p[1] - 2) + '" r="1.6" fill="#a0603a"/>'; });
+    return '<svg viewBox="0 0 104 76" width="' + w + '" height="' + Math.round(w * 76 / 104) + '"><path d="M52 72Q4 44 4 20Q4 2 26 2q16 0 26 14q10-14 26-14q22 0 22 18q0 24-48 52z" fill="#D81B45"/>' +
+      '<path d="M52 64Q12 40 12 22Q12 10 28 10q14 0 24 12q10-12 24-12q16 0 16 12q0 18-40 42z" fill="#8E1230"/>' + dots + '</svg>';
+  }
+  if (t === 'valentine') {
+    put(ribbon(200, false), 'left:-18px;top:-12px');
+    put(heart(64, '#FF3B5C', -12), 'left:140px;top:-58px');
+    put(heart(40, '#FF8FAB', 14), 'left:196px;top:-38px');
+    put(heart(28, '#FFC2D1', -8), 'left:228px;top:-26px');
+    put(chocolates(110), 'left:1620px;top:-74px');
+    put(heart(30, '#FF6F91', 10), 'left:1736px;top:-28px');
+    put(heart(34, '#FFC2D1', -14), 'right:200px;top:-32px');
+    put(heart(58, '#FF3B5C', 12), 'right:130px;top:-54px');
+    put(ribbon(180, true), 'right:-18px;top:-12px');
+    put(heart(26, '#FF8FAB', 20), 'left:-10px;bottom:-14px');
+    put(heart(26, '#FF8FAB', -20), 'right:-10px;bottom:-14px');
+  }
+
+  // ── March: St. Patrick's ──
+  function shamrock(w, rot, c) {
+    c = c || '#2FBF71';
+    var leafS = function (a) { return '<path transform="rotate(' + a + ' 20 22)" d="M20 22q-14-4-12-14q4-8 12 0q8-8 12 0q2 10-12 14z" fill="' + c + '"/>'; };
+    return '<svg viewBox="0 0 40 44" width="' + w + '" height="' + Math.round(w * 1.1) + '" style="transform:rotate(' + rot + 'deg)">' +
+      '<path d="M20 22q2 12 8 20" stroke="#1E8A4E" stroke-width="2.5" fill="none"/>' + leafS(0) + leafS(120) + leafS(240) + '</svg>';
+  }
+  function potOfGold(w) {
+    var coins = '';
+    [[22, 16], [34, 12], [46, 16], [28, 6], [40, 4]].forEach(function (p) { coins += '<ellipse cx="' + p[0] + '" cy="' + p[1] + '" rx="8" ry="5" fill="#F5C451" stroke="#C99A2E" stroke-width="1.2"/>'; });
+    return '<svg viewBox="0 0 70 64" width="' + w + '" height="' + Math.round(w * 64 / 70) + '">' + coins +
+      '<path d="M8 22h54q4 34-27 40Q4 56 8 22z" fill="#1a1a1a"/><path d="M4 18h62v8H4z" fill="#2b2b2b"/><path d="M12 22h46" stroke="#444" stroke-width="2"/></svg>';
+  }
+  function horseshoe(w) {
+    return '<svg viewBox="0 0 44 48" width="' + w + '" height="' + Math.round(w * 48 / 44) + '"><path d="M8 44V20a14 14 0 0 1 28 0v24" stroke="#C7CCD1" stroke-width="9" fill="none" stroke-linecap="round"/>' +
+      '<g fill="#555"><circle cx="8" cy="30" r="1.6"/><circle cx="36" cy="30" r="1.6"/><circle cx="10" cy="16" r="1.6"/><circle cx="34" cy="16" r="1.6"/></g></svg>';
+  }
+  function rainbow(w) {
+    var c = ['#E5484D', '#F2A33A', '#F5C451', '#2FBF71', '#4FB3D9', '#7C5CFF'], d = '';
+    c.forEach(function (col, i) { var r = w / 2 - i * 6; d += '<path d="M' + (w / 2 - r) + ' ' + (w / 2) + 'a' + r + ' ' + r + ' 0 0 1 ' + (2 * r) + ' 0" stroke="' + col + '" stroke-width="6" fill="none"/>'; });
+    return '<svg viewBox="0 0 ' + w + ' ' + (w / 2 + 4) + '" width="' + w + '" height="' + (w / 2 + 4) + '">' + d +
+      '<ellipse cx="' + (w * 0.12) + '" cy="' + (w / 2) + '" rx="22" ry="9" fill="#F4F6F8"/><ellipse cx="' + (w * 0.88) + '" cy="' + (w / 2) + '" rx="22" ry="9" fill="#F4F6F8"/></svg>';
+  }
+  if (t === 'stpatrick') {
+    put(rainbow(170), 'left:20px;top:-86px');
+    put(shamrock(40, -20), 'left:-10px;top:-30px');
+    put(shamrock(30, 25, '#3CD483'), 'left:196px;top:-26px');
+    put(horseshoe(46), 'left:1640px;top:-50px');
+    put(shamrock(30, 10), 'left:1694px;top:-28px');
+    put(shamrock(26, -30, '#3CD483'), 'left:1600px;top:-24px');
+    put(shamrock(32, 15, '#3CD483'), 'right:170px;top:-30px');
+    put(potOfGold(80), 'right:70px;top:-72px');
+    put(shamrock(42, 30), 'right:-12px;top:-30px');
+    put(shamrock(28, 160), 'left:-10px;bottom:-16px');
+    put(shamrock(28, -160), 'right:-10px;bottom:-16px');
+  }
+
+  // ── April: Spring ──
+  function tulip(h, c) {
+    return '<svg viewBox="0 0 24 70" width="' + Math.round(h * 24 / 70) + '" height="' + h + '"><path d="M12 24v46" stroke="#3E9B4F" stroke-width="3"/>' +
+      '<path d="M12 50q-12-10-8-26q4 10 8 18z" fill="#4CB35E"/><path d="M4 4q0 22 8 22t8-22l-4 7-4-9-4 9z" fill="' + c + '"/></svg>';
+  }
+  function egg(w, c, c2, rot) {
+    return '<svg viewBox="0 0 30 38" width="' + w + '" height="' + Math.round(w * 38 / 30) + '" style="transform:rotate(' + rot + 'deg)"><ellipse cx="15" cy="20" rx="13" ry="17" fill="' + c + '"/>' +
+      '<path d="M3 16q6-4 12 0t12 0M3 24q6 4 12 0t12 0" stroke="' + c2 + '" stroke-width="2.5" fill="none"/><circle cx="15" cy="20" r="2" fill="' + c2 + '"/></svg>';
+  }
+  function bunny(w) {                    // a bunny peeking over the edge
+    return '<svg viewBox="0 0 80 70" width="' + w + '" height="' + Math.round(w * 70 / 80) + '">' +
+      '<ellipse cx="28" cy="20" rx="8" ry="22" fill="#F1ECE6" transform="rotate(-12 28 40)"/><ellipse cx="52" cy="20" rx="8" ry="22" fill="#F1ECE6" transform="rotate(12 52 40)"/>' +
+      '<ellipse cx="28" cy="20" rx="4" ry="15" fill="#F7B6C8" transform="rotate(-12 28 40)"/><ellipse cx="52" cy="20" rx="4" ry="15" fill="#F7B6C8" transform="rotate(12 52 40)"/>' +
+      '<ellipse cx="40" cy="58" rx="24" ry="18" fill="#F1ECE6"/><circle cx="32" cy="54" r="3" fill="#2b2b2b"/><circle cx="48" cy="54" r="3" fill="#2b2b2b"/>' +
+      '<ellipse cx="40" cy="61" rx="4" ry="3" fill="#F7A1B8"/><path d="M14 70q8-8 14-2M66 70q-8-8-14-2" stroke="#E2DAD1" stroke-width="5" stroke-linecap="round" fill="none"/></svg>';
+  }
+  function grass(w) {
+    var d = '';
+    for (var x = 0; x < w; x += 6) d += 'M' + x + ' 20l' + (2 - (x % 4)) + ' -' + (8 + (x * 7) % 10);
+    return '<svg viewBox="0 0 ' + w + ' 20" width="' + w + '" height="20"><path d="' + d + '" stroke="#4CB35E" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
+  }
+  if (t === 'spring') {
+    put(grass(250), 'left:10px;top:-18px');
+    ['#F7A8C8', '#FFD36E', '#E5484D', '#B794F4', '#F7A8C8'].forEach(function (c, i) { put(tulip(58 + (i % 2) * 10, c), 'left:' + (24 + i * 42) + 'px;top:-' + (58 + (i % 2) * 10) + 'px'); });
+    put(bunny(84), 'left:1640px;top:-72px');
+    put(grass(170), 'right:16px;top:-18px');
+    put(egg(34, '#9BE7A8', '#FFFFFF', -14), 'right:150px;top:-40px');
+    put(egg(40, '#F7A8C8', '#B794F4', 8), 'right:104px;top:-48px');
+    put(egg(34, '#FFD36E', '#4FB3D9', 18), 'right:62px;top:-40px');
+    put(egg(30, '#B794F4', '#FFD36E', -6), 'right:26px;top:-36px');
+  }
+
+  // ── May: Spring at the Straits ──
+  function daffodil(h) {
+    var pet = '';
+    for (var i = 0; i < 6; i++) pet += '<ellipse cx="16" cy="9" rx="5" ry="9" fill="#FFE36E" transform="rotate(' + (i * 60) + ' 16 16)"/>';
+    return '<svg viewBox="0 0 32 80" width="' + Math.round(h * 32 / 80) + '" height="' + h + '"><path d="M16 28v52" stroke="#4E9F3D" stroke-width="3"/><path d="M16 60q-12-8-10-22q6 10 10 16z" fill="#5DB84A"/>' +
+      pet + '<circle cx="16" cy="16" r="6" fill="#F2A33A"/><circle cx="16" cy="16" r="3" fill="#E07B1A"/></svg>';
+  }
+  function trillium(w) {
+    var pet = '';
+    for (var i = 0; i < 3; i++) pet += '<ellipse cx="20" cy="9" rx="7" ry="12" fill="#FBFBF7" transform="rotate(' + (i * 120) + ' 20 20)"/>';
+    return '<svg viewBox="0 0 40 60" width="' + w + '" height="' + Math.round(w * 1.5) + '"><path d="M20 28v32" stroke="#4E9F3D" stroke-width="3"/>' +
+      '<path d="M20 44q-16-2-18 8q12 2 18-8zM20 44q16-2 18 8q-12 2-18-8z" fill="#5DB84A"/>' + pet + '<circle cx="20" cy="20" r="4" fill="#F5D76E"/></svg>';
+  }
+  function robin(w) {
+    return '<svg viewBox="0 0 80 60" width="' + w + '" height="' + Math.round(w * 0.75) + '"><path d="M10 30q10-22 36-20q20 2 26 18q-10 22-40 22q-18 0-22-20z" fill="#5a4a3e"/>' +
+      '<path d="M34 30q8 18 30 6q-4 14-26 16q-8-6-4-22z" fill="#E2622A"/><circle cx="60" cy="20" r="3" fill="#111"/><circle cx="60.8" cy="19.3" r=".9" fill="#fff"/>' +
+      '<path d="M70 22l10 3-10 3z" fill="#F2B233"/><path d="M10 30L0 22l2 12z" fill="#4a3c32"/><path d="M40 52v8M48 52v8" stroke="#C98A3A" stroke-width="2"/></svg>';
+  }
+  if (t === 'may') {
+    put(grass(240), 'left:10px;top:-18px');
+    [0, 1, 2, 3].forEach(function (i) { put(daffodil(64 + (i % 2) * 12), 'left:' + (20 + i * 50) + 'px;top:-' + (64 + (i % 2) * 12) + 'px'); });
+    put(robin(84), 'left:1640px;top:-60px');
+    put(grass(200), 'right:10px;top:-18px');
+    [0, 1, 2].forEach(function (i) { put(trillium(36 + (i % 2) * 6), 'right:' + (30 + i * 56) + 'px;top:-' + (54 + (i % 2) * 9) + 'px'); });
+  }
+
+  // ── June: Lilac season ──
+  function lilacs(w, flip) {             // lilac sprays draped over a top corner
+    var bl = '';
+    function spray(cx, cy, s) {
+      for (var i = 0; i < 26; i++) {
+        var a = i * 2.4, r = Math.sqrt(i) * 3.4 * s, x = cx + Math.cos(a) * r * 0.8, y = cy + Math.sin(a) * r + i * 0.9 * s;
+        bl += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (3.4 * s).toFixed(1) + '" fill="' + ['#B794F4', '#9F7AEA', '#D6BCFA', '#C3A3F7'][i % 4] + '"/>';
+      }
+    }
+    var leavesL = '<path d="M10 12q30 0 50 18q-30 6-50-18z" fill="#5DA34A"/><path d="M' + (w * 0.55) + ' 8q30-4 46 14q-28 6-46-14z" fill="#6BB357"/>';
+    spray(w * 0.2, 16, 1); spray(w * 0.5, 10, 0.9); spray(w * 0.8, 14, 0.8);
+    return '<svg viewBox="0 0 ' + w + ' 80" width="' + w + '" height="80"' + (flip ? ' style="transform:scaleX(-1)"' : '') + '>' +
+      '<path d="M0 6Q' + (w / 2) + ' 24 ' + w + ' 4" stroke="#6b4a2e" stroke-width="3" fill="none"/>' + leavesL + bl + '</svg>';
+  }
+  function bike(w) {
+    return '<svg viewBox="0 0 90 56" width="' + w + '" height="' + Math.round(w * 56 / 90) + '" fill="none" stroke="#F4F4F4" stroke-width="3">' +
+      '<circle cx="20" cy="38" r="16"/><circle cx="70" cy="38" r="16"/><path d="M20 38l16-22h24l10 22M36 16l12 22h-28M48 38l12-22" stroke="#9F7AEA"/>' +
+      '<path d="M32 10h10M58 16l2-8h8" stroke-linecap="round"/><path d="M64 12q8-4 10 6" stroke="#8DD17A"/><circle cx="48" cy="38" r="3" fill="#F4F4F4"/></svg>';
+  }
+  if (t === 'lilac') {
+    put(lilacs(240, false), 'left:-10px;top:-40px');
+    put(bike(92), 'left:1630px;top:-58px');
+    put(lilacs(210, true), 'right:-10px;top:-40px');
+  }
+
+  // ── July: Fourth of July ──
+  function bunting(w, flip) {            // a pleated fan of red, white and blue pinned over a top corner
+    var r = w / 2, segs = '';
+    for (var i = 0; i < 9; i++) {
+      var a0 = Math.PI * i / 9, a1 = Math.PI * (i + 1) / 9;
+      segs += '<path d="M' + r + ' 0L' + (r + Math.cos(a0) * r).toFixed(1) + ' ' + (Math.sin(a0) * r).toFixed(1) + 'A' + r + ' ' + r + ' 0 0 1 ' +
+              (r + Math.cos(a1) * r).toFixed(1) + ' ' + (Math.sin(a1) * r).toFixed(1) + 'z" fill="' + ['#C8102E', '#F4F4F4', '#C8102E', '#F4F4F4', '#C8102E', '#F4F4F4', '#C8102E', '#F4F4F4', '#C8102E'][i] + '"/>';
+    }
+    return '<svg viewBox="0 0 ' + w + ' ' + (r + 2) + '" width="' + w + '" height="' + (r + 2) + '"' + (flip ? ' style="transform:scaleX(-1)"' : '') + '>' + segs +
+      '<path d="M0 0h' + w + 'v' + (r * 0.32) + 'a' + r + ' ' + (r * 0.32) + ' 0 0 1 -' + w + ' 0z" fill="#1E3A8A"/>' +
+      [0.25, 0.5, 0.75].map(function (k) { return '<path transform="translate(' + (w * k) + ' ' + (r * 0.16) + ') scale(.5)" d="M0-10l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z" fill="#fff"/>'; }).join('') + '</svg>';
+  }
+  function flag(w, rot) {
+    var st = '';
+    for (var i = 0; i < 7; i++) st += '<rect x="4" y="' + (2 + i * 4) + '" width="40" height="2" fill="#C8102E"/>';
+    return '<svg viewBox="0 0 48 60" width="' + w + '" height="' + Math.round(w * 60 / 48) + '" style="transform:rotate(' + rot + 'deg);transform-origin:4px 100%"><path d="M4 0v60" stroke="#C7CCD1" stroke-width="2"/>' +
+      '<rect x="4" y="2" width="40" height="26" fill="#F4F4F4"/>' + st + '<rect x="4" y="2" width="17" height="14" fill="#1E3A8A"/></svg>';
+  }
+  function burst(w, c) {
+    var d = '';
+    for (var i = 0; i < 12; i++) { var a = i * Math.PI / 6; d += 'M' + (30 + Math.cos(a) * 8).toFixed(1) + ' ' + (30 + Math.sin(a) * 8).toFixed(1) + 'L' + (30 + Math.cos(a) * 28).toFixed(1) + ' ' + (30 + Math.sin(a) * 28).toFixed(1); }
+    return '<svg viewBox="0 0 60 60" width="' + w + '" height="' + w + '"><path d="' + d + '" stroke="' + c + '" stroke-width="2.6" stroke-linecap="round"/><circle cx="30" cy="30" r="3" fill="' + c + '"/></svg>';
+  }
+  if (t === 'july4') {
+    put(burst(54, '#5B8CFF'), 'left:150px;top:-66px');
+    put(burst(40, '#E5484D'), 'left:206px;top:-46px');
+    put(bunting(76, false), 'left:4px;top:2px');
+    put(flag(40, -14), 'left:1620px;top:-50px');
+    put(flag(40, 0), 'left:1650px;top:-52px');
+    put(flag(40, 14), 'left:1680px;top:-50px');
+    put(burst(46, '#F4F4F4'), 'right:170px;top:-58px');
+    put(burst(56, '#E5484D'), 'right:220px;top:-70px');
+    put(bunting(64, true), 'right:4px;top:2px');
+  }
+
+  // ── August: Summer by the bridge ──
+  function gull(w) {
+    return '<svg viewBox="0 0 80 56" width="' + w + '" height="' + Math.round(w * 0.7) + '"><path d="M8 30q14-20 40-16q22 4 26 18q-12 14-38 14q-22 0-28-16z" fill="#F4F6F8"/>' +
+      '<path d="M22 24q16-10 34 0q-8 10-30 8z" fill="#9AA5B1"/><circle cx="64" cy="22" r="2.6" fill="#111"/><path d="M70 24l10 2-10 3z" fill="#F2B233"/><circle cx="76" cy="26" r="1.4" fill="#E5484D"/>' +
+      '<path d="M8 30L0 26l4 8z" fill="#2b2b2b"/><path d="M38 46v10M46 46v10" stroke="#F2B233" stroke-width="2"/></svg>';
+  }
+  function lifering(w) {
+    return '<svg viewBox="0 0 60 60" width="' + w + '" height="' + w + '"><circle cx="30" cy="30" r="22" fill="none" stroke="#F4F4F4" stroke-width="12"/>' +
+      '<path d="M30 8a22 22 0 0 1 22 22" stroke="#E5484D" stroke-width="12" fill="none" stroke-dasharray="17 17.5" transform="rotate(-8 30 30)"/><path d="M8 30a22 22 0 0 1 22-22M30 52a22 22 0 0 1-22-22" stroke="#E5484D" stroke-width="12" fill="none" stroke-dasharray="17 100"/></svg>';
+  }
+  function lighthouse(h) {               // Old Mackinac Point-style: white tower, red roof
+    return '<svg viewBox="0 0 50 100" width="' + Math.round(h / 2) + '" height="' + h + '"><path d="M14 98l4-66h14l4 66z" fill="#F4F4F4"/><path d="M15 70h20M16 52h18" stroke="#ddd" stroke-width="2"/>' +
+      '<rect x="14" y="24" width="22" height="10" fill="#2b2b2b"/><rect x="17" y="26" width="16" height="6" fill="#FFE08A"/><path d="M12 24l13-14 13 14z" fill="#C8102E"/><path d="M25 10V4" stroke="#2b2b2b" stroke-width="2"/>' +
+      '<rect x="21" y="84" width="8" height="14" fill="#7a4d26"/><path d="M36 30l14-6v12z" fill="rgba(255,224,138,.5)"/></svg>';
+  }
+  function shades(w) {
+    return '<svg viewBox="0 0 70 26" width="' + w + '" height="' + Math.round(w * 26 / 70) + '"><path d="M2 4h66" stroke="#2b2b2b" stroke-width="3"/>' +
+      '<path d="M6 5h24q0 16-12 16T6 5zM40 5h24q0 16-12 16T40 5z" fill="#1E3A8A"/><path d="M30 6q5-3 10 0" stroke="#2b2b2b" stroke-width="3" fill="none"/>' +
+      '<path d="M10 8l6 0M44 8l6 0" stroke="#9cc3ff" stroke-width="2"/></svg>';
+  }
+  if (t === 'summer') {
+    put(lifering(66), 'left:30px;top:-60px');
+    put(shades(70), 'left:120px;top:-24px');
+    put(gull(84), 'left:1640px;top:-58px');
+    put(lighthouse(98), 'right:40px;top:-96px');
+  }
+
+  // ── September: Bridge Walk / early fall ──
+  function sneaker(w, c, flip) {
+    return '<svg viewBox="0 0 80 40" width="' + w + '" height="' + Math.round(w / 2) + '"' + (flip ? ' style="transform:scaleX(-1)"' : '') + '>' +
+      '<path d="M4 30q0-14 10-18l16-6q8 10 22 12q18 2 24 12v6H4z" fill="' + c + '"/><path d="M4 32h72v6H4z" fill="#F4F4F4"/>' +
+      '<path d="M26 10l6 8M32 8l6 8M38 8l6 9" stroke="#F4F4F4" stroke-width="2"/><path d="M46 20q12 4 24 4" stroke="#F4F4F4" stroke-width="3" fill="none"/></svg>';
+  }
+  function apple(w, c) {
+    return '<svg viewBox="0 0 40 44" width="' + w + '" height="' + Math.round(w * 1.1) + '"><path d="M20 12q-6-6-12-2q-8 6-4 18q4 14 16 14q12 0 16-14q4-12-4-18q-6-4-12 2z" fill="' + c + '"/>' +
+      '<path d="M20 12q0-6 4-10" stroke="#5a3a1a" stroke-width="2.5" fill="none"/><path d="M22 6q8-6 12 0q-6 4-12 0z" fill="#5DA34A"/><ellipse cx="12" cy="20" rx="3" ry="5" fill="#fff" opacity=".3"/></svg>';
+  }
+  function bridgeFlag(w) {               // a small pennant with the bridge's colours
+    return '<svg viewBox="0 0 50 60" width="' + w + '" height="' + Math.round(w * 1.2) + '"><path d="M4 0v60" stroke="#C7CCD1" stroke-width="2"/><path d="M4 4l42 12-42 12z" fill="#3DBE8B"/>' +
+      '<path d="M10 22v-12M24 20v-8" stroke="#F2C14E" stroke-width="2.5"/><path d="M6 20q11-8 22-2" stroke="#F2C14E" stroke-width="1.5" fill="none"/></svg>';
+  }
+  if (t === 'bridgewalk') {
+    put(sneaker(74, '#3DBE8B', false), 'left:40px;top:-34px');
+    put(sneaker(74, '#3DBE8B', true), 'left:112px;top:-32px');
+    put(bridgeFlag(40), 'left:1630px;top:-48px');
+    put(bridgeFlag(40), 'left:1676px;top:-48px');
+    put(leaf(34, '#E8B23A', -20), 'right:200px;top:-24px');
+    put(apple(46, '#D9342B'), 'right:140px;top:-48px');
+    put(apple(40, '#E8B23A'), 'right:98px;top:-42px');
+    put(apple(46, '#C8402A'), 'right:52px;top:-48px');
+    put(leaf(40, '#E8752A', 30), 'right:-16px;top:-24px');
+  }
+
+})();
 </script>
 </body>
 </html>
