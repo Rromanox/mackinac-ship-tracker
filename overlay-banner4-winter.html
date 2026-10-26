@@ -1140,8 +1140,10 @@ html[data-theme="halloween"] #bar::before { height: 4px; background: linear-grad
   var THEMES = ['winter', 'valentine', 'stpatrick', 'spring', 'may', 'lilac', 'july4', 'summer', 'bridgewalk', 'halloween', 'thanksgiving', 'christmas'];
   var Qt = new URLSearchParams(location.search), t = Qt.get('theme');
   if (t === 'auto') {
-    var d = new Date(), m = d.getMonth() + 1;
-    t = THEMES[m - 1];                          // one theme per month, January first
+    var monthNow = function () { return THEMES[new Date().getMonth()]; };   // one theme per month, January first
+    t = monthNow();
+    // OBS keeps the page open for weeks: when the month turns, reload so the new month's look takes over
+    setInterval(function () { if (monthNow() !== t) location.reload(); }, 5 * 60 * 1000);
   }
   if (THEMES.indexOf(t) < 0) return;
   document.documentElement.setAttribute('data-theme', t);
