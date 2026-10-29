@@ -98,6 +98,9 @@ app.use(express.json({ limit: '2mb' })); // AIS-catcher batches can be sizeable
 // Shared secret for the local AIS receiver feed (set on Render)
 const LOCAL_AIS_KEY = process.env.LOCAL_AIS_KEY;
 
+// Ship flag pictures for the banners (flags/<iso>.png, from flagcdn.com), so overlays don't depend on an outside site
+app.use('/flags', express.static(path.join(__dirname, 'flags'), { maxAge: '30d' }));
+
 // Serve the frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));

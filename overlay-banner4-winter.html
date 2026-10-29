@@ -167,6 +167,7 @@ body { width: 2560px; height: 420px; overflow: hidden; background: transparent;
 .tag.idle { color: var(--muted); background: rgba(255,255,255,.07); }
 @keyframes glow { 0%,100% { box-shadow: 0 0 0 0 rgba(255,90,95,.0); } 50% { box-shadow: 0 0 22px 2px rgba(255,90,95,.55); } }
 .hero-meta { font-size: 18px; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-flag { height: 36px; width: auto; border-radius: 4px; margin-right: 16px; vertical-align: -3px; box-shadow: 0 0 0 1px rgba(255,255,255,.25), 0 2px 6px rgba(0,0,0,.4); }
 .hero-name { font-size: 46px; font-weight: 800; letter-spacing: -.6px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hero-fact { margin-top: 7px; font-size: 19px; color: #CFE3F2; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hero-fact::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--gold); margin-right: 10px; vertical-align: 3px; }
@@ -618,6 +619,16 @@ var MID = { 366:'United States',367:'United States',368:'United States',369:'Uni
   240:'Greece',241:'Greece', 247:'Italy', 227:'France',228:'France', 224:'Spain',225:'Spain', 412:'China',413:'China',414:'China',
   431:'Japan',432:'Japan', 440:'South Korea',441:'South Korea' };
 function flagOf(mmsi) { var s = String(mmsi); return s.length === 9 ? (MID[+s.slice(0, 3)] || '') : ''; }
+// Flag pictures served from /flags (emoji flags show as letters in OBS on Windows). Main ship name only:
+// in the queue a flag would cut long names to "…".
+var ISO = { 'United States':'us', 'Canada':'ca', 'Marshall Islands':'mh', 'Liberia':'lr', 'Netherlands':'nl', 'Portugal':'pt',
+  'Antigua & Barbuda':'ag', 'Bahamas':'bs', 'Malta':'mt', 'Cyprus':'cy', 'Hong Kong':'hk', 'Singapore':'sg', 'Norway':'no', 'Panama':'pa',
+  'Germany':'de', 'Poland':'pl', 'United Kingdom':'gb', 'Denmark':'dk', 'Finland':'fi', 'Sweden':'se', 'Turkey':'tr', 'Greece':'gr',
+  'Italy':'it', 'France':'fr', 'Spain':'es', 'China':'cn', 'Japan':'jp', 'South Korea':'kr' };
+function flagImg(mmsi, cls) {   // '' when the country is unknown; a picture that fails to load removes itself
+  var iso = ISO[flagOf(mmsi)];
+  return iso ? '<img class="' + cls + '" src="' + HTTP_BASE + '/flags/' + iso + '.png" alt="" onerror="this.remove()">' : '';
+}
 function factFor(ship) {
   var f = FACTS[factKey(ship.name)];
   if (f) return f;
@@ -727,6 +738,7 @@ function connect() {
 // ── Render ──────────────────────────────────────────────────────
 var heroKey = '';
 function setText(id, t) { var el = document.getElementById(id); if (el.textContent !== t) el.textContent = t; }
+function setHtml(id, h) { var el = document.getElementById(id); if (el._h !== h) { el.innerHTML = h; el._h = h; } }
 // Keep a just-passed ship featured while it's still in frame — same rule as the camera close-up: until it is its
 // own length + ~500 ft past the bridge LINE (through the surveyed piers), not the instant it crosses.
 var BRIDGE_AXIS_S = [45.80527, -84.72945], BRIDGE_AXIS_N = [45.82543, -84.72643];
@@ -807,7 +819,7 @@ function renderHero(s) {
       var last = lastPassed;
       tag.className = 'tag idle'; tag.textContent = last ? 'LAST SHIP' : 'WATCHING';
       setText('heroMeta', last ? 'Passed under the bridge ' + whenAt(last.passedTime) : 'Freighters pass here day and night');
-      setText('heroName', last ? last.name : 'Watching the Straits');
+      setHtml('heroName', last ? flagImg(last.mmsi, 'hero-flag') + escHtml(last.name) : 'Watching the Straits');
       setText('heroFact', last ? factFor(last) : GENERAL.length ? GENERAL[Math.floor(Date.now() / 600000) % GENERAL.length] : '');
       meter.classList.remove('dim'); meter.classList.add('idle');
       setText('idleMain', 'No ships within ' + DEPART_MAX_MI + ' miles');
@@ -820,7 +832,7 @@ function renderHero(s) {
     var fl = flagOf(s.mmsi); if (fl) meta.push(fl);
     meta.push(boundWord(s.course));
     setText('heroMeta', meta.join('  ·  '));
-    setText('heroName', s.name);
+    setHtml('heroName', flagImg(s.mmsi, 'hero-flag') + escHtml(s.name));
     setText('heroFact', factFor(s));
     meter.classList.remove('dim');
     if (s.direction === 'Approaching') {
