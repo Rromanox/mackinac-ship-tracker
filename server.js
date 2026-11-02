@@ -1654,6 +1654,41 @@ let lastAisMessageAt = null;
 let aisMessagesTotal = 0;
 const recentVessels = {}; // mmsi → { name, lastSeen } for vessels seen in last 10 min
 
+// Ships on their way to the bridge, for the chat bot (/api/ships/coming): the banner's "coming next" list worked out
+// here, the same way (within 100 mi, moving, course toward the bridge, ETA = distance / speed). Name, direction,
+// miles and ETA only, the same things the banner already shows on screen; no positions.
+const COMING_MAX_KM = 100 / 0.621371, COMING_FRESH_MS = 10 * 60 * 1000;
+const comingWatch = {};   // mmsi → { name, lat, lon, speed, cog, at }
+function noteComing(mmsi, name, lat, lon, speed, cog) {
+  if (typeof lat !== 'number' || typeof lon !== 'number' || haversineKm(lat, lon, BRIDGE_LAT, BRIDGE_LON) > COMING_MAX_KM) {
+    delete comingWatch[mmsi];
+    return;
+  }
+  comingWatch[mmsi] = { name, lat, lon, speed, cog: typeof cog === 'number' && cog < 360 ? cog : null, at: Date.now() };
+}
+function shipsComing(limit) {
+  const now = Date.now(), out = [];
+  Object.keys(comingWatch).forEach(k => {
+    const v = comingWatch[k];
+    if (now - v.at > COMING_FRESH_MS) { delete comingWatch[k]; return; }
+    const t = (staticInfo[k] || {}).type;
+    if (t >= 60 && t <= 69) return;                                       // passenger boats, as on the banner
+    if (!v.speed || v.speed < 0.5 || v.speed >= 102 || v.cog == null || !v.name || v.name === 'Unknown') return;   // 102.3 = speed not available
+    const dLat = v.lat - BRIDGE_LAT, dLon = (v.lon - BRIDGE_LON) * Math.cos(BRIDGE_LAT * Math.PI / 180);
+    const toBridge = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
+    if (Math.abs(((v.cog - toBridge) + 540) % 360 - 180) >= 90) return;  // heading away
+    const km = haversineKm(v.lat, v.lon, BRIDGE_LAT, BRIDGE_LON), etaMin = Math.round(km / (v.speed * 1.852) * 60);
+    if (etaMin > 600) return;
+    out.push({ name: v.name, direction: v.lon < BRIDGE_LON ? 'eastbound' : 'westbound',
+               distanceMi: +(km * 0.621371).toFixed(1), speedKn: +v.speed.toFixed(1), etaMin,
+               etaAt: new Date(v.at + etaMin * 60000).toISOString() });
+  });
+  return out.sort((a, b) => a.etaMin - b.etaMin).slice(0, limit);
+}
+app.get('/api/ships/coming', (req, res) => {
+  res.json({ ships: shipsComing(Math.min(parseInt(req.query.limit) || 8, 20)) });
+});
+
 // Watchdog — if no message arrives within this window, assume zombie connection and reconnect
 const WATCHDOG_MS = 5 * 60 * 1000; // 5 minutes
 let watchdogTimer = null;
@@ -1887,6 +1922,7 @@ function processAisMessage(message, source) {
 
     // Detect bridge passings (side-of-bridge crossing)
     const pos = message.Message.PositionReport;
+    noteComing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog);
     checkBridgePassing(shipInfo.mmsi, shipInfo.name, pos.Latitude, pos.Longitude, shipInfo.speed, pos.Cog, source, aisFixAt(message.MetaData, source));
 
     // Save to database (async, don't wait)
