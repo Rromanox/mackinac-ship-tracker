@@ -386,7 +386,8 @@ const PTZ_SPAN_ALONG_KM = 2.0;    // only ships within ~1.2 mi of mid-span (nort
 // Ship length in miles for the hold: AIS size, else the curated database (≥300 ft), else a typical
 // laker. A tug's own length isn't the barge it pushes, so tug-barge units use a long default.
 function shipLenMi(mmsi, name) {
-  const info = staticInfo[mmsi] || {}, isTow = TOW_TYPES.has(info.type);
+  const info = staticInfo[mmsi] || {}, isTow = TOW_TYPES.has(info.type), unit = towUnit(name);
+  if (unit) return unit.lenFt / 5280;
   if (isTow) return 800 / 5280;
   if (info.length) return info.length * 3.28084 / 5280;
   const db = DB_LEN_M[lenKey(name)];
@@ -588,9 +589,12 @@ function trkAimAt(lat, lon, hfov) {
 // at the bow on old lakers. Aim at the middle of the hull instead, (A - B) / 2 m forward along the course. Not for
 // tows: the AIS size is the tug's, and where the barge's middle is isn't known.
 function trkHullCenter(v, p, info) {
-  const a = info.toBow, b = info.toStern;
-  if (!(a > 0 && b > 0) || v.cog == null || TOW_TYPES.has(info.type)) return p;
-  const d = (a - b) / 2, c = v.cog * Math.PI / 180, R = 6371000;
+  const a = info.toBow, b = info.toStern, unit = towUnit(v.name);
+  let d;
+  if (unit && v.cog != null) d = unit.lenFt * 0.3048 / 2 - (unit.antSternM != null ? unit.antSternM : TOW_ANT_STERN_M);
+  else if (!(a > 0 && b > 0) || v.cog == null || TOW_TYPES.has(info.type)) return p;
+  else d = (a - b) / 2;
+  const c = v.cog * Math.PI / 180, R = 6371000;
   return { lat: p.lat + (d * Math.cos(c) / R) * 180 / Math.PI,
            lon: p.lon + (d * Math.sin(c) / (R * Math.cos(p.lat * Math.PI / 180))) * 180 / Math.PI, shiftM: Math.round(d) };
 }
@@ -603,8 +607,10 @@ function trkAim(v, now) {
   // and anything under 300 ft fall through to the default rather than framing a 700-ft unit too tight.
   const dbLenM = DB_LEN_M[lenKey(v.name)];
   const isTow = TOW_TYPES.has(info.type);
+  const unit = towUnit(v.name);
   let lenM = TRK_DEFAULT_LEN_M, lenSrc = 'est';
-  if (info.length && !isTow) { lenM = info.length; lenSrc = 'ais'; }
+  if (unit) { lenM = unit.lenFt * 0.3048; lenSrc = 'tow'; }
+  else if (info.length && !isTow) { lenM = info.length; lenSrc = 'ais'; }
   else if (!isTow && dbLenM && dbLenM * 3.28084 >= 300) { lenM = dbLenM; lenSrc = 'db'; }
   const lenKnown = lenSrc !== 'est';
   // How long the ship LOOKS from the mast: full length broadside, much less bow- or stern-on
@@ -831,6 +837,32 @@ const staticInfo = {};     // mmsi -> { type, length }  (learned from static mes
 // are real freight traffic through the straits, so size must not hide them.
 // (Nuisance harbour tugs are still handled by the MMSI blocklist.)
 const TOW_TYPES = new Set([31, 32, 52]);
+
+// Tug-barge units: AIS is the tug's (its own size, or none), and the GPS antenna is on the tug at the unit's stern.
+// For these the camera aims (length/2 - antSternM) ahead of the antenna, along the course, and frames and holds
+// for the whole unit's length. lenFt = the combined unit as sailed; antSternM = antenna to the unit's stern (m).
+// GL OSTRANDER/INTEGRITY measured from the Axis pass pictures on 2026-11-01: ~170 m overall, antenna ~20-25 m from the stern.
+const TOW_ANT_STERN_M = 22;
+// Overall lengths from the operators, Boatnerd, WMHS and Mason County Press (researched 2026-11-01). "est" = no source
+// gives the combined length: barge + ~70% of the tug (the notch), which matches the known units within ~2%.
+const TOW_UNITS = {
+  PRESQUEISLE:        { lenFt: 1000 },   // ITB, tug 153 ft + barge 974 ft
+  JOYCELVANENKEVORT:  { lenFt: 845 },    // + GREAT LAKES TRADER
+  CLYDESVANENKEVORT:  { lenFt: 840 },    // + ERIE TRADER
+  DIRKSVANENKEVORT:   { lenFt: 830 },    // + MICHIGAN TRADER (est: 740-ft barge)
+  VICTORY:            { lenFt: 810 },    // + MAUMEE (sources say 804 and 815)
+  OLIVELMOORE:        { lenFt: 728 },    // + MENOMINEE
+  DOROTHYANN:         { lenFt: 700 },    // + PATHFINDER
+  PRENTISSBROWN:      { lenFt: 613 },    // + ST. MARYS CHALLENGER (est: 527-ft barge)
+  CAROLINEMCKEE:      { lenFt: 581 },    // + COMMANDER (est: 495-ft barge)
+  GLOSTRANDER:        { lenFt: 544 },    // + INTEGRITY (~170 m measured on the Axis 2026-11-01)
+  SAMUELDECHAMPLAIN:  { lenFt: 544 },    // + INNOVATION, same 460-ft barge and tug as GL OSTRANDER (est)
+  UNDAUNTED:          { lenFt: 494 },    // + PERE MARQUETTE 41
+  ALBERT:             { lenFt: 471 },    // + MARGARET (est: 391-ft barge)
+  KARENANDRIE:        { lenFt: 444 },    // + ENDEAVOUR (est: 360-ft barge)
+  REBECCALYNN:        { lenFt: 379 },    // + ENDURANCE (est: 300-ft barge)
+};
+function towUnit(name) { return TOW_UNITS[lenKey(name)] || null; }
 
 const CG_SMALL_BOATS = new Set(); // runtime: MMSIs of small USCG response boats (AIS name "CG#####")
 // Named cutters ("CG NEAH BAY", "USCGC MACKINAW") have letters, not digits, so they stay visible (Biscayne Bay is blocklisted by MMSI).
