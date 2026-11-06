@@ -547,6 +547,7 @@ app.get('/api/passages', async (req, res) => {
   }
 });
 app.get('/passages', (req, res) => res.sendFile(path.join(__dirname, 'passages.html')));
+app.get('/upcoming', (req, res) => res.sendFile(path.join(__dirname, 'upcoming.html')));
 
 // ── /site.js: shared by the public pages ──
 // Loads Google Analytics when GA_ID (a "G-..." measurement ID) is set on Render, and counts clicks on the

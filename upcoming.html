@@ -1,0 +1,132 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upcoming Ships — Mackinac Tracker</title>
+<meta name="description" content="The ships heading for the Mackinac Bridge right now, with live arrival estimates that update by themselves.">
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff; --east:#3fbf79; --west:#ffb84e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; padding:22px 16px; }
+  .wrap { max-width:1040px; margin:0 auto; }
+  h1 { font-size:1.45rem; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:.9rem; margin-bottom:14px; line-height:1.5; }
+  .site-nav { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 16px; }
+  .site-nav a { color:var(--muted); text-decoration:none; font-size:.85rem; padding:6px 12px; border:1px solid var(--line); border-radius:999px; background:var(--card); }
+  .site-nav a:hover { color:var(--text); border-color:#334155; }
+  .site-nav a[aria-current] { color:var(--text); border-color:var(--accent); }
+  .status { color:var(--muted); font-size:.8rem; margin-bottom:16px; display:flex; align-items:center; gap:7px; }
+  .status i { width:8px; height:8px; border-radius:50%; background:var(--east); flex:none; }
+  .status.bad i { background:var(--west); }
+  .e { color:var(--east); } .w { color:var(--west); }
+  .ship { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 15px; display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .ship a { color:var(--text); font-weight:700; font-size:1rem; text-decoration:none; overflow-wrap:anywhere; }
+  .ship a:hover { color:var(--accent); text-decoration:underline; }
+  .ship .dir { font-size:.83rem; font-weight:700; }
+  .ship .eta { font-size:1.2rem; font-weight:800; line-height:1.2; }
+  .ship .eta small { display:block; color:var(--muted); font-size:.82rem; font-weight:400; margin-top:2px; }
+  .ship .meta { color:var(--muted); font-size:.82rem; font-variant-numeric:tabular-nums; }
+  .next { padding:18px 20px; border-color:var(--accent); margin-bottom:12px; }
+  .next .label { color:var(--muted); font-size:.74rem; text-transform:uppercase; letter-spacing:.5px; }
+  .next a { font-size:1.4rem; }
+  .next .eta { font-size:1.9rem; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+  .empty { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:22px 20px; color:var(--muted); line-height:1.55; }
+  .empty b { display:block; color:var(--text); font-size:1.05rem; margin-bottom:4px; }
+  .empty a { color:var(--accent); }
+  .note { color:var(--muted); font-size:.78rem; margin-top:22px; line-height:1.55; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="site-nav" aria-label="Pages"><a href="/passages">Ships Under the Bridge</a><a href="/upcoming" aria-current="page">Upcoming</a><a href="/traffic">Traffic</a><a href="/map">Live map</a><a href="/passages#stay">Book a room</a></nav>
+  <h1>Upcoming Ships</h1>
+  <div class="sub">Ships heading for the Mackinac Bridge right now, soonest first. Times are local (Eastern). Tap a ship to see every time she has passed.</div>
+  <div class="status" id="status"><i aria-hidden="true"></i><span id="statusText">Loading…</span></div>
+  <div id="view"></div>
+  <div class="note">Arrival times are estimates from each ship's current speed and straight-line distance to the bridge, so they shift as she moves. A ship can also slow down, anchor or stop at a port before reaching the bridge. Ships appear here within about 100 miles of the bridge and 10 hours of arriving. This page updates by itself.</div>
+</div>
+
+<script>
+const TZ = 'America/Detroit', REFRESH_MS = 30000;
+const $ = id => document.getElementById(id);
+const fmtTime = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
+const fmtDay = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+const fmtWeekday = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'long' });
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+let ships = null, updatedAt = 0, failed = false, timer = null;
+
+function countdown(at) {
+  const min = Math.round((at - Date.now()) / 60000);
+  if (min < 2) return 'Any minute now';
+  if (min < 60) return 'In ' + min + ' min';
+  const h = Math.floor(min / 60), m = min % 60;
+  return 'In ' + h + ' hr' + (m ? ' ' + m + ' min' : '');
+}
+function clock(at) {
+  const sameDay = fmtDay.format(at) === fmtDay.format(Date.now());
+  return 'about ' + fmtTime.format(at) + (sameDay ? '' : ' ' + fmtWeekday.format(at));
+}
+function card(s, first) {
+  const east = s.direction === 'eastbound', at = new Date(s.etaAt).getTime();
+  const c = el('article', 'ship' + (first ? ' next' : ''));
+  if (first) c.append(el('div', 'label', 'Next at the bridge'));
+  const a = el('a', null, s.name); a.href = '/passages?ship=' + encodeURIComponent(s.name); c.append(a);
+  c.append(el('div', 'dir ' + (east ? 'e' : 'w'), east ? '→ Eastbound, toward Lake Huron' : '← Westbound, toward Lake Michigan'));
+  const eta = el('div', 'eta', countdown(at)); eta.append(el('small', null, clock(at))); c.append(eta);
+  c.append(el('div', 'meta', s.distanceMi + ' mi away · ' + s.speedKn + ' kn'));
+  return c;
+}
+function render() {
+  const v = $('view');
+  if (ships === null) return;
+  if (!ships.length) {
+    const e = el('div', 'empty'); e.append(el('b', null, 'No ships heading for the bridge right now'));
+    e.append('Check back soon, ships appear here as they come within range. Meanwhile, see ');
+    const a = el('a', null, 'the ships that already passed'); a.href = '/passages'; e.append(a, '.');
+    v.replaceChildren(e);
+    return;
+  }
+  const grid = el('div', 'grid');
+  ships.slice(1).forEach(s => grid.append(card(s, false)));
+  v.replaceChildren(card(ships[0], true), ...(ships.length > 1 ? [grid] : []));
+}
+function renderStatus() {
+  const sec = updatedAt ? Math.round((Date.now() - updatedAt) / 1000) : null;
+  $('status').classList.toggle('bad', failed);
+  const n = ships ? ships.length : 0;
+  const count = !n ? '' : (n === 1 ? '1 ship on the way · ' : n + ' ships on the way · ');
+  if (failed && sec == null) $('statusText').textContent = 'Could not load the ships. Trying again…';
+  else if (failed) $('statusText').textContent = 'Could not update, trying again. Last updated ' + clockAgo(sec);
+  else if (sec != null) $('statusText').textContent = count + 'Updated ' + clockAgo(sec);
+}
+function clockAgo(sec) { return sec < 5 ? 'just now' : sec < 90 ? sec + ' sec ago' : Math.round(sec / 60) + ' min ago'; }
+
+async function load() {
+  clearTimeout(timer);
+  try {
+    const r = await fetch('/api/ships/coming?limit=20', { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    ships = (await r.json()).ships || [];
+    updatedAt = Date.now(); failed = false;
+    render();
+  } catch (e) { failed = true; }
+  renderStatus();
+  timer = setTimeout(load, REFRESH_MS);
+}
+// Countdowns and the "updated" line keep moving between refreshes
+setInterval(() => { renderStatus(); }, 5000);
+setInterval(render, 30000 / 2);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+load();
+</script>
+<script src="/site.js" defer></script>
+</body>
+</html>
