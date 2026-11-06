@@ -79,7 +79,8 @@
   <div class="note">A "crossing" is a vessel our detector saw pass the bridge longitude. Small craft, ferries, and pleasure boats are filtered out. Newest day first.</div>
 
 <script>
-  var HTTP_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? '' : 'https://mackinac-ship-tracker.onrender.com';
+  // Same address the page came from (the tracker or ships.shadowofthebridge.com); the tracker only when opened as a file
+  var HTTP_BASE = /^https?:$/.test(location.protocol) ? '' : 'https://mackinac-ship-tracker.onrender.com';
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function dayLabel(ymd){ try{ var d=new Date(ymd+'T12:00:00'); return d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}); }catch(e){ return ymd; } }
   function hourLabel(h){ if(h==null) return '—'; var ap=h<12?'am':'pm'; var hh=h%12; if(hh===0)hh=12; return hh+' '+ap; }

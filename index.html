@@ -525,12 +525,15 @@
         const isGitHubPages = window.location.hostname.includes('github.io');
         // file://, GitHub Pages, or any non-Render host → always use the Render backend
         const useRender = isFileProtocol || isGitHubPages || (!isLocalhost && window.location.hostname !== RENDER_URL);
+        // Served by the tracker itself (Render, or its custom domain ships.shadowofthebridge.com) → same host,
+        // so the browser never treats it as another site
+        const sameHost = !isLocalhost && !useRender || window.location.hostname === 'ships.shadowofthebridge.com';
         const PROXY_SERVER_URL = isLocalhost
             ? `ws://localhost:${window.location.port || 3000}`
-            : `wss://${RENDER_URL}`;
+            : `wss://${sameHost ? window.location.host : RENDER_URL}`;
         const HTTP_SERVER_URL = isLocalhost
             ? `http://localhost:${window.location.port || 3000}`
-            : `https://${RENDER_URL}`;
+            : `https://${sameHost ? window.location.host : RENDER_URL}`;
 
         // Mackinac Bridge coordinates
         const BRIDGE_LAT = 45.8174;

@@ -153,13 +153,14 @@ function readUrl() {
   state = { month: date ? date.slice(0, 7) : p.get('month'), ship: p.get('ship'), day: date };
 }
 function go(next, push = true) {
+  const wasShip = !!state.ship;
   state = Object.assign({ month: null, ship: null, day: null }, next);
   if (state.day) state.month = state.day.slice(0, 7);
   const p = new URLSearchParams();
   if (state.ship) p.set('ship', state.ship); else if (state.day) p.set('date', state.day); else if (state.month) p.set('month', state.month);
   if (push) history.pushState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
-  load();
-  window.scrollTo({ top: 0 });
+  // Picking a month or a day keeps the page where it is; opening or leaving a ship goes to its details
+  load().then(() => { if (state.ship || wasShip) $('view').scrollIntoView({ block: 'start' }); });
 }
 window.addEventListener('popstate', () => { readUrl(); load(); });
 
