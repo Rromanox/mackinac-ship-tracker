@@ -2003,6 +2003,7 @@ const recentVessels = {}; // mmsi → { name, lastSeen } for vessels seen in las
 // here, the same way (within 100 mi, moving, course toward the bridge, ETA = distance / speed). Name, direction,
 // miles and ETA only, the same things the banner already shows on screen; no positions.
 const COMING_MAX_KM = 100 / 0.621371, COMING_FRESH_MS = 10 * 60 * 1000;
+const COMING_ANTENNA_MS = 15 * 60 * 1000;   // ?source=local: heard by our own antenna this recently
 const comingWatch = {};   // mmsi → { name, lat, lon, speed, cog, at }
 function noteComing(mmsi, name, lat, lon, speed, cog) {
   if (typeof lat !== 'number' || typeof lon !== 'number' || haversineKm(lat, lon, BRIDGE_LAT, BRIDGE_LON) > COMING_MAX_KM) {
@@ -2011,11 +2012,12 @@ function noteComing(mmsi, name, lat, lon, speed, cog) {
   }
   comingWatch[mmsi] = { name, lat, lon, speed, cog: typeof cog === 'number' && cog < 360 ? cog : null, at: Date.now() };
 }
-function shipsComing(limit) {
+function shipsComing(limit, antennaOnly) {
   const now = Date.now(), out = [];
   Object.keys(comingWatch).forEach(k => {
     const v = comingWatch[k];
     if (now - v.at > COMING_FRESH_MS) { delete comingWatch[k]; return; }
+    if (antennaOnly && !(localReception[k] && now - localReception[k].at < COMING_ANTENNA_MS)) return;
     const t = (staticInfo[k] || {}).type;
     if (t >= 60 && t <= 69) return;                                       // passenger boats, as on the banner
     if (!v.speed || v.speed < 0.5 || v.speed >= 102 || v.cog == null || !v.name || v.name === 'Unknown') return;   // 102.3 = speed not available
@@ -2031,7 +2033,7 @@ function shipsComing(limit) {
   return out.sort((a, b) => a.etaMin - b.etaMin).slice(0, limit);
 }
 app.get('/api/ships/coming', (req, res) => {
-  res.json({ ships: shipsComing(Math.min(parseInt(req.query.limit) || 8, 20)) });
+  res.json({ ships: shipsComing(Math.min(parseInt(req.query.limit) || 8, 20), req.query.source === 'local') });
 });
 
 // Watchdog — if no message arrives within this window, assume zombie connection and reconnect

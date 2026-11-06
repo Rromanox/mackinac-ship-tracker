@@ -9,7 +9,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Upcoming Ships — Mackinac Tracker</title>
-<meta name="description" content="The ships heading for the Mackinac Bridge right now, with live arrival estimates that update by themselves.">
+<meta name="description" content="The ships our antenna hears heading for the Mackinac Bridge right now, with live arrival estimates that update by themselves.">
 <style>
   :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff; --east:#3fbf79; --west:#ffb84e; }
   * { box-sizing:border-box; }
@@ -47,10 +47,10 @@
 <div class="wrap">
   <nav class="site-nav" aria-label="Pages"><a href="/passages">Ships Under the Bridge</a><a href="/upcoming" aria-current="page">Upcoming</a><a href="/traffic">Traffic</a><a href="/map">Live map</a><a href="/passages#stay">Book a room</a></nav>
   <h1>Upcoming Ships</h1>
-  <div class="sub">Ships heading for the Mackinac Bridge right now, soonest first. Times are local (Eastern). Tap a ship to see every time she has passed.</div>
+  <div class="sub">Ships our own antenna can hear heading for the Mackinac Bridge right now, soonest first. Times are local (Eastern). Tap a ship to see every time she has passed.</div>
   <div class="status" id="status"><i aria-hidden="true"></i><span id="statusText">Loading…</span></div>
   <div id="view"></div>
-  <div class="note">Arrival times are estimates from each ship's current speed and straight-line distance to the bridge, so they shift as she moves. A ship can also slow down, anchor or stop at a port before reaching the bridge. Ships appear here within about 100 miles of the bridge and 10 hours of arriving. This page updates by itself.</div>
+  <div class="note">Arrival times are estimates from each ship's current speed and straight-line distance to the bridge, so they shift as she moves. A ship can also slow down, anchor or stop at a port before reaching the bridge. Ships appear here once our antenna at the Straits picks them up. This page updates by itself.</div>
 </div>
 
 <script>
@@ -89,7 +89,7 @@ function render() {
   if (ships === null) return;
   if (!ships.length) {
     const e = el('div', 'empty'); e.append(el('b', null, 'No ships heading for the bridge right now'));
-    e.append('Check back soon, ships appear here as they come within range. Meanwhile, see ');
+    e.append('Check back soon, ships appear here when our antenna picks them up. Meanwhile, see ');
     const a = el('a', null, 'the ships that already passed'); a.href = '/passages'; e.append(a, '.');
     v.replaceChildren(e);
     return;
@@ -112,7 +112,7 @@ function clockAgo(sec) { return sec < 5 ? 'just now' : sec < 90 ? sec + ' sec ag
 async function load() {
   clearTimeout(timer);
   try {
-    const r = await fetch('/api/ships/coming?limit=20', { cache: 'no-store' });
+    const r = await fetch('/api/ships/coming?limit=20&source=local', { cache: 'no-store' });
     if (!r.ok) throw new Error(r.status);
     ships = (await r.json()).ships || [];
     updatedAt = Date.now(); failed = false;
