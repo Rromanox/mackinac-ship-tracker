@@ -29,6 +29,7 @@ const DB_NAME = 'shiptracker';
 let db = null;
 let shipsCollection = null;
 let passingsCollection = null;
+let passPhotosCollection = null; // one Freighter Cam picture per bridge pass (sent by the streaming PC)
 let narrationsCollection = null;
 let ptzLogCollection = null;
 let rangeLogCollection = null;
@@ -45,6 +46,7 @@ async function connectToMongoDB() {
     db = client.db(DB_NAME);
     shipsCollection = db.collection('ships');
     passingsCollection = db.collection('passings');
+    passPhotosCollection = db.collection('pass_photos');
     narrationsCollection = db.collection('narrations');
     ptzLogCollection = db.collection('ptz_log');
     rangeLogCollection = db.collection('range_log');
@@ -59,6 +61,7 @@ async function connectToMongoDB() {
     await shipsCollection.createIndex({ passedBridge: 1 });
     await passingsCollection.createIndex({ passedTime: -1 });
     await passingsCollection.createIndex({ mmsi: 1 });
+    await passPhotosCollection.createIndex({ takenAt: 1 });
     await narrationsCollection.createIndex({ at: -1 });
     await ptzLogCollection.createIndex({ at: -1 });
     await rangeLogCollection.createIndex({ at: -1 });
@@ -348,6 +351,133 @@ app.get('/api/traffic', async (req, res) => {
   });
 });
 app.get('/traffic', (req, res) => res.sendFile(path.join(__dirname, 'traffic.html')));
+
+// ── Passages: every ship that passed the bridge, by month, with that day's weather and a picture ──
+// The streaming PC grabs a Freighter Cam frame from OBS when it hears 'bridge_passing' and sends it to
+// POST /api/passages/photo. Pictures share the free database, so they're capped at PHOTO_BUDGET_MB:
+// past that the oldest pictures are dropped and their passes stay listed without one.
+// Public answers carry names, times, direction and weather only (no MMSI, no positions).
+const PHOTO_KEY = process.env.PHOTO_KEY || LOCAL_AIS_KEY;
+const PHOTO_MAX_BYTES = 400 * 1024;
+const PHOTO_BUDGET_BYTES = (parseInt(process.env.PHOTO_BUDGET_MB) || 300) * 1024 * 1024;
+const { ObjectId } = require('mongodb');
+let photoBytesTotal = null;   // running total, counted from the database on first use
+
+async function prunePhotos() {
+  if (photoBytesTotal == null) {
+    const agg = await passPhotosCollection.aggregate([{ $group: { _id: null, b: { $sum: '$bytes' } } }]).toArray();
+    photoBytesTotal = agg.length ? agg[0].b : 0;
+  }
+  while (photoBytesTotal > PHOTO_BUDGET_BYTES) {
+    const oldest = await passPhotosCollection.find({}, { projection: { jpeg: 0 } }).sort({ takenAt: 1 }).limit(50).toArray();
+    if (!oldest.length) break;
+    const drop = [];   // just enough of the oldest to get back under the budget
+    for (const o of oldest) { if (photoBytesTotal <= PHOTO_BUDGET_BYTES) break; drop.push(o._id); photoBytesTotal -= o.bytes || 0; }
+    await passPhotosCollection.deleteMany({ _id: { $in: drop } });
+    await passingsCollection.updateMany({ photoId: { $in: drop } }, { $unset: { photoId: '' } });
+    console.log('📷 Dropped ' + drop.length + ' oldest pass pictures to stay under the photo budget');
+  }
+}
+
+app.post('/api/passages/photo', async (req, res) => {
+  if (!PHOTO_KEY || req.get('x-photo-key') !== PHOTO_KEY) return res.status(401).json({ error: 'bad key' });
+  if (!passingsCollection || !passPhotosCollection) return res.status(503).json({ error: 'no database' });
+  try {
+    const { mmsi, passedTime, jpegBase64 } = req.body || {};
+    const jpeg = Buffer.from(String(jpegBase64 || ''), 'base64');
+    if (!mmsi || jpeg.length < 1000 || jpeg[0] !== 0xFF || jpeg[1] !== 0xD8) return res.status(400).json({ error: 'need mmsi and a JPEG' });
+    if (jpeg.length > PHOTO_MAX_BYTES) return res.status(413).json({ error: 'picture over ' + (PHOTO_MAX_BYTES >> 10) + ' KB' });
+    // Attach it to that ship's pass closest to the given time (within 20 min)
+    const at = passedTime ? new Date(passedTime) : new Date();
+    if (isNaN(at.getTime())) return res.status(400).json({ error: 'bad passedTime' });
+    const win = 20 * 60 * 1000;
+    const cands = await passingsCollection.find({ mmsi: Number(mmsi) || mmsi, passedTime: { $gte: new Date(at.getTime() - win), $lte: new Date(at.getTime() + win) } }).toArray();
+    if (!cands.length) return res.status(404).json({ error: 'no pass for that ship near that time' });
+    const pass = cands.sort((x, y) => Math.abs(x.passedTime - at) - Math.abs(y.passedTime - at))[0];
+    if (pass.photoId) return res.json({ ok: true, already: true });
+    const ins = await passPhotosCollection.insertOne({ passingId: pass._id, takenAt: new Date(), bytes: jpeg.length, jpeg });
+    await passingsCollection.updateOne({ _id: pass._id }, { $set: { photoId: ins.insertedId } });
+    if (photoBytesTotal != null) photoBytesTotal += jpeg.length;
+    prunePhotos().catch(e => console.error('📷 prune failed:', e.message));
+    console.log('📷 Pass picture saved: ' + pass.name + ' (' + Math.round(jpeg.length / 1024) + ' KB)');
+    res.json({ ok: true, name: pass.name });
+  } catch (e) {
+    console.error('📷 photo upload failed:', e.message);
+    res.status(500).json({ error: 'could not save picture' });
+  }
+});
+
+app.get('/api/passages/photo/:id', async (req, res) => {
+  try {
+    const doc = passPhotosCollection && await passPhotosCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!doc) return res.status(404).end();
+    const jpeg = Buffer.isBuffer(doc.jpeg) ? doc.jpeg : Buffer.from(doc.jpeg.value());   // Mongo hands back a BSON Binary
+    res.set('Cache-Control', 'public, max-age=2592000, immutable').type('image/jpeg').send(jpeg);
+  } catch (e) { res.status(404).end(); }
+});
+
+let passageMonthsCache = { at: 0, months: [] };
+async function passageMonths() {
+  if (Date.now() - passageMonthsCache.at < 10 * 60 * 1000) return passageMonthsCache.months;
+  const rows = await passingsCollection.aggregate([
+    { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$passedTime', timezone: STRAITS_TZ } }, n: { $sum: 1 } } },
+    { $sort: { _id: -1 } }]).toArray();
+  passageMonthsCache = { at: Date.now(), months: rows.filter(r => r._id).map(r => ({ month: r._id, passes: r.n })) };
+  return passageMonthsCache.months;
+}
+function passOut(r) {
+  return { name: r.name, direction: r.direction, at: new Date(r.passedTime).getTime(),
+    weather: r.weather || null, photo: r.photoId ? '/api/passages/photo/' + r.photoId : null };
+}
+app.get('/api/passages', async (req, res) => {
+  if (!passingsCollection) {
+    return res.json({ months: [], month: null, passes: recentPassingsMemory.map(passOut), note: 'database offline: recent passes only' });
+  }
+  try {
+    const months = await passageMonths();
+    const ship = String(req.query.ship || '').trim().slice(0, 60);
+    let rows, month = null;
+    if (ship) {
+      // Loose match, so "CLYDE S VANENKEVORT" finds "CLYDE S. VANENKEVORT"
+      const letters = ship.replace(/[^A-Za-z0-9]/g, '');
+      if (!letters) return res.status(400).json({ error: 'ship name needed' });
+      const rx = new RegExp('^[^A-Za-z0-9]*' + letters.split('').join('[^A-Za-z0-9]*') + '[^A-Za-z0-9]*$', 'i');
+      rows = await passingsCollection.find({ name: rx }).sort({ passedTime: -1 }).limit(500).toArray();
+    } else {
+      month = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : (months[0] ? months[0].month : etDateParts(new Date()).ymd.slice(0, 7));
+      const [y, m] = month.split('-').map(Number);
+      // Wide UTC window, then keep the passes that fall in the month on Straits (Eastern) time
+      rows = await passingsCollection.find({ passedTime: { $gte: new Date(Date.UTC(y, m - 1, 1) - 864e5), $lt: new Date(Date.UTC(y, m, 1) + 864e5) } })
+        .sort({ passedTime: -1 }).limit(3000).toArray();
+      rows = rows.filter(r => etDateParts(new Date(r.passedTime)).ymd.slice(0, 7) === month);
+    }
+    const passes = rows.map(passOut);
+    const byShip = {}, byDay = {};
+    passes.forEach(p => {
+      byShip[p.name] = (byShip[p.name] || 0) + 1;
+      const d = etDateParts(new Date(p.at)).ymd; byDay[d] = (byDay[d] || 0) + 1;
+    });
+    const busiest = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({
+      months, month, ship: ship || null,
+      summary: {
+        passes: passes.length,
+        eastbound: passes.filter(p => p.direction === 'eastbound').length,
+        westbound: passes.filter(p => p.direction === 'westbound').length,
+        ships: Object.keys(byShip).length,
+        photos: passes.filter(p => p.photo).length,
+        busiestDay: busiest ? { date: busiest[0], passes: busiest[1] } : null,
+        topShips: Object.entries(byShip).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8).map(([name, n]) => ({ name, passes: n }))
+      },
+      passes
+    });
+  } catch (e) {
+    console.error('passages failed:', e.message);
+    res.status(500).json({ error: 'could not read passages' });
+  }
+});
+app.get('/passages', (req, res) => res.sendFile(path.join(__dirname, 'passages.html')));
 
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {
@@ -1011,6 +1141,11 @@ function checkBridgePassing(mmsi, name, lat, lon, speed, cog, source = 'local', 
 
 async function recordPassing(mmsi, name, direction) {
   const rec = { mmsi, name, direction, passedTime: new Date() };
+  // The weather at the bridge when she passed (for the passages page); skipped if the last reading is stale
+  if (currentWeather && Date.now() - currentWeather.at < 30 * 60 * 1000) {
+    const w = currentWeather;
+    rec.weather = { tempF: w.tempF, desc: w.desc, icon: w.icon || null, windMph: w.windMph ?? null, gustMph: w.gustMph ?? null };
+  }
   recentPassingsMemory.unshift(rec);
   if (recentPassingsMemory.length > 20) recentPassingsMemory.pop();
   console.log(`🌉 PASSED THE BRIDGE: ${name} (${mmsi}) ${direction} at ${rec.passedTime.toISOString()}`);
@@ -1406,7 +1541,9 @@ async function refreshWeather() {
     const r = await fetch('https://api.openweathermap.org/data/2.5/weather?units=imperial&lat=45.7829&lon=-84.7278&appid=' + OWM_KEY);
     if (!r.ok) throw new Error('OWM ' + r.status);
     const j = await r.json();
-    if (j && j.main) currentWeather = { tempF: Math.round(j.main.temp), desc: ((j.weather && j.weather[0] && j.weather[0].description) || '').toLowerCase(), at: Date.now() };
+    if (j && j.main) currentWeather = { tempF: Math.round(j.main.temp), desc: ((j.weather && j.weather[0] && j.weather[0].description) || '').toLowerCase(),
+      icon: (j.weather && j.weather[0] && j.weather[0].icon) || null, windMph: j.wind ? Math.round(j.wind.speed) : null,
+      gustMph: (j.wind && j.wind.gust) ? Math.round(j.wind.gust) : null, at: Date.now() };
   } catch (e) { /* keep last good reading */ }
 }
 refreshWeather();

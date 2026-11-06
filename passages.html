@@ -1,0 +1,241 @@
+<!doctype html>
+<!--
+  Mackinac Bridge Ship Tracker
+  Copyright (c) 2026 Kevin Salazar Fernandes. All rights reserved.
+  Proprietary and confidential -- see LICENSE.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ships Under the Bridge — Mackinac Tracker</title>
+<meta name="description" content="Every freighter that passed under the Mackinac Bridge, month by month, with a picture from the live Freighter Cam and the weather when it passed.">
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --line:#1f2937; --text:#e7edf4; --muted:#8aa0b6; --accent:#4ea3ff; --east:#3fbf79; --west:#ffb84e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; padding:22px 16px; }
+  .wrap { max-width:1040px; margin:0 auto; }
+  h1 { font-size:1.45rem; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:.9rem; margin-bottom:18px; line-height:1.5; }
+  .sub a { color:var(--accent); }
+  .bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  .months { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; flex:1; min-width:0; scrollbar-width:thin; }
+  .chip { flex:none; background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:999px; padding:7px 13px; font:inherit; font-size:.85rem; cursor:pointer; white-space:nowrap; }
+  .chip:hover { border-color:#334155; }
+  .chip.on { background:var(--accent); border-color:var(--accent); color:#04121f; font-weight:700; }
+  .chip small { opacity:.7; margin-left:4px; }
+  .search { display:flex; gap:6px; }
+  .search input { background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:8px 11px; font:inherit; font-size:.88rem; width:210px; }
+  .search input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  @media (max-width:640px){ .months { flex-basis:100%; } .search, .search input { width:100%; } }
+  .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
+  @media (max-width:760px){ .cards{ grid-template-columns:repeat(2,1fr); } }
+  .metric { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 15px; min-width:0; }
+  .metric .label { color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.5px; margin:0 0 7px; }
+  .metric .big { font-size:1.75rem; font-weight:800; margin:0; line-height:1.05; overflow-wrap:anywhere; }
+  .metric .big.txt { font-size:1.12rem; line-height:1.3; overflow-wrap:normal; }
+  .metric .detail { color:var(--muted); font-size:.78rem; margin:7px 0 0; }
+  .e { color:var(--east); } .w { color:var(--west); }
+  .top { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:20px; }
+  .top h2, .day h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 10px; font-weight:600; }
+  .top .list { display:flex; flex-wrap:wrap; gap:7px; }
+  .top .chip b { color:var(--accent); margin-left:5px; }
+  .day { margin-bottom:22px; }
+  .day h2 { display:flex; gap:10px; align-items:baseline; }
+  .day h2 span { text-transform:none; letter-spacing:0; font-weight:400; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; align-items:start; }
+  .pass { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+  .pic { aspect-ratio:16/9; background:#0f141b; display:block; border:0; padding:0; width:100%; cursor:zoom-in; }
+  .pic img { width:100%; height:100%; object-fit:cover; display:block; }
+  .info { padding:10px 12px 12px; display:flex; flex-direction:column; gap:5px; }
+  .name { font-weight:700; font-size:.97rem; background:none; border:0; color:var(--text); font-family:inherit; padding:0; text-align:left; cursor:pointer; }
+  .name:hover { color:var(--accent); text-decoration:underline; }
+  .meta { color:var(--muted); font-size:.82rem; display:flex; gap:8px; flex-wrap:wrap; font-variant-numeric:tabular-nums; }
+  .meta b { font-weight:700; }
+  .wx { font-size:.83rem; color:#c8d4e0; }
+  .empty, .status { color:var(--muted); padding:22px 0; }
+  .note { color:var(--muted); font-size:.78rem; margin-top:26px; line-height:1.55; }
+  .back { display:inline-block; margin-bottom:12px; color:var(--accent); background:none; border:0; font:inherit; font-size:.88rem; cursor:pointer; padding:0; }
+  .lb { position:fixed; inset:0; background:rgba(0,0,0,.88); display:none; align-items:center; justify-content:center; flex-direction:column; gap:10px; padding:16px; z-index:10; cursor:zoom-out; }
+  .lb.on { display:flex; }
+  .lb img { max-width:100%; max-height:85vh; border-radius:8px; }
+  .lb div { color:#dbe5ee; font-size:.9rem; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ships Under the Mackinac Bridge</h1>
+  <div class="sub">Every freighter that passed under the bridge, month by month, with a picture from the live Freighter Cam and the weather when it went by. Times are local (Eastern). Tap a ship's name to see all of its passes.</div>
+
+  <div class="bar">
+    <div class="months" id="months" role="tablist" aria-label="Month"></div>
+    <form class="search" id="search"><input id="q" type="search" placeholder="Find a ship" aria-label="Find a ship by name" autocomplete="off"></form>
+  </div>
+
+  <div id="view"><div class="status">Loading…</div></div>
+
+  <div class="note">Ships are counted when they cross under the bridge, from the AIS signals they broadcast. Pictures are a frame from the Freighter Cam at that moment; at night the camera rests on its home view. The oldest pictures are retired after about a year, but every pass stays listed.</div>
+</div>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Picture"><img id="lbImg" alt=""><div id="lbCap"></div></div>
+
+<script>
+const TZ = 'America/Detroit';
+const $ = id => document.getElementById(id);
+const fmtDay = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'long', month: 'long', day: 'numeric' });
+const fmtDayYear = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+const fmtTime = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
+const fmtYmd = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+const monthName = m => { const [y, mo] = m.split('-').map(Number); return new Date(Date.UTC(y, mo - 1, 15)).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }); };
+const shortMonth = m => { const [y, mo] = m.split('-').map(Number); return new Date(Date.UTC(y, mo - 1, 15)).toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }); };
+const WX = { '01': '☀️', '02': '🌤️', '03': '⛅', '04': '☁️', '09': '🌧️', '10': '🌦️', '11': '⛈️', '13': '🌨️', '50': '🌫️' };
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+let state = { month: null, ship: null };
+let timer = null;
+
+function readUrl() {
+  const p = new URLSearchParams(location.search);
+  state = { month: p.get('month'), ship: p.get('ship') };
+}
+function go(next, push = true) {
+  state = Object.assign({ month: null, ship: null }, next);
+  const p = new URLSearchParams();
+  if (state.ship) p.set('ship', state.ship); else if (state.month) p.set('month', state.month);
+  if (push) history.pushState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
+  load();
+  window.scrollTo({ top: 0 });
+}
+window.addEventListener('popstate', () => { readUrl(); load(); });
+
+async function load() {
+  clearTimeout(timer);
+  const q = state.ship ? '?ship=' + encodeURIComponent(state.ship) : (state.month ? '?month=' + state.month : '');
+  let d;
+  try {
+    const r = await fetch('/api/passages' + q);
+    if (!r.ok) throw new Error(r.status);
+    d = await r.json();
+  } catch (e) {
+    $('view').replaceChildren(el('div', 'status', 'Could not load the passes right now. Try again in a minute.'));
+    timer = setTimeout(load, 60000);
+    return;
+  }
+  renderMonths(d);
+  render(d);
+  // The current month keeps itself up to date
+  const latest = d.months && d.months[0] && d.months[0].month;
+  if (!d.ship && d.month === latest) timer = setTimeout(load, 120000);
+}
+
+function renderMonths(d) {
+  const box = $('months'); box.replaceChildren();
+  (d.months || []).forEach(m => {
+    const b = el('button', 'chip' + (!d.ship && m.month === d.month ? ' on' : ''), shortMonth(m.month));
+    b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', !d.ship && m.month === d.month);
+    b.appendChild(el('small', null, m.passes));
+    b.onclick = () => go({ month: m.month });
+    box.appendChild(b);
+  });
+}
+
+function metric(label, big, detail, txt) {
+  const m = el('div', 'metric'); m.append(el('p', 'label', label)); const b = el('p', txt ? 'big txt' : 'big'); if (big instanceof Node) b.append(big); else b.textContent = big; m.append(b);
+  if (detail) { const p = el('p', 'detail'); if (detail instanceof Node) p.append(detail); else p.textContent = detail; m.append(p); }
+  return m;
+}
+
+function render(d) {
+  const v = $('view'); v.replaceChildren();
+  const s = d.summary || { passes: 0 };
+  if (d.ship) {
+    const back = el('button', 'back', '← Back to ' + (d.months && d.months[0] ? monthName(d.months[0].month) : 'the months'));
+    back.onclick = () => { $('q').value = ''; go({}); };
+    v.append(back);
+  }
+  const split = el('span'); split.append(el('b', 'e', s.eastbound || 0), ' east · ', el('b', 'w', s.westbound || 0), ' west');
+  const cards = el('div', 'cards');
+  if (d.ship) {
+    const first = d.passes.length ? d.passes[d.passes.length - 1].at : null;
+    cards.append(metric('Ship', d.passes.length ? d.passes[0].name : d.ship, null, true),
+      metric('Times passed', s.passes, split),
+      metric('Last seen', d.passes.length ? fmtDayYear.format(d.passes[0].at) : '—', d.passes.length ? fmtTime.format(d.passes[0].at) : '', true),
+      metric('First on record', first ? fmtDayYear.format(first) : '—', null, true));
+  } else {
+    cards.append(metric(monthName(d.month), s.passes, split),
+      metric('Different ships', s.ships || 0),
+      metric('Busiest day', s.busiestDay ? s.busiestDay.passes : '—', s.busiestDay ? fmtDay.format(new Date(s.busiestDay.date + 'T12:00:00Z')) : ''),
+      metric('With a picture', s.photos || 0));
+  }
+  v.append(cards);
+
+  if (!d.ship && s.topShips && s.topShips.length) {
+    const t = el('div', 'top'); t.append(el('h2', null, 'Most frequent this month'));
+    const list = el('div', 'list');
+    s.topShips.forEach(x => { const b = el('button', 'chip', x.name); b.type = 'button'; b.append(el('b', null, '×' + x.passes)); b.onclick = () => go({ ship: x.name }); list.append(b); });
+    t.append(list); v.append(t);
+  }
+
+  if (!d.passes.length) { v.append(el('div', 'empty', d.ship ? 'No passes found for that name. Try part of the name as it shows on the banner.' : 'No passes recorded this month yet.')); return; }
+
+  // Group by local day, newest first
+  const days = [];
+  d.passes.forEach(p => {
+    const key = fmtYmd.format(p.at);
+    if (!days.length || days[days.length - 1].key !== key) days.push({ key, at: p.at, list: [] });
+    days[days.length - 1].list.push(p);
+  });
+  days.forEach(day => {
+    const sec = el('section', 'day');
+    const h = el('h2', null, d.ship ? fmtDayYear.format(day.at) : fmtDay.format(day.at));
+    h.append(el('span', null, day.list.length + (day.list.length === 1 ? ' ship' : ' ships')));
+    sec.append(h);
+    const grid = el('div', 'grid');
+    day.list.forEach(p => grid.append(passCard(p, !!d.ship)));
+    sec.append(grid); v.append(sec);
+  });
+}
+
+function passCard(p, onShipPage) {
+  const c = el('article', 'pass');
+  const east = p.direction === 'eastbound';
+  const when = fmtTime.format(p.at);
+  if (p.photo) {
+    const b = el('button', 'pic'); b.type = 'button'; b.setAttribute('aria-label', 'Enlarge the picture of ' + p.name);
+    const img = el('img'); img.src = p.photo; img.loading = 'lazy'; img.alt = p.name + ' passing the Mackinac Bridge';
+    img.onerror = () => { b.remove(); };
+    b.append(img);
+    b.onclick = () => openLb(p.photo, p.name + ' · ' + (east ? 'eastbound' : 'westbound') + ' · ' + fmtDayYear.format(p.at) + ', ' + when + wxText(p.weather, ' · '));
+    c.append(b);
+  }
+  const info = el('div', 'info');
+  const n = el('button', 'name', p.name); n.type = 'button'; n.title = 'All passes of ' + p.name;
+  if (onShipPage) n.disabled = true; else n.onclick = () => go({ ship: p.name });
+  info.append(n);
+  const meta = el('div', 'meta'); meta.append(el('b', east ? 'e' : 'w', east ? '→ Eastbound' : '← Westbound'), el('span', null, when));
+  info.append(meta);
+  const wt = wxText(p.weather, '');
+  if (wt) info.append(el('div', 'wx', wt));
+  c.append(info);
+  return c;
+}
+function wxText(w, lead) {
+  if (!w || w.tempF == null) return '';
+  const icon = WX[String(w.icon || '').slice(0, 2)] || '';
+  let t = (icon ? icon + ' ' : '') + w.tempF + '°F' + (w.desc ? ', ' + w.desc : '');
+  if (w.windMph != null) t += ', wind ' + w.windMph + (w.gustMph && w.gustMph > w.windMph ? '–' + w.gustMph : '') + ' mph';
+  return lead + t;
+}
+
+function openLb(src, cap) { $('lbImg').src = src; $('lbImg').alt = cap; $('lbCap').textContent = cap; $('lb').classList.add('on'); }
+$('lb').onclick = () => $('lb').classList.remove('on');
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('lb').classList.remove('on'); });
+$('search').onsubmit = e => { e.preventDefault(); const q = $('q').value.trim(); if (q) go({ ship: q }); };
+
+readUrl();
+if (state.ship) $('q').value = state.ship;
+load();
+</script>
+</body>
+</html>
