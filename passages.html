@@ -83,6 +83,17 @@
   .cal .d.on small { color:#04121f; }
   .cal .d:disabled { opacity:.35; cursor:default; }
   .cal .d:disabled:hover { border-color:var(--line); }
+  .stay { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 15px; margin-bottom:20px; scroll-margin-top:12px; }
+  .stay h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 4px; font-weight:600; }
+  .stay .when { color:var(--muted); font-size:.83rem; margin:0 0 12px; }
+  .stay .hotels { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  @media (max-width:640px){ .stay .hotels { grid-template-columns:1fr; } }
+  .hotel { border:1px solid var(--line); border-radius:10px; padding:11px 12px; background:var(--bg); }
+  .hotel b { display:block; font-size:.97rem; }
+  .hotel span { display:block; color:var(--muted); font-size:.82rem; margin:2px 0 9px; }
+  .hotel a { display:inline-block; font-size:.84rem; text-decoration:none; border-radius:8px; padding:6px 11px; margin:0 6px 4px 0; border:1px solid var(--line); color:var(--text); }
+  .hotel a.book { background:var(--accent); border-color:var(--accent); color:#04121f; font-weight:700; }
+  .hotel a:hover { border-color:var(--accent); }
   .back { display:inline-block; margin-bottom:12px; color:var(--accent); background:none; border:0; font:inherit; font-size:.88rem; cursor:pointer; padding:0; }
   .lb { position:fixed; inset:0; background:rgba(0,0,0,.88); display:none; align-items:center; justify-content:center; flex-direction:column; gap:10px; padding:16px; z-index:10; cursor:zoom-out; }
   .lb.on { display:flex; }
@@ -92,13 +103,24 @@
 </head>
 <body>
 <div class="wrap">
-  <nav class="site-nav" aria-label="Pages"><a href="/passages" aria-current="page">Ships Under the Bridge</a><a href="/traffic">Traffic</a><a href="/map">Live map</a></nav>
+  <nav class="site-nav" aria-label="Pages"><a href="/passages" aria-current="page">Ships Under the Bridge</a><a href="/traffic">Traffic</a><a href="/map">Live map</a><a href="/passages#stay">Book a room</a></nav>
   <h1>Ships Under the Mackinac Bridge</h1>
   <div class="sub">Every freighter that passed under the bridge, month by month, with a picture from the live Freighter Cam and the weather when it went by. Times are local (Eastern). Tap a ship's name to see all of its passes.</div>
 
   <section class="live" id="live" hidden aria-label="Watch live">
     <div class="tabs" id="liveTabs"><h2><span class="dot" aria-hidden="true"></span>Watch live</h2></div>
     <div class="player" id="player"></div>
+  </section>
+
+  <section class="stay" id="stay" aria-label="Stay by the bridge">
+    <h2>Watch the ships from your room</h2>
+    <p class="when" id="stayWhen"></p>
+    <div class="hotels">
+      <div class="hotel"><b>Riviera Motel</b><span>Mackinaw City, the motel this camera is on</span>
+        <a class="book" data-hotel="Riviera Motel" data-kind="book" href="https://resnexus.com/resnexus/reservations/book/D921E5B7-4734-454B-ADD0-88D2D895548F" target="_blank" rel="noopener">Book a room</a><a data-hotel="Riviera Motel" href="https://shadowofthebridge.com/" target="_blank" rel="noopener">Website</a></div>
+      <div class="hotel"><b>American Boutique Inn</b><span>Mackinaw City</span>
+        <a class="book" data-hotel="American Boutique Inn" data-kind="book" href="https://resnexus.com/resnexus/reservations/book/DA3BCAA2-7A25-47A8-9A28-D1EB744FDC69" target="_blank" rel="noopener">Book a room</a><a data-hotel="American Boutique Inn" href="https://americanboutiquemackinaw.com/" target="_blank" rel="noopener">Website</a></div>
+    </div>
   </section>
 
   <div class="bar">
@@ -347,10 +369,24 @@ async function loadLive() {
   } catch (e) { $('live').hidden = true; }
 }
 
+// Booking: both hotels close for the winter. Before reservations open the box says so and hides the booking
+// buttons; from that day on it shows them. Update these dates each season.
+const STAY = { opens: '2027-03-01', opensText: 'March 1, 2027', seasonText: 'mid-May 2027' };
+(function stayBox() {
+  const today = fmtYmd.format(Date.now());
+  if (today < STAY.opens) {
+    $('stayWhen').textContent = 'Both are closed for the winter and reopen in ' + STAY.seasonText + '. Reservations open ' + STAY.opensText + ' on their websites.';
+    document.querySelectorAll('#stay a.book').forEach(a => a.remove());
+  } else {
+    $('stayWhen').textContent = 'Rooms with a view of the Straits, right in Mackinaw City.';
+  }
+})();
+
 readUrl();
 if (state.ship) $('q').value = state.ship;
 load();
 loadLive();
 </script>
+<script src="/site.js" defer></script>
 </body>
 </html>

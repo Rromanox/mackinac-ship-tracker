@@ -548,6 +548,24 @@ app.get('/api/passages', async (req, res) => {
 });
 app.get('/passages', (req, res) => res.sendFile(path.join(__dirname, 'passages.html')));
 
+// ── /site.js: shared by the public pages ──
+// Loads Google Analytics when GA_ID (a "G-..." measurement ID) is set on Render, and counts clicks on the
+// hotel booking buttons (links with data-hotel) as a "book_click" event. With no GA_ID it does nothing.
+const GA_ID = /^G-[A-Z0-9]{4,16}$/.test(process.env.GA_ID || '') ? process.env.GA_ID : null;
+app.get('/site.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=600').type('application/javascript');
+  if (!GA_ID) return res.send('/* analytics off: set GA_ID on the server */');
+  res.send(`(function(){
+  var s=document.createElement('script'); s.async=true; s.src='https://www.googletagmanager.com/gtag/js?id=${GA_ID}'; document.head.appendChild(s);
+  window.dataLayer=window.dataLayer||[]; window.gtag=function(){dataLayer.push(arguments);};
+  gtag('js', new Date()); gtag('config', '${GA_ID}');
+  document.addEventListener('click', function(e){
+    var a=e.target.closest && e.target.closest('a[data-hotel]');
+    if (a) gtag('event', 'book_click', { hotel: a.getAttribute('data-hotel'), link_type: a.getAttribute('data-kind') || 'website', page: location.pathname });
+  });
+})();`);
+});
+
 // ── The channel's live streams, for the player on Ships Under the Bridge ──
 // A stream's video ID changes whenever it restarts, so read the channel's Live tab every 10 minutes and
 // pick each camera by its title. If YouTube can't be read, the last good answer is kept.
