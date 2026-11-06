@@ -174,11 +174,18 @@
    "fact": "Bulgarian-run saltie named for the Rhodopes' highest peak",
    "built": 2022,
    "lengthFt": 623,
-   "source": "vesselfinder.com IMO 9905722 · en.wikipedia.org/wiki/Golyam_Perelik",
+   "source": "vesselfinder.com IMO 9905722 · en.wikipedia.org/wiki/Golyam_Perelik | 2026-11 additions: navbul.com/en/news/details.php?id=88 - flag raised 11 Feb 2022, Jiangsu Yangzijiang, third of eight 32,150-tonne ships, third ship of the name, maiden voyage from Caofeidian with cargo for Great Lakes ports. en.wikipedia.org/wiki/Golyam_Perelik - 2,191 m (7,188 ft), Perelik Point in Antarctica. magicport.ai/vessels/bulk-carrier/perelik-mmsi-229654000 - IMO 9905722, Malta flag, Navibulgar managed.",
    "facts": [
     "Bulgarian-run saltie named for the Rhodopes' highest peak",
-    "Though Bulgarian-owned by Navibulgar, she sails under the flag of Malta."
-   ]
+    "Though Bulgarian-owned by Navibulgar, she sails under the flag of Malta.",
+    "Her namesake, Golyam Perelik, rises 7,188 feet in the Rhodope Mountains of southern Bulgaria.",
+    "That same peak also lent its name to Perelik Point, a spot on Robert Island in Antarctica.",
+    "Her flag was raised at the Chinese shipyard on February 11, 2022, the third of eight sister ships.",
+    "Her first voyage was planned from Caofeidian, China, with cargo bound for Great Lakes ports.",
+    "She is the third ship in Navibulgar's history to be named Perelik."
+   ],
+   "flag": "Malta",
+   "type": "Oceangoing bulk carrier (saltie)"
   },
   {
    "name": "SEA EAGLE II",
@@ -537,10 +544,17 @@
    "fact": "Bay Shipbuilding 1975 — hauls 24,300 tons a trip",
    "built": 1975,
    "lengthFt": 635,
-   "source": "en.wikipedia.org/wiki/MV_Sam_Laud — CORRECTED: launched 1975 and in service April 1975, not 1974; the 'side-launched' detail is not stated by any source found. 634 ft 10 in, Bay Shipbuilding Sturgeon Bay, 24,300 tons at midsummer draft (confirmed).",
+   "source": "en.wikipedia.org/wiki/MV_Sam_Laud — CORRECTED: launched 1975 and in service April 1975, not 1974; the 'side-launched' detail is not stated by any source found. 634 ft 10 in, Bay Shipbuilding Sturgeon Bay, 24,300 tons at midsummer draft (confirmed). | 2026-11 additions: americansteamship.com/?p=128 (via search; direct fetch failed on a certificate error) - 250-ft boom, 5,000 tons/hour, 5 holds, 20 hatches, namesake, cargoes. en.wikipedia.org/wiki/MV_Sam_Laud - GATX chairman 1896-1963, Hull 712, two 3,500 hp EMD diesels, Major League film credits. greatlakesvesselhistory.com/?p=3784 - entered service April 1975, first sailed to Escanaba. masoncountypress.com June 2026 - aggregate cargo at Ludington.",
    "facts": [
-    "Bay Shipbuilding 1975 — hauls 24,300 tons a trip"
-   ]
+    "Bay Shipbuilding 1975 — hauls 24,300 tons a trip",
+    "She is named for Sam Laud, a former chairman of GATX, the company that bought American Steamship in 1973.",
+    "Movie fans can spot her in the opening credits of the 1989 baseball comedy Major League.",
+    "She has five cargo holds and 20 hatches, and her 250-foot boom swings out to unload onto the dock.",
+    "Her cargo list includes iron ore pellets, coal, limestone and gypsum.",
+    "Two 3,500-horsepower diesels drive a single propeller."
+   ],
+   "flag": "United States",
+   "type": "Great Lakes self-unloading bulk carrier"
   },
   {
    "name": "FEDERAL FRASER",
@@ -743,11 +757,18 @@
    "fact": "1976 · first diesel ship in the Inland Steel fleet",
    "built": 1976,
    "lengthFt": 728,
-   "source": "greatlakesvesselhistory.com; greatlakesships.wordpress.com/joseph-l-block — christened 29 Jun 1976, first diesel in Inland Steel fleet",
+   "source": "greatlakesvesselhistory.com; greatlakesships.wordpress.com/joseph-l-block — christened 29 Jun 1976, first diesel in Inland Steel fleet | 2026-11 additions: wmhs.org/?p=3721 - 37,200 tons, 6,000 tons/hour, Central Marine Logistics since July 1999, namesake. dcmm.org/uncategorized/winter-fleet-2024 - two 3,600 hp EMD V20 engines, bow and stern thrusters, red hull, first into Sturgeon Bay canal Jan 2024. greatlakesvesselhistory.com/?p=3791 - Hull 715, launched 26 Feb 1976, 78 ft beam. wmhs.org/joseph-l-block-at-duluth - taconite Duluth to Indiana Harbor, July 2026. Search of marinelink.com - route list Indiana Harbor, Escanaba, Port Inland, Duluth.",
    "facts": [
     "1976 · first diesel ship in the Inland Steel fleet",
-    "Launched at Sturgeon Bay in 1976, she spent decades hauling iron ore out of Escanaba."
-   ]
+    "Launched at Sturgeon Bay in 1976, she spent decades hauling iron ore out of Escanaba.",
+    "She is named for Joseph L. Block, chairman of the board of her first owner, Inland Steel.",
+    "At 728 feet she is more than two football fields long, and she can carry 37,200 tons in one trip.",
+    "Her self-unloading gear can empty cargo at up to 6,000 tons an hour, with no shore cranes needed.",
+    "She often loads taconite iron ore pellets at Duluth for the steel mills at Indiana Harbor.",
+    "Two 3,600-horsepower EMD diesels turn one propeller, and bow and stern thrusters help her maneuver in tight harbors."
+   ],
+   "flag": "United States",
+   "type": "Great Lakes self-unloading bulk carrier"
   },
   {
    "name": "JOHN G MUNSON",
@@ -988,11 +1009,18 @@
    "fact": "Handysize bulk carrier, Malta-flagged, brand new in 2022",
    "built": 2022,
    "lengthFt": 623,
-   "source": "vesselfinder.com vessel search VERILA — bulk carrier, built 2022, 32,165 DWT, 190 x 24 m; vesseltracker.com IMO 9905734, MMSI 229656000 / callsign 9HA5549 = Malta flag. CORRECTED: could NOT verify 'Bulgarian' flag (Malta-flagged) or the ice-class / 'built for winter Seaway runs' claim — Seaway closes in winter, so that claim was dropped",
+   "source": "vesselfinder.com vessel search VERILA — bulk carrier, built 2022, 32,165 DWT, 190 x 24 m; vesseltracker.com IMO 9905734, MMSI 229656000 / callsign 9HA5549 = Malta flag. CORRECTED: could NOT verify 'Bulgarian' flag (Malta-flagged) or the ice-class / 'built for winter Seaway runs' claim — Seaway closes in winter, so that claim was dropped | 2026-11 additions: navbul.com/en/news/details.php?id=89 - flag raised 20 June 2022 at Jiangsu Yangzijiang, fourth of eight 32,150-tonne ships, earlier Verilas 1969-2003 and 2007-2018, sisters Kom, Bogdan, Perelik. gna.org.gh Navibulgar series story and navbul.com - lake-type construction allows Great Lakes trading. magicport.ai/vessels/bulk-carrier/verila-mmsi-229656000 - IMO 9905734, Malta flag, 32,165 dwt.",
    "facts": [
     "Handysize bulk carrier, Malta-flagged, brand new in 2022",
-    "She shares her name with Verila, a mountain range in western Bulgaria."
-   ]
+    "She shares her name with Verila, a mountain range in western Bulgaria.",
+    "She is the fourth of eight sister bulk carriers built for Bulgaria's Navibulgar at Jiangsu Yangzijiang in China.",
+    "Her flag went up at the shipyard on June 20, 2022.",
+    "She is the third Navibulgar ship called Verila: the first served from 1969 to 2003 and the second from 2007 to 2018.",
+    "Navibulgar calls this series Laker type, meaning they were designed to reach the Great Lakes from the ocean.",
+    "Her sisters include the Kom, the Bogdan and the Perelik, which also visits the Straits."
+   ],
+   "flag": "Malta",
+   "type": "Oceangoing bulk carrier (saltie)"
   },
   {
    "name": "PEARL MIST",
@@ -1301,11 +1329,17 @@
    "fact": "Ex-tanker Algosea — rebuilt as a dry bulk carrier in 2025",
    "built": 1998,
    "lengthFt": 588,
-   "source": "mckeil.com/our-fleet/kathy-mckeil/ (1998/2025, 588'4\", dry bulk); vesselfinder.com IMO 9127198 (ex-Algosea to Nov 2023)",
+   "source": "mckeil.com/our-fleet/kathy-mckeil/ (1998/2025, 588'4\", dry bulk); vesselfinder.com IMO 9127198 (ex-Algosea to Nov 2023) | 2026-11 additions: chroniclejournal.com Upbeat for shipping season (28 Mar 2026) - first arrival of 2026 at Thunder Bay, top hat, Capt. Adam Barnes, canola at Richardson to Windsor, last ship out the previous season, wintered at Windsor. mckeil.com/fr/notre-flotte/kathy-mckeil - dry bulk, 1998 with 2025 refit, 179.33 m (588 ft 4 in), four holds totaling 26,010 cubic metres, registered Hamilton. magicport.ai/vessels/tanker/kathy-mckeil-mmsi-316006868 - recent ports.",
    "facts": [
     "Ex-tanker Algosea — rebuilt as a dry bulk carrier in 2025",
-    "She's about 472 feet long and can carry more than 21,000 tonnes of cargo."
-   ]
+    "In March 2026 Thunder Bay gave her captain the ceremonial top hat for being first ship of the season.",
+    "That trip she loaded canola at the Richardson terminal to carry down to Windsor.",
+    "She was also the last ship out of Thunder Bay the season before, so she closed one season and opened the next.",
+    "Her four holds add up to about 26,000 cubic metres of cargo space.",
+    "She is registered in Hamilton, Ontario, and her length of 588 feet makes her nearly two football fields long."
+   ],
+   "flag": "Canada",
+   "type": "Dry bulk carrier"
   },
   {
    "name": "ONTARIO VENTURE",
@@ -2438,10 +2472,15 @@
    "lengthFt": 86,
    "flag": "United States",
    "type": "Freight / harbor tug",
-   "source": "gltugs.wordpress.com - built 1944 as US Army ST-709, renamed Clyde W. Fogg 2022 by St. James Marine of Charlevoix MI, registered Beaver Island",
+   "source": "gltugs.wordpress.com - built 1944 as US Army ST-709, renamed Clyde W. Fogg 2022 by St. James Marine of Charlevoix MI, registered Beaver Island | 2026-11 additions: gltugs.wordpress.com/susan-l-2 - Equitable Equipment New Orleans 1944, ST-709, Stanley 1947, Susan L 1999 Selvick Marine Towing, Clyde W. Fogg 2022, 86 ft, 700 bhp. gltugs.wordpress.com/st-james-marine-company - freight to the island from Ironton by tug and barge. tugboatinformation.com/company.cfm?id=2367 - Fogg Marine founded early 1970s by Clyde Fogg. ports.marinelink.com/vessels/vessel/368268160 - Beaver Island port calls 2026 (lists 98 ft, conflicts with 86 ft).",
    "facts": [
     "Built in 1944 as the U.S. Army tug ST-709; she served the Army Corps of Engineers for decades before civilian work.",
-    "Renamed Clyde W. Fogg in 2022 by St. James Marine of Charlevoix, Michigan; registered at Beaver Island, she mainly runs freight out to the island."
+    "Renamed Clyde W. Fogg in 2022 by St. James Marine of Charlevoix, Michigan; registered at Beaver Island, she mainly runs freight out to the island.",
+    "Equitable Equipment of New Orleans built her in 1944, and she has now had four names.",
+    "From 1947 to 1999 she was the Stanley, working on the Great Lakes for the Army Corps of Engineers.",
+    "Selvick Marine Towing of Sturgeon Bay bought her in 1999 and named her Susan L.",
+    "Her owners, Fogg Marine, began in the early 1970s when a man named Clyde Fogg started the business.",
+    "With a barge in tow she brings freight from Ironton, Michigan, out to the people of Beaver Island."
    ]
   },
   {
@@ -2521,10 +2560,14 @@
    "lengthFt": 80,
    "flag": "United States",
    "type": "Great Lakes tug",
-   "source": "tugboatinformation.com (USCG Doc 287250) - built 1961 Golden Meadow LA (ex Gladys Bea), King Co./RDK LLC of Holland MI, ex-Mari Beth Andrie",
+   "source": "tugboatinformation.com (USCG Doc 287250) - built 1961 Golden Meadow LA (ex Gladys Bea), King Co./RDK LLC of Holland MI, ex-Mari Beth Andrie | 2026-11 additions: gltugs.wordpress.com/matt-allen - came to the Great Lakes 1973, active for King Company in dredge and construction trades on Lake Michigan, 80 ft 4 in, 2,200 bhp, two Detroit 12V-149. tugboatinformation.com/tug.cfm?id=3212 - name and owner chain, Tidewater Dredge of Chicago, Bultema of Muskegon, Canonie, Andrie, King Co., RDK LLC.",
    "facts": [
     "Built in 1961 in Louisiana as the Gladys Bea, she is an 80-foot, 2,200-horsepower twin-screw tug.",
-    "Owned by the King Company of Holland, Michigan; she earlier worked for Andrie Inc. of Muskegon as the Mari Beth Andrie."
+    "Owned by the King Company of Holland, Michigan; she earlier worked for Andrie Inc. of Muskegon as the Mari Beth Andrie.",
+    "She has sailed under four names: Gladys Bea, American Viking, Mari Beth Andrie and now Matt Allen.",
+    "She reached the Great Lakes in 1973, when Tidewater Dredge and Construction of Chicago named her American Viking.",
+    "Two Detroit Diesel engines give her 2,200 horsepower and turn twin propellers.",
+    "She stays busy on dredging and construction jobs around Lake Michigan."
    ]
   },
   {
@@ -2534,10 +2577,626 @@
    "lengthFt": 105,
    "flag": "United States",
    "type": "Great Lakes tug",
-   "source": "tugboatinformation.com - built 1942 as USCGC Manitou (WYT-60), civilian 1984, acquired 2024 by Ryba Marine Construction of Cheboygan MI",
+   "source": "tugboatinformation.com - built 1942 as USCGC Manitou (WYT-60), civilian 1984, acquired 2024 by Ryba Marine Construction of Cheboygan MI | 2026-11 additions: gltugs.wordpress.com/manitou - Coast Guard Yard Baltimore, Malcolm Marine 1984-2024, rebuilt from the deck up, back in service 1996, dredging, construction, icebreaking and ship assist (lists 110 ft). tugboatinformation.com/tug.cfm?id=13821 - decommissioned Nov 1980, repowered 1996 with EMD 16-645, Ryba 2024, 104.9 ft, 2,200 hp.",
    "facts": [
-    "Built in 1942 as the U.S. Coast Guard cutter Manitou; she served off Greenland before being sold into civilian work in 1984.",
-    "A 105-foot, 2,200-horsepower tug acquired in 2024 by Ryba Marine Construction of Cheboygan - right at the Straits."
+    "Built in 1942 as the U.S. Coast Guard cutter Manitou, she was sold into civilian work in 1984.",
+    "A 105-foot, 2,200-horsepower tug acquired in 2024 by Ryba Marine Construction of Cheboygan - right at the Straits.",
+    "She was built at the Coast Guard's own shipyard in Baltimore and served as an icebreaking tug until 1980.",
+    "Malcolm Marine of St. Clair, Michigan, bought her in 1984 and kept the name Manitou for the next 40 years.",
+    "Malcolm rebuilt her from the deck up over more than a decade, and she returned to work in 1996.",
+    "Today she helps with dredging and construction jobs, and she can still break ice and assist ships in port."
+   ]
+  },
+  {
+   "name": "VOLGABORG",
+   "fact": "Dutch Wagenborg saltie with a bulb-free bow that slices through waves.",
+   "built": 2013,
+   "lengthFt": 468,
+   "flag": "Netherlands",
+   "type": "Ocean-going multipurpose cargo ship (saltie)",
+   "source": "IMO 9631072. ferussmit.com launch notice: size, bulbless bow, ice-friendly stem, Winschoterdiep record. shiphotos.com ID 572: IMO, 2013 launch, length, Wagenborg manager, Delfzijl registry. importinfo.com: Great Lakes port calls and 2026 cargoes. wagenborg.com: river-plus-borg naming. Wikipedia Volga: longest river in Europe.",
+   "facts": [
+    "She is managed by Wagenborg of Delfzijl in the Netherlands and measures 468 feet, with room for about 12,000 tons.",
+    "Her builders gave her a bulbless bow, whose long sharp lines ease her through the water and help her cut through rough seas.",
+    "The shape of her bow also helps her push through sheets of ice.",
+    "In August 2026 she brought paperboard from Kemi, Finland, to Green Bay, after carrying ferrochrome from Finland to Toledo that April.",
+    "Wagenborg likes to name ships for rivers and add the ending borg, and the Volga is the longest river in Europe."
+   ]
+  },
+  {
+   "name": "FULDABORG",
+   "fact": "River-style Wagenborg name, ice-class hull, and a Chicago regular.",
+   "built": 2012,
+   "lengthFt": 507,
+   "flag": "Netherlands",
+   "type": "Ocean-going general cargo ship (saltie)",
+   "source": "IMO 9559092. Wagenborg F-class data sheet (wagenborg.com PDF): sister list, Ferus Smit yard, ice class, Lakes fitted, 154.6 m length, holds, movable bulkheads. vesselfinder, magicport: 2012 build, Dutch flag. importinfo.com: 71 US port calls, Green Bay Oct 2026. wagenborg.com: naming custom. Wikipedia Fulda river.",
+   "facts": [
+    "She is one of six Wagenborg F-class sisters built by Ferus Smit, all with Finnish and Swedish 1A ice class and fitted for the Great Lakes.",
+    "Her two box-shaped holds offer more than 600,000 cubic feet of space, and movable bulkheads let the crew reshape them to suit a cargo.",
+    "U.S. records list 71 port calls for her, led by Chicago, Cleveland and Detroit.",
+    "In October 2026 she called at Green Bay with about 8,000 tons of cargo.",
+    "Her name follows the Wagenborg river custom, and the Fulda is a German river of about 137 miles."
+   ]
+  },
+  {
+   "name": "FRASERBORG",
+   "fact": "Wagenborg F-class saltie that carries Swedish steel to Chicago.",
+   "built": 2011,
+   "lengthFt": 507,
+   "flag": "Netherlands",
+   "type": "Ocean-going general cargo ship (saltie)",
+   "source": "IMO 9419319. Wagenborg F-class data sheet (wagenborg.com PDF): sister list, ice class, Lakes fitted, 154.6 m length. vesselfinder, magicport: 2011 build, Dutch flag, Wagenborg manager. importinfo.com: 68 US port calls, Aug 2026 Chicago steel from Oxelosund. wagenborg.com: naming custom. Wikipedia Fraser River.",
+   "facts": [
+    "In August 2026 she brought hot-rolled steel coils and plates from Oxelosund, Sweden, to Chicago.",
+    "U.S. records show 68 port calls for her since 2013, with Chicago, Detroit and Cleveland as her recent regulars.",
+    "She and Fuldaborg are sisters in the six-ship Wagenborg F-class, built for ice and fitted for the Great Lakes.",
+    "Her name follows the Wagenborg river custom, and the Fraser is the longest river wholly inside British Columbia."
+   ]
+  },
+  {
+   "name": "EGBERT WAGENBORG",
+   "fact": "Named for Wagenborg's founder, with her bridge up near the bow.",
+   "built": 2017,
+   "lengthFt": 492,
+   "flag": "Netherlands",
+   "type": "Ocean-going multipurpose cargo ship (saltie)",
+   "source": "IMO 9802695. wagenborg.com EasyMax story: forward bridge, size, Seaway routes, largest built inland in the northern Netherlands. portnews.ru christening report: founder's name, third ship in 67 years, first voyage. portwindsor.com: first saltie of 2023, challenge coin. importinfo.com: Oct 2026 Chicago steel. vesselfinder: specs, flag.",
+   "facts": [
+    "She honors Egbert Wagenborg, who founded the Dutch company in 1898, and by 2017 she was the third company ship in 67 years to carry his name.",
+    "Her bridge and cabins sit toward the bow, which frees up cargo space and gives clear views over her load.",
+    "On April 4, 2023 she became the first saltie of the season at Port Windsor and was welcomed with the port's challenge coin.",
+    "In October 2026 she brought hot-rolled steel coils from Oxelosund, Sweden, to Chicago.",
+    "When new she was the largest ship ever built in the northern Netherlands on the land side of the dikes."
+   ]
+  },
+  {
+   "name": "HEEMSKERKGRACHT",
+   "fact": "Dutch crane ship that brought 15 engine generators to Cleveland.",
+   "built": 2009,
+   "lengthFt": 453,
+   "flag": "Netherlands",
+   "type": "Ocean-going multipurpose cargo ship (saltie)",
+   "source": "IMO 9443669. spliethoff.com H-type page: sister ships, cranes, Great Lakes fitted. Spliethoff 2025 fleet list: 138.07 m, 2 x 180 mt cranes. spliethoff.com about page: canal naming since 1946. breakbulk.news: ex HHL Nile, bought 2016. importinfo.com: Duluth, Chicago and Cleveland 2026 calls, Aug 2026 cargo. vesselfinder: specs, flag.",
+   "facts": [
+    "Spliethoff of Amsterdam has named its ships for canals since 1946, and gracht is the Dutch word for canal.",
+    "Her two deck cranes lift 180 tons each and can team up for 360 tons.",
+    "In August 2026 she reached Cleveland with 15 Wartsila engine generators for a power plant, plus a motor yacht on its own cradle.",
+    "She started out as HHL Nile, and Spliethoff bought and renamed her in 2016.",
+    "She reached Duluth twice in 2026, in June and August, which took her all the way up Lake Superior."
+   ]
+  },
+  {
+   "name": "POLSTEAM OKRA",
+   "fact": "New Polish laker-max named for a small lake in West Pomerania.",
+   "built": 2025,
+   "lengthFt": 656,
+   "flag": "Portugal",
+   "type": "Ocean-going laker-max bulk carrier (saltie)",
+   "source": "IMO 9984819. marinepoland.com: lake name, handover, fifth of 12, size. dailymare.com: maiden voyage, Madeira flag. shiphotos.com ID 68706: 200 m, Polsteam manager. importinfo.com: 2026 Great Lakes calls, Dutch steel to Chicago.",
+   "facts": [
+    "Polsteam names its lake-class ships for Polish lakes, and Okra is a small lake in the Drawskie Lake District.",
+    "She is the fifth of twelve laker-max ships, handed over at the Shanhaiguan yard in China in January 2025.",
+    "Her maiden voyage took steel from China across the Pacific and through the Panama Canal to Cleveland and Milwaukee.",
+    "At 656 feet she is nearly two football fields long, sized to fit the locks on the way to the Great Lakes.",
+    "In August 2026 she brought steel from IJmuiden in the Netherlands to Chicago."
+   ]
+  },
+  {
+   "name": "POLSTEAM LEBSKO",
+   "fact": "Laker-max named for a shallow lake in a Polish national park.",
+   "built": 2024,
+   "lengthFt": 656,
+   "flag": "Portugal",
+   "type": "Ocean-going laker-max bulk carrier (saltie)",
+   "source": "IMO 9971874. polandatsea.com launch report: lake name, third of 12, Welland Canal design. Wikipedia Lebsko Lake: area, depth. vesselfinder: 199.99 m, 2024, Portugal (Madeira) flag. importinfo.com: Chicago, Milwaukee and Cleveland calls, 2026 Dutch steel cargoes.",
+   "facts": [
+    "She is named for Lake Lebsko, near the town of Leba in Slowinski National Park on Poland's Baltic coast.",
+    "Her namesake lake covers about 28 square miles yet averages only about 5 feet deep.",
+    "She is the third of twelve sisters, designed to fit the eight locks of the Welland Canal, which lift ships about 330 feet.",
+    "In April 2026 she brought coiled tinplate and other steel from IJmuiden in the Netherlands to Milwaukee and Chicago."
+   ]
+  },
+  {
+   "name": "POLSTEAM KOPROWO",
+   "fact": "Second of Polsteam's 12 laker-maxes, named for a Wolin Island lake.",
+   "built": 2024,
+   "lengthFt": 656,
+   "flag": "Portugal",
+   "type": "Ocean-going laker-max bulk carrier (saltie)",
+   "source": "IMO 9971862. polandatsea.com: lake name, second of 12, yard, maiden voyage. vesselfinder: 199.99 m, 2024, Portugal (Madeira) flag; some trackers still show Liberia. importinfo.com: Milwaukee Dec 2024 tinplate, Chicago, Toledo Aug 2026.",
+   "facts": [
+    "She takes her name from a lake on Wolin Island in Poland, and she is a lake ship in both senses.",
+    "She is the second of twelve laker-max bulk carriers built at the Shanhaiguan yard in Qinhuangdao, China.",
+    "On her first voyage in April 2024 she carried steel from China and South Korea to Hamilton and Windsor by way of the Panama Canal.",
+    "In December 2024 she brought almost 10,000 tons of coiled tinplate from the Netherlands to Milwaukee."
+   ]
+  },
+  {
+   "name": "POLSTEAM WADAG",
+   "fact": "One of the newest salties here, with a methanol-ready design.",
+   "built": 2026,
+   "lengthFt": 656,
+   "flag": "Portugal",
+   "type": "Ocean-going laker-max bulk carrier (saltie)",
+   "source": "IMO 1027196. marinepoland.com: tenth of 12, methanol-ready, maiden voyage, size, Madeira flag. vesselfinder: 2026, Portugal flag, Calumet Nov 2026. olsztyn.eu and visit.olsztyn.eu: Lake Wadag location. marinepoland.com Okra article: Polish lake naming custom.",
+   "facts": [
+    "She joined Polsteam in 2026 as the tenth of twelve laker-max ships.",
+    "Her design is ready to run on methanol as well as conventional fuel.",
+    "Her maiden voyage carried aluminium ingots from Port Klang, Malaysia, to Turkey and Bulgaria.",
+    "Polsteam names these ships for Polish lakes, and Lake Wadag lies east of the city of Olsztyn."
+   ]
+  },
+  {
+   "name": "MAMRY",
+   "fact": "Polsteam bulker sharing her name with Poland's second-largest lake.",
+   "built": 2012,
+   "lengthFt": 622,
+   "flag": "Bahamas",
+   "type": "Ocean-going bulk carrier (saltie)",
+   "source": "IMO 9496264. shiphotos.com ID 8124: builder, launch, Polsteam manager. naviecapitani.it: 189.6 m, Bahamas flag, three cranes. Wikipedia Polsteam: 30,000-ton group. Wikipedia Lake Mamry: second largest, about 40 sq mi, 33 islands. importinfo.com: 28 US port calls, Aug 2026 Chicago coils from Turkey.",
+   "facts": [
+    "She is managed by Polsteam, the Polish Steamship Company of Szczecin, and is one of eight 30,000-ton ships built in China.",
+    "She shares her name with Lake Mamry in Poland's Masurian Lake District, a lake of about 40 square miles with 33 islands.",
+    "She carries three cranes of her own for handling cargo.",
+    "In August 2026 she brought 162 coils of cold-rolled steel from Turkey to Chicago."
+   ]
+  },
+  {
+   "name": "JUNO",
+   "fact": "Polish-run saltie who shares her name with a Masurian lake.",
+   "built": 2011,
+   "lengthFt": 620,
+   "flag": "Bahamas",
+   "type": "Ocean-going bulk carrier (saltie)",
+   "source": "IMO 9422378 (this is the Polsteam ship, not an older Great Lakes Juno). magicport, gard.no: 2011, 189 m, Bahamas flag, Polsteam manager. Wikipedia Polsteam: 30,000-ton group with Mamry. Duluth News Tribune: left Duluth Oct 8, 2024 for Bilbao. importinfo.com: 29 US port calls, 2026 Chicago steel from Turkey. komoot, slowhop: Lake Juno at Mragowo.",
+   "facts": [
+    "She is managed by Polsteam, the Polish Steamship Company, and is a fleet sister of Mamry in the 30,000-ton group.",
+    "She shares her name with Lake Juno, which sits beside the town of Mragowo in Poland's Masurian region.",
+    "In October 2024 she left Duluth bound for Bilbao, Spain, a trip of about two and a half weeks.",
+    "In June 2026 she brought hot-rolled steel from Aliaga, Turkey, to Chicago.",
+    "U.S. records show 29 port calls for her, with Chicago the most frequent at 11."
+   ]
+  },
+  {
+   "name": "SHIPKA",
+   "fact": "Bulgarian bulker, the fourth ship in her fleet to carry the name.",
+   "built": 2022,
+   "lengthFt": 623,
+   "flag": "Malta",
+   "type": "Ocean-going bulk carrier (saltie)",
+   "source": "IMO 9937282. hellenicshippingnews.com and navbul.com: fourth Shipka, Shipka Peak, sixth of 12, 1979 lake-fitted ship. maritimeoptima, magicport: 190 m, Malta flag. michiganexposures blog: seen on the Detroit River in 2024, fits Welland Canal. importinfo.com: Toledo and Buffalo 2026 cargoes.",
+   "facts": [
+    "She belongs to Navigation Maritime Bulgare and is the fourth company ship named for Shipka Peak.",
+    "An earlier Shipka, from 1979, was the first Bulgarian bulk carrier fitted for lake service.",
+    "She is the sixth of twelve 32,150-ton sisters built at the Jiangsu Yangzi Xinfu yard in China.",
+    "In 2026 she brought rock salt from Alexandria, Egypt, to Toledo and raw cane sugar from Argentina to Buffalo."
+   ]
+  },
+  {
+   "name": "BBC TORNIO",
+   "fact": "New ice-strengthened heavy-lifter working for BBC Chartering.",
+   "built": 2025,
+   "lengthFt": 482,
+   "flag": "Antigua and Barbuda",
+   "type": "Ocean-going multipurpose heavy-lift ship (saltie)",
+   "source": "IMO 1056276. heavyliftpfi.com July 2025: F500 delivery to Briese, ice class and winter ports. bbc-chartering.com company page: name meaning, F500 lifting, ice-class ships. vesselfinder: 147 m, 2025, flag, Burns Harbor Nov 2026. magicport: Briese manager. Wikipedia Tornio: town facts.",
+   "facts": [
+    "The BBC in her name has nothing to do with television: it stands for Briese Bischoff Company, from Germany.",
+    "Her strengthened 1A ice class lets her work the northern Gulf of Bothnia and the St. Lawrence River in harsh winters.",
+    "She is an F500-type ship, a family built around cranes that can lift 500 tons together.",
+    "She shares her name with Tornio, a Finnish town on the border with Sweden.",
+    "In November 2026 she was reported leaving Burns Harbor, Indiana, on Lake Michigan."
+   ]
+  },
+  {
+   "name": "BBC SEBASTOPOL",
+   "fact": "Heavy-lifter whose two Liebherr cranes can lift 500 tons together.",
+   "built": 2022,
+   "lengthFt": 483,
+   "flag": "Antigua and Barbuda",
+   "type": "Ocean-going multipurpose heavy-lift ship (saltie)",
+   "source": "IMO 9812004. bbc-chartering.com Nov 2022 news: builder, owner, size, cranes, engine, first voyage. vesselfinder: flag, 2022, Hamilton Nov 2026. importinfo.com: Chicago Oct 2026, 2026 cargoes.",
+   "facts": [
+    "Her two Liebherr heavy-lift cranes can work as a team to lift up to 500 tons.",
+    "She was built by Taizhou Sanfu in China and joined the BBC Chartering fleet in October 2022.",
+    "She is owned and managed by Briese Schiffahrts of Leer, Germany, a sister company of BBC Chartering.",
+    "In 2026 her cargoes included about 6,900 tons of steel tubes from Turkey and compressor equipment from Japan.",
+    "In fall 2026 she called at Chicago in October and Hamilton, Ontario, in November."
+   ]
+  },
+  {
+   "name": "BBC DUBAI",
+   "fact": "LakerMax heavy-lifter built as big as Seaway locks and bridges allow.",
+   "built": 2024,
+   "lengthFt": 492,
+   "flag": "Antigua and Barbuda",
+   "type": "Ocean-going multipurpose heavy-lift ship (saltie)",
+   "source": "IMO 9885312. bairdmaritime.com: builder, charter, triple-deck design, cranes, Seaway fit. shiphotos.com ID 68808: 149.95 m, flag, BBC fleet. bbc-chartering.com and maritimemag.com: 15 LakerMax ships, name meaning, forward bridge. importinfo.com: Duluth and Chicago Aug 2026, Linde project cargo from Mumbai.",
+   "facts": [
+    "She is one of fifteen LakerMax ships, so named because their size is maxed out to still fit Seaway locks and bridges.",
+    "She is a triple-decker whose deck panels lock in at different heights to suit the cargo.",
+    "With her cranes on one side, she keeps about 2,830 square meters of open deck, more than half a football field.",
+    "In August 2026 she brought equipment from Mumbai, India, to Chicago and Duluth for a project in Alberta, Canada.",
+    "She was built by Taizhou Sanfu in China and works on long-term charter to BBC Chartering."
+   ]
+  },
+  {
+   "name": "FEDERAL BRISTOL",
+   "fact": "Fednav of Montreal's Seaway-sized bulker, a regular with European steel.",
+   "built": 2015,
+   "lengthFt": 656,
+   "flag": "Marshall Islands",
+   "type": "Ocean-going bulk carrier (saltie)",
+   "source": "IMO 9697844. vesselfinder: 199.98 m, 2015, flag, Milwaukee Nov 2026. motorship.com: Oshima at Saiki, third-generation Lakes-dimensioned series, fuel saving. Wikipedia Fednav: founded 1944, Montreal. importinfo.com: 27 US port calls, Oct 2026 coils from Aviles.",
+   "facts": [
+    "She sails for Fednav, a privately owned Canadian company based in Montreal and founded in 1944.",
+    "She was built by Oshima in Saiki, Japan, as part of a series sized for the Great Lakes.",
+    "Her class uses about 25 percent less fuel than similar ships built 15 to 20 years earlier.",
+    "In October 2026 she brought 374 coils of steel, roughly 3,500 tons, from Aviles, Spain, to Milwaukee.",
+    "U.S. records show 27 port calls for her since 2016, mostly at Chicago, Milwaukee and Cleveland."
+   ]
+  },
+  {
+   "name": "INDUSTRIAL SKIPPER",
+   "fact": "Heavy-lift ship with two 250-ton cranes, built for oversize cargo.",
+   "built": 2016,
+   "lengthFt": 482,
+   "flag": "Liberia",
+   "type": "Ocean-going multipurpose heavy-lift ship (saltie)",
+   "source": "IMO 9741138. shippingtelegraph.com: F500 type, 2 x 250 t cranes, 147 m, Intermarine charter. naviecapitani.it: Shandong Huanghai yard, July 2016 delivery. vesselfinder: flag, 2016. importinfo.com: Chicago Aug 2026, 2023 Algoma and Konecranes cargoes.",
+   "facts": [
+    "Her two cranes lift 250 tons each and can combine for 500 tons.",
+    "She was delivered in July 2016 from the Shandong Huanghai yard in Rongcheng, China.",
+    "Intermarine chartered her long term in 2024 as part of a group of four heavy-lift ships.",
+    "In August 2023 her cargo included 283 pieces of steelmaking furnace equipment for Algoma Steel, about 1,130 tons.",
+    "That same month she also carried steel crane structures from Croatia to Chicago."
+   ]
+  },
+  {
+   "name": "HARVEST SPIRIT",
+   "fact": "McKeil Marine's crane-equipped bulker, a grain hauler on the Thunder Bay run.",
+   "built": 2012,
+   "lengthFt": 500,
+   "flag": "Canada",
+   "type": "Canadian geared bulk carrier (Great Lakes and Seaway trader)",
+   "source": "IMO 9655951. mckeil.com fleet page: 152.50 m, four holds, cargo types, 16,737 tonnes. portofmonroe.com March 2023: three cranes, McKeil purchase 2020, routes, Turkey build, former names. vesselfinder, magicport: Canadian flag, McKeil owner (the McKeil page still lists Malta). McKeil spec sheet: in business since 1956.",
+   "facts": [
+    "She works for McKeil Marine, a Canadian company operating since 1956, which bought her in 2020.",
+    "She was built in Turkey in 2012 as Zealand Juliana and later sailed as Juliana.",
+    "She has four cargo holds and three deck cranes, which are handy for coiled steel.",
+    "Her regular route carries grain between Thunder Bay and Windsor, Ontario.",
+    "She has also run steel coils from Nanticoke, Ontario, to Monroe, Michigan."
+   ]
+  },
+  {
+   "name": "VICTORY",
+   "fact": "Tug that pushes the barge Maumee, stone, coal and ore from Superior to Erie",
+   "built": 1981,
+   "lengthFt": 804,
+   "flag": "United States",
+   "type": "Articulated tug-barge unit (tug Victory with barge Maumee)",
+   "source": "wmhs.org/?p=3506 - pairing with Maumee, 804-ft unit length, 25,500 tons, renamed Victory/Maumee 2019, barge built 1953 as Reserve. gltugs.wordpress.com/victory - trades, route, tallest-tug claim, 7,880 bhp. tugboatinformation.com/tug.cfm?id=894 - Texaco 1981 build, pilothouse raised 8 ft, Gulf and Bahamas work. en.wikipedia.org/wiki/James_L._Kuber_(lake_freighter) - barge history. 'built' is the tug's year; lengthFt is the combined unit.",
+   "facts": [
+    "She works as a matched pair with the self-unloading barge Maumee, which sailed for years as the James L. Kuber.",
+    "Her barge started life in 1953 as the freighter Reserve, so the pair blends a 1981 tug with a much older hull.",
+    "Fastened together they stretch 804 feet, more than two football fields, and can carry about 25,500 tons.",
+    "Built for Texaco, she worked Gulf of Mexico and Bahamas ports before coming to the Great Lakes in 2006.",
+    "Her pilothouse was raised high for barge work, and one Great Lakes tug site calls her the tallest tug on the Lakes."
+   ]
+  },
+  {
+   "name": "NORTHERN VENTURE",
+   "fact": "McKeil Marine's first self-unloader, with a 260-foot unloading boom",
+   "built": 1998,
+   "lengthFt": 509,
+   "flag": "Canada",
+   "type": "Self-unloading bulk carrier",
+   "source": "masoncountypress.com (2025 Ludington debut, 2026 Manistee chase story) - built 1998 Shin Kurushima Japan as Asia Cement No. 7, later Da Shen, McKeil 2022, 508.5 ft, 260-ft boom, 50-degree holds, 40 gates, trap rock from Bruce Mines. marinelog.com/news/mckeil-marine-thordonizes-self-discharging-bulker - water-lubricated bearings, COSCO Nantong refit, 19,651 dwt. McKeil announcement via search - first self-unloader in its fleet.",
+   "facts": [
+    "She was built in Japan in 1998 as Asia Cement No. 7, then worked Asian waters as Da Shen.",
+    "McKeil Marine of Burlington, Ontario, bought her in 2022 and refitted her in China as its first self-unloader.",
+    "Four holds sloped at 50 degrees let her cargo slide down to 40 hydraulic gates and onto conveyor belts below.",
+    "Her propeller shaft bearings run on water rather than oil, which helps keep grease out of the Great Lakes.",
+    "She hauls trap rock from Bruce Mines, Ontario, and has passed under two drawbridges to reach Manistee Lake."
+   ]
+  },
+  {
+   "name": "REBECCA LYNN",
+   "fact": "Andrie asphalt tug, a 1964 Texas-built saltwater veteran",
+   "built": 1964,
+   "lengthFt": 113,
+   "flag": "United States",
+   "type": "Great Lakes tug (tank barge service)",
+   "source": "gltugs.wordpress.com/rebecca-lynn - built 1964 Port Arthur TX as Katherine Clewis, 112 ft 7 in, 3,600 bhp, saltwater dry bulk barges, Andrie 1996, works with tank barge Endurance in asphalt trades. tugboatinformation.com/tug.cfm?id=5614 - owner Andrie, Norton Shores MI. mikeyuhas.org/albums/marine/20244906.php - photographed with Endurance at Milwaukee Sept 2024.",
+   "facts": [
+    "She was built in Port Arthur, Texas, in 1964 and first sailed as the Katherine Clewis.",
+    "Her early years were spent in salt water, moving dry bulk barges for Gulfcoast Transit.",
+    "Andrie of Muskegon brought her to the Great Lakes in 1996 and gave her the name Rebecca Lynn.",
+    "These days she usually teams up with the tank barge Endurance to move asphalt, the stuff that paves our roads.",
+    "Two big EMD diesels give her 3,600 horsepower and turn twin propellers."
+   ]
+  },
+  {
+   "name": "ALGOTITAN",
+   "fact": "Algoma product tanker carrying refined fuels, formerly the Chantaco",
+   "built": 2007,
+   "lengthFt": 470,
+   "flag": "Canada",
+   "type": "Product tanker",
+   "source": "seawayreview.com/algoma-central-corporation-acquires-two-product-tankers - ex Chantaco, built 2007, 18,894 dwt, Great Lakes and St. Lawrence service. marinelog.com/news/algoma-central-acquires-2007-built-products-tanker-pair - purchase of sister pair. magicport.ai/vessels/tanker/algotitan-mmsi-316050854 - IMO 9333802, 143 m LOA, 23.4 m beam, Canadian flag, Algoma Tankers, Canadian ports. shiphotos.com sister ship entry - 143.29 m (470.1 ft). en.wikipedia.org/wiki/Algoma_Central - fleet list.",
+   "facts": [
+    "She is a tanker, not a bulk carrier, and moves refined petroleum products around the Great Lakes and St. Lawrence.",
+    "Algoma Central bought her and her sister Algoberta in December 2022 to prepare for replacing two older ships.",
+    "She sailed as the Chantaco before joining the Canadian flag in January 2023.",
+    "She is about 470 feet long and rated at 18,894 deadweight tonnes.",
+    "Her recent stops include Montreal, Valleyfield, Port Colborne and Nanticoke."
+   ]
+  },
+  {
+   "name": "CG KATMAI BAY",
+   "fact": "Lead ship of the Coast Guard's 140-foot icebreaking tugs",
+   "built": 1979,
+   "lengthFt": 140,
+   "flag": "United States",
+   "type": "US Coast Guard icebreaking tug",
+   "source": "en.wikipedia.org/wiki/USCGC_Katmai_Bay - 140 ft, Tacoma Boatbuilding, commissioned 8 Jan 1979, lead of class, name origin, Sault Ste. Marie, operates in support of Mackinaw. en.wikipedia.org/wiki/Bay-class_tugboat - bubbling system, 20 in continuous, 3 ft by ramming. dcms.uscg.mil CG-9 and shephardmedia.com - service-life work 2018. 'built' is the commissioning year.",
+   "facts": [
+    "She is the first of the Coast Guard's Bay-class icebreaking tugs, commissioned in January 1979.",
+    "Her name comes from a saltwater shoreline in Katmai National Park and Preserve in Alaska.",
+    "Sault Ste. Marie, Michigan, is her home, and she works alongside the much larger icebreaker Mackinaw.",
+    "Her class can keep moving through 20 inches of freshwater ice and can break three-foot ice by ramming it.",
+    "Air bubbled along her hull helps her slip through ice with less resistance."
+   ]
+  },
+  {
+   "name": "CG NEAH BAY",
+   "fact": "Cleveland-based Coast Guard icebreaking tug, 140 feet long",
+   "built": 1980,
+   "lengthFt": 140,
+   "flag": "United States",
+   "type": "US Coast Guard icebreaking tug",
+   "source": "en.wikipedia.org/wiki/USCGC_Neah_Bay - name origin, Tacoma Boatbuilding, launched and commissioned 1980, Cleveland, bubbler system. atlanticarea.uscg.mil Neah Bay unit page via search - Great Lakes-wide service. marinelink.com/news/maritime/neah-bay - 20 in continuous, 3 ft ramming, Lake Erie ice work. en.wikipedia.org/wiki/Bay-class_tugboat - nine in class.",
+   "facts": [
+    "She is named for Neah Bay, an inlet in Washington state, though her home is Cleveland, Ohio.",
+    "She can push steadily through 20 inches of hard freshwater ice, then back up and ram through more than three feet.",
+    "A low-pressure bubbler forces air and water between her hull and the ice so she needs less power to get through.",
+    "She is one of nine Bay-class tugs, and she helps keep freighters moving when Lake Erie ices up.",
+    "Commissioned in 1980, she works across the entire Great Lakes system."
+   ]
+  },
+  {
+   "name": "CGC SEQUOIA",
+   "fact": "225-foot Coast Guard buoy tender based in Port Huron, Michigan",
+   "built": 2004,
+   "lengthFt": 225,
+   "flag": "United States",
+   "type": "US Coast Guard seagoing buoy tender",
+   "source": "en.wikipedia.org/wiki/USCGC_Sequoia - 225 ft, Marinette Marine, launched 2003, commissioned 2004, Guam then Port Huron, 16 Juniper class. wgrt.com/coast-guard-cutter-sequoia-arrives-in-port-huron - arrival 7 Sept 2024, 19-day trip, replaces Hollyhock. atlanticarea.uscg.mil Sequoia unit page via search (direct fetch blocked) - nearly 150 aids on the lower Great Lakes. en.wikipedia.org/wiki/Juniper-class_cutter - station keeping, tree names.",
+   "facts": [
+    "She looks after nearly 150 buoys and other navigation aids on the lower Great Lakes.",
+    "Marinette Marine in Wisconsin built her, so her move to Port Huron in 2024 was a homecoming to the Lakes.",
+    "Before Michigan she spent years in Guam as the buoy tender for the Marianas, a long way from any lake.",
+    "Her class can hold its spot within a 10-metre circle using computers and thrusters while the crew sets a buoy.",
+    "She is one of 16 Juniper-class tenders, a family with many ships named for trees."
+   ]
+  },
+  {
+   "name": "DAVID R. SCHANOCK",
+   "fact": "Roen Salvage tug from Sturgeon Bay, once owned on Kauai, Hawaii",
+   "built": 1978,
+   "lengthFt": 69,
+   "flag": "United States",
+   "type": "Great Lakes marine construction tug",
+   "source": "tugboatinformation.com/tug.cfm?id=13077 and gltugs.wordpress.com/david-r-schanock - 1978 Main Iron Works, Itco XVI, H.A. Walker of Lihue Plantation in Hawaii, Trevor of Weeks Marine 1994, Roen 2021, 69 ft, 1,500 hp, twin Caterpillar C32. vesselfinder.com IMO 7939638 - US tug, built 1978. aol.com Door County firm story - David Schanock president since 2022, company founded 1949, fourth generation, tug and scows bound for Sault Ste. Marie April 2024.",
+   "facts": [
+    "She started out in 1978 in Louisiana as the Itco XVI and was sold to a Hawaiian plantation company that same year.",
+    "She kept the name H.A. Walker until Weeks Marine of New Jersey made her the Trevor in 1994.",
+    "Roen Salvage of Sturgeon Bay bought her in 2021, and she shares her name with company president David Schanock.",
+    "Roen is a fourth-generation family company founded in 1949 that builds docks and breakwaters and does dredging.",
+    "In April 2024 she headed out with two deck scows for a dredging job near Sault Ste. Marie."
+   ]
+  },
+  {
+   "name": "WEST SHORE",
+   "fact": "1947 Mackinac Island ferry, back under her original name since 2025",
+   "built": 1947,
+   "lengthFt": 65,
+   "flag": "United States",
+   "type": "Mackinac Island passenger and freight ferry",
+   "source": "arnoldtransitcompany.com/?p=10318 (A Legacy on the Water: The Story of West Shore) - built 1947 Sturgeon Bay, 64 ft 10 in, Miller Boat Line, 12 vehicles and 235 passengers, Beaver Island freight, Anna May from 2013, name restored 2025, 150 passengers or 47,000 lb, oldest-ferry claim is the company's own.",
+   "facts": [
+    "She was built in Sturgeon Bay, Wisconsin, in 1947 to carry cars and people on Lake Erie.",
+    "Her first owner, Miller Boat Line of Put-in-Bay, Ohio, could fit 12 vehicles and 235 passengers aboard.",
+    "A Beaver Island owner later used her to haul freight, and she then sailed as the Anna May, carrying food and supplies.",
+    "Arnold Transit brought back her original name and colors in 2025 and calls her the oldest ferry still serving Mackinac Island.",
+    "She can carry up to 150 passengers or 47,000 pounds of freight."
+   ]
+  },
+  {
+   "name": "NEESKAY",
+   "fact": "UW-Milwaukee research boat whose name means pure, clean water",
+   "built": 1953,
+   "lengthFt": 71,
+   "flag": "United States",
+   "type": "University research vessel",
+   "source": "milwaukeeindependent.com/articles/research-vessel-neeskay-a-vital-tool-for-great-lakes-study - built 1953 Higgins New Orleans, 71 ft, name meaning, UWM 1970. uwm.edu/freshwater fleet page - 71 ft, 750-mile range, only year-round research vessel on the Lakes. yahoo.com/news/uwms-neeskay... - algae, mussels, microbes, buoys. wpr.org/news/neeskay-boat-research-vessel-winter-great-lakes-uw-milwaukee - winter work, mid-lake reef. uwm.edu Maggi Sue pages - planned 120-ft successor.",
+   "facts": [
+    "Her name comes from the Ho-Chunk language and means pure, clean water.",
+    "The University of Wisconsin-Milwaukee bought her in 1970 and turned the 71-foot workboat into a floating science lab.",
+    "UWM calls her the only research vessel on the Great Lakes that works year-round.",
+    "Scientists aboard study algae blooms, invasive quagga and zebra mussels, and tiny microbes in the water.",
+    "She also sets and tends buoys that report weather, water temperature and nutrients from out on the lake."
+   ]
+  },
+  {
+   "name": "LAKE ERIE",
+   "fact": "607-foot saltie with three deck cranes, formerly the Federal Matane",
+   "built": 2004,
+   "lengthFt": 607,
+   "flag": "Antigua and Barbuda",
+   "type": "Oceangoing bulk carrier (saltie)",
+   "source": "gard.no/vessels/43891 - Lake Erie, IMO 9283540, bulk carrier, Antigua and Barbuda, built 2004, ex Federal Matane. erieshipnews.blogspot.com (Federal Matane label) - 2004 Wenchong Shipyard, 607 ft, three 30-tonne cranes, 27,781 tonnes at 9.8 m, 20,100 at Seaway draft, Fednav. ports.marinelink.com/vessels/vessel/304604000 - Port Weller 20 Oct 2026, Calumet Harbor 28 Oct 2026, Thunder Bay and Hamilton earlier in 2026. shipspotting.com/photos/3506545 via search - name chain Lake Erie, Federal Matane, CL Hanse Gate, Hanse Gate.",
+   "facts": [
+    "She is an ocean-crossing freighter, known on the Lakes as a saltie, and she came through the Seaway in 2026.",
+    "China's Wenchong Shipyard built her in 2004, and at 607 feet she is about as long as two football fields.",
+    "Three cranes on her deck, each good for 30 metric tons, can lift cargo in and out of her holds.",
+    "Fednav once sailed her as the Federal Matane, before she took the name Lake Erie.",
+    "Her 2026 travels have taken her from Thunder Bay and Hamilton to Chicago's Calumet Harbor and all the way to Brazil."
+   ]
+  },
+  {
+   "name": "CHAMPION",
+   "fact": "Durocher Marine tug from Cheboygan, built in 1974",
+   "built": 1974,
+   "lengthFt": 75,
+   "flag": "United States",
+   "type": "Great Lakes marine construction tug",
+   "source": "gltugs.wordpress.com/champion - built 1974 Amelia LA, 75 ft, 1,400 bhp, official number 556293, Durocher Marine of Cheboygan, contracting work. intelligence.marinelink.com/vessels/vessel/champion-321061 - same USCG number, Durocher Marine, Great Lakes, built 1974, 1,400 hp (lists 63.7 ft register length). gltugs.wordpress.com/durocher-marine - current fleet, division of Kokosing. test.ipernity.com Joel Dinda tug photos - pushing barge Kokosing 2 in 2012. Other Champions ruled out: Campbell Transportation's 2013 tug is a Pittsburgh river boat.",
+   "facts": [
+    "She works for Durocher Marine of Cheboygan, a neighbor just down the shore from the Straits of Mackinac.",
+    "Durocher, part of Kokosing Construction, is one of the largest marine contractors on the Great Lakes.",
+    "Built in Amelia, Louisiana, in 1974, she is 75 feet long with 1,400 horsepower.",
+    "She has been photographed pushing the company's work barge Kokosing 2, which is named for the parent company.",
+    "She goes wherever the job is, helping with construction and dredging projects around the Great Lakes."
+   ]
+  },
+  {
+   "name": "ROBINSON BAY",
+   "fact": "Seaway's old icebreaking tug, now a training boat for future mariners",
+   "built": 1958,
+   "lengthFt": 103,
+   "flag": "United States",
+   "type": "Maritime academy training tug",
+   "source": "tilife.org Thousand Islands Life, Workin' Robby Bay - nickname, 103 ft, Christy Corp., delivered April 1958, ice work between Eisenhower and Snell locks, about 200 navigation aids. gltugs.wordpress.com/robinson-bay - 1958, Christy Corp., 1991 repower and upper house, backup from 2020, transfer 2024. seawayreview.com/transfer-of-historic-robinson-bay-tugboat and marinelink.com/news/historic-tug-transferred-great-lakes-519602 - donated to Great Lakes Maritime Academy, over six decades of service.",
+   "facts": [
+    "Christy Corporation of Sturgeon Bay built her for the St. Lawrence Seaway, which took delivery in April 1958.",
+    "Her crews nicknamed her Robby Bay, and she has been called the little tug that could.",
+    "Each spring she chopped ice into small pieces between the Eisenhower and Snell locks so ships could get through.",
+    "She tended about 200 buoys and markers on a stretch of more than 100 miles from Massena to Lake Ontario.",
+    "After six decades on the Seaway she was donated in 2024 to the Great Lakes Maritime Academy in Traverse City to train students."
+   ]
+  },
+  {
+   "name": "THEO G",
+   "fact": "Turkish-flagged ocean bulk carrier who visits the Great Lakes from overseas",
+   "built": 2009,
+   "lengthFt": 607,
+   "flag": "Turkey",
+   "type": "Ocean-going bulk carrier (saltie)",
+   "source": "maritimeoptima.com (IMO 9415246: type, 2009, Turkey, 185 m, also listed under the name THEA G); ports.marinelink.com/vessels/vessel/271053634 (607 ft, 2026 calls at Hamilton and Montreal); magicport.ai (30,790 t deadweight, recent calls at Port Weller, Port Colborne, Milwaukee)",
+   "facts": [
+    "She is a bulk carrier, built to carry loose cargo in her holds, and she stretches about 607 feet.",
+    "She can carry roughly 30,800 tonnes of cargo.",
+    "She is a true saltie: her 2026 log runs from Hamilton and Montreal to Italy, Ireland and Portugal.",
+    "Her recent Great Lakes stops include Port Weller, Port Colborne and Milwaukee."
+   ]
+  },
+  {
+   "name": "RONNIE",
+   "fact": "482-foot heavy-lift saltie with two big cranes of her own",
+   "built": 2021,
+   "lengthFt": 482,
+   "flag": "Antigua and Barbuda",
+   "type": "Ocean-going multipurpose heavy-lift cargo ship (saltie)",
+   "source": "vesselfinder.com and magicport.ai (IMO 9736224: 2021, Antigua and Barbuda, 147 m, 12,325 t deadweight); ports.marinelink.com/vessels/vessel/305434000 (482 ft, September 2026 calls at Montreal, Port Huron, Sarnia); marinelink.com German Shipowner Buys Two Multi-Purpose Vessels, Feb 2026 (Ernst Russ purchase, seven-year charter to dship Carriers, cranes); marinelink.com MV Charlie delivered article (four-ship F-500 class)",
+   "facts": [
+    "She belongs to a family of four F-500 heavy-lift ships, alongside Mick, Keith and Charlie.",
+    "Two Liebherr cranes sit on her deck, and working together they can lift up to 500 tonnes.",
+    "Ernst Russ of Hamburg bought her in 2026, and she is on a seven-year charter to dship Carriers, a project cargo specialist.",
+    "In September 2026 she came up from Montreal and was logged at Port Huron and Sarnia."
+   ]
+  },
+  {
+   "name": "MOLLY M 1",
+   "fact": "McKeil Marine tug born in 1962, once the Foundation Vigour",
+   "built": 1962,
+   "flag": "Canada",
+   "type": "Great Lakes project tug",
+   "source": "mckeil.com/our-fleet/molly-m-i (McKeil project tug, Canadian flag, single screw); tugfaxblogspotcom.blogspot.com Nov 10 2014 post (built 1962, former names, 2006 sale to McKeil, Nadro operation, Halifax career); maritimeoptima.com and magicport.ai (IMO 5118838, 1962, Canada, AIS at Hamilton). Length left out because sources disagree.",
+   "facts": [
+    "She started life in 1962 as Foundation Vigour, one of six sister tugs.",
+    "She later became Point Vigour and spent years as a harbor tug at Halifax, Nova Scotia.",
+    "McKeil's group bought her in 2006, and she took the name Molly M 1 the next year.",
+    "She is part of the project fleet of McKeil Marine, the Hamilton, Ontario towing company.",
+    "She has a single propeller, and it turns inside a nozzle that adds pulling power."
+   ]
+  },
+  {
+   "name": "ECOSSE",
+   "fact": "McKeil Marine project tug from 1979, twin screws and 1,500 horsepower",
+   "built": 1979,
+   "lengthFt": 91,
+   "flag": "Canada",
+   "type": "Great Lakes harbor and project tug",
+   "source": "mckeil.com/our-fleet/ecosse (91 ft, 1,500 hp, twin screw, 14 t bollard pull, Canadian flag, project tug); maritimeoptima.com (IMO 8624682, 1979, Canada, recent calls at Montreal, Hamilton, Oswego); magicport.ai (McKeil Marine registered owner); globalmaritimehistory.com ship spotting post (built to support Lake Erie platforms, single source)",
+   "facts": [
+    "She is a 91-foot tug in the fleet of McKeil Marine of Hamilton, Ontario.",
+    "Two propellers and 1,500 horsepower give her about 14 tonnes of pulling power.",
+    "McKeil uses her for harbor towing and for its project work.",
+    "Recent tracking shows her calling at Hamilton, Oswego and Montreal."
+   ]
+  },
+  {
+   "name": "CHARLIE",
+   "fact": "Fourth and final F-500 heavy-lift saltie, delivered in 2022",
+   "built": 2022,
+   "lengthFt": 482,
+   "flag": "Antigua and Barbuda",
+   "type": "Ocean-going multipurpose heavy-lift cargo ship (saltie)",
+   "source": "vesselfinder.com and magicport.ai (IMO 9736236: 2022, Antigua and Barbuda, 147 m); ports.marinelink.com/vessels/vessel/305543000 (482 ft, October 2026 calls at Montreal, Port Weller, Burns Harbor); ajot.com dship Carriers launches MV Charlie (launched March 3 2021, cranes, 12,385 t deadweight, Becker devices, 75 m hold); marinelink.com MV Charlie delivered, Feb 2022 (fourth of four); marinelink.com Feb 2026 (Ernst Russ purchase and charter)",
+   "facts": [
+    "She was launched in March 2021 and delivered in early 2022 as the fourth and final ship of her class.",
+    "Her two Liebherr cranes are each rated for 250 tons.",
+    "A special duct ahead of her propeller and a fin-fitted rudder help her save fuel.",
+    "Her class has a main hold about 75 meters long, with movable decks inside for odd-shaped cargo.",
+    "In October 2026 she went from Montreal through Port Weller to Burns Harbor, Indiana, on Lake Michigan."
+   ]
+  },
+  {
+   "name": "BRUCE",
+   "fact": "Liberian-flagged heavy-lift saltie, a 482-foot world traveler",
+   "built": 2016,
+   "lengthFt": 482,
+   "flag": "Liberia",
+   "type": "Ocean-going multipurpose cargo ship (saltie)",
+   "source": "vesselfinder.com, maritimeoptima.com and magicport.ai (IMO 9741140: 2016, Liberia, 147 m, 12,300 t deadweight, Burns Harbor call, Montreal next); ports.marinelink.com/vessels/vessel/636093060 (482 ft, late 2026 calls at Port Weller and Burns Harbor, 2026 calls in Poland and Australia); ship-photos.de (Huanghai Shipyard builder, 2 x 250 t cranes, about 840 containers, single source)",
+   "facts": [
+    "She was built in 2016 at the Huanghai Shipyard in Rongcheng, China.",
+    "She carries two 250-ton cranes on deck, handy for heavy project cargo.",
+    "She can hold about 840 standard containers or around 12,300 tonnes of cargo.",
+    "Her 2026 travels took her to Poland and Australia before she came up the Seaway.",
+    "In autumn 2026 she stopped at Port Weller and Burns Harbor, Indiana, then headed back toward Montreal."
+   ]
+  },
+  {
+   "name": "STEELHEAD",
+   "fact": "Michigan DNR research boat studying Lake Michigan fish from Charlevoix",
+   "flag": "United States",
+   "type": "State fisheries research vessel",
+   "source": "content.govdelivery.com/accounts/MIDNR/bulletins/42d6a25 (DNR release: new 66 ft RV Steelhead, commissioned Sept 30 2026 at Charlevoix, surveys, features, named after old boat); content.govdelivery.com/accounts/MIDNR/bulletins/2e28521 (DNR profile of the 1968 boat: built at Escanaba, crew of five, Lakes Michigan and Huron); bairdmaritime.com Steelhead review (builder, solar, gyrostabilizer); wwmt.com (final testing on Lake Huron); michiganpublic.org (commissioning). Built and length left out because two boats share this name and AIS alone cannot tell which one passed.",
+   "facts": [
+    "Steelhead is the name of the Michigan DNR boat that surveys Lake Michigan fish from Charlevoix.",
+    "A brand-new 66-foot Steelhead was commissioned at Charlevoix on September 30, 2026, taking over from an older boat of the same name built in 1968.",
+    "The new boat was built in Michigan by Moran Iron Works of Onaway, and she was tested on Lake Huron before delivery.",
+    "The new boat has a gyrostabilizer to keep her steady, a bow thruster and solar charging.",
+    "The original Steelhead was built at Escanaba, and a crew of five could live aboard her for weeklong trips."
+   ]
+  },
+  {
+   "name": "COE LUISA",
+   "fact": "453-foot saltie who traveled from the ocean all the way to Duluth",
+   "built": 2008,
+   "lengthFt": 453,
+   "flag": "Antigua and Barbuda",
+   "type": "Ocean-going cargo ship (saltie)",
+   "source": "shiphotos.com/Ship/?ID=29161 (IMO 9435026: builder, launch and commissioning dates, 138 m, 12,668 t deadweight, 15 knots, former names, COE Shipping fleet); ports.marinelink.com/vessels/vessel/305172000 (453 ft, October 2026 calls at Cleveland and Duluth-Superior); maritimeoptima.com (2008, Antigua and Barbuda, Thunder Bay, Duluth and Milwaukee calls); vesseltracker.com (flag, size)",
+   "facts": [
+    "She was built in China and entered service in June 2008.",
+    "She has worn a few names: first Beluga Felicity, then BBC Tennessee, and now COE Luisa.",
+    "She has sailed in the fleet of COE Shipping of Buxtehude, Germany, since 2022.",
+    "She can carry about 12,700 tonnes and cruises at around 15 knots.",
+    "In autumn 2026 she made a grand Great Lakes tour with stops at Cleveland, Thunder Bay, Duluth-Superior and Milwaukee."
    ]
   }
  ],
