@@ -101,6 +101,73 @@ app.use(express.json({ limit: '2mb' })); // AIS-catcher batches can be sizeable
 // Shared secret for the local AIS receiver feed (set on Render)
 const LOCAL_AIS_KEY = process.env.LOCAL_AIS_KEY;
 
+// ── Owner-only pages ──
+// Links to this site get posted in the YouTube chat, so the back-office pages (the live map, the menu,
+// the camera and antenna logs, Macki, narrations) are for the owner only: anyone else is sent to the
+// public Ships Under the Bridge page. The overlays and the data the stream, chat bot and camera read stay
+// open. Sign in once per browser at /owner (password: OWNER_PASSWORD, or the LOCAL_AIS_KEY value).
+const crypto = require('crypto');
+const OWNER_PASSWORD = process.env.OWNER_PASSWORD || LOCAL_AIS_KEY;
+const OWNER_PAGES = new Set(['/', '/menu', '/links', '/tracker', '/ptz-log', '/range-log', '/narrations', '/macki', '/missing-facts', '/bridge-conditions']);
+const OWNER_APIS = new Set(['/api/ptz-log', '/api/ptz/state', '/api/range-log', '/api/local-range', '/api/narrations', '/api/missing-facts']);
+const OWNER_COOKIE_DAYS = 365;
+const ownerToken = OWNER_PASSWORD ? crypto.createHmac('sha256', OWNER_PASSWORD).update('mackinac-owner-v1').digest('hex') : null;
+function sameSecret(a, b) {
+  const x = crypto.createHash('sha256').update(String(a || '')).digest(), y = crypto.createHash('sha256').update(String(b || '')).digest();
+  return crypto.timingSafeEqual(x, y);
+}
+function isOwner(req) {
+  if (!OWNER_PASSWORD) return true;   // nothing configured: everything stays open, as before
+  const k = req.query.key || req.headers['x-api-key'];
+  if (LOCAL_AIS_KEY && k && sameSecret(k, LOCAL_AIS_KEY)) return true;
+  const m = (req.headers.cookie || '').match(/(?:^|;\s*)owner=([0-9a-f]{64})/);
+  return !!m && sameSecret(m[1], ownerToken);
+}
+app.use((req, res, next) => {
+  // Express matches routes ignoring case and a trailing slash, so normalise the same way here
+  const p = req.path.length > 1 ? req.path.toLowerCase().replace(/\/+$/, '') : req.path;
+  if (OWNER_PAGES.has(p) && !isOwner(req)) return res.redirect(302, '/passages');
+  if (OWNER_APIS.has(p) && !isOwner(req)) return res.status(403).json({ error: 'owner only' });
+  next();
+});
+
+const ownerFails = {};   // ip -> { n, since }: at most 8 wrong passwords per 15 min
+function ownerPage(msg) {
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<meta name="robots" content="noindex"><title>Owner sign-in — Mackinac Tracker</title><style>' +
+    'body{margin:0;background:#0b0f14;color:#e7edf4;font-family:"Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:16px}' +
+    'form{background:#121821;border:1px solid #1f2937;border-radius:12px;padding:22px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px}' +
+    'h1{font-size:1.1rem;margin:0}p{margin:0;color:#8aa0b6;font-size:.85rem;line-height:1.45}' +
+    'input,button{font:inherit;border-radius:8px;padding:10px 12px;border:1px solid #1f2937}input{background:#0b0f14;color:#e7edf4}' +
+    'button{background:#4ea3ff;color:#04121f;font-weight:700;border-color:#4ea3ff;cursor:pointer}.err{color:#ff8a80}</style></head><body>' +
+    '<form method="post" action="/owner"><h1>Owner sign-in</h1><p>For the stream owner\'s pages. This browser stays signed in for a year.</p>' +
+    (msg ? '<p class="err">' + msg + '</p>' : '') +
+    '<input type="password" name="password" autocomplete="current-password" aria-label="Password" placeholder="Password" required autofocus>' +
+    '<button type="submit">Sign in</button><p><a href="/passages" style="color:#4ea3ff">Ships Under the Bridge</a></p></form></body></html>';
+}
+app.get('/owner', (req, res) => {
+  if (isOwner(req) && OWNER_PASSWORD) return res.redirect(302, '/menu');
+  res.set('Cache-Control', 'no-store').type('html').send(ownerPage(OWNER_PASSWORD ? '' : 'No owner password is set on the server.'));
+});
+app.post('/owner', express.urlencoded({ extended: false, limit: '2kb' }), (req, res) => {
+  if (!OWNER_PASSWORD) return res.redirect(302, '/menu');
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const f = ownerFails[ip];
+  if (f && Date.now() - f.since > 15 * 60 * 1000) delete ownerFails[ip];
+  if (ownerFails[ip] && ownerFails[ip].n >= 8) return res.status(429).type('html').send(ownerPage('Too many tries. Wait 15 minutes.'));
+  if (!sameSecret((req.body || {}).password, OWNER_PASSWORD)) {
+    (ownerFails[ip] = ownerFails[ip] || { n: 0, since: Date.now() }).n++;
+    return res.status(401).type('html').send(ownerPage('Wrong password.'));
+  }
+  delete ownerFails[ip];
+  res.set('Set-Cookie', 'owner=' + ownerToken + '; Path=/; Max-Age=' + OWNER_COOKIE_DAYS * 86400 + '; HttpOnly; Secure; SameSite=Lax');
+  res.redirect(303, '/menu');
+});
+app.get('/owner/signout', (req, res) => {
+  res.set('Set-Cookie', 'owner=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
+  res.redirect(302, '/passages');
+});
+
 // Ship flag pictures for the banners (flags/<iso>.png, from flagcdn.com), so overlays don't depend on an outside site
 app.use('/flags', express.static(path.join(__dirname, 'flags'), { maxAge: '30d' }));
 
@@ -108,6 +175,8 @@ app.use('/flags', express.static(path.join(__dirname, 'flags'), { maxAge: '30d' 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+// The live map, public (the main address above is owner-only and sends viewers to /passages)
+app.get('/map', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 // Control panel: an index of every page / overlay / API and what each one does
 app.get('/menu',  (req, res) => res.sendFile(path.join(__dirname, 'menu.html')));
@@ -478,6 +547,53 @@ app.get('/api/passages', async (req, res) => {
   }
 });
 app.get('/passages', (req, res) => res.sendFile(path.join(__dirname, 'passages.html')));
+
+// ── The channel's live streams, for the player on Ships Under the Bridge ──
+// A stream's video ID changes whenever it restarts, so read the channel's Live tab every 10 minutes and
+// pick each camera by its title. If YouTube can't be read, the last good answer is kept.
+const YT_CHANNEL_ID = 'UCfNWUHvOsckqB-h6OMZBUMg';   // Riviera Motel Mackinaw City
+const LIVE_CAMS = [
+  { key: 'bridge',    label: 'Bridge Cam',      match: /mackinac bridge camera/i },
+  { key: 'freighter', label: 'Freighter Cam',   match: /freighter cam/i },
+  { key: 'aurora',    label: 'Northern Lights', match: /all-sky|northern lights|aurora/i }
+];
+let liveStreams = { at: 0, cams: [] };
+function liveLockups(html) {
+  const start = html.indexOf('var ytInitialData = ');
+  if (start < 0) return [];
+  const end = html.indexOf(';</script>', start);
+  const data = JSON.parse(html.slice(start + 20, end));
+  const out = [];
+  (function walk(o) {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (!o || typeof o !== 'object') return;
+    if (o.lockupViewModel) {
+      const v = o.lockupViewModel, title = (((v.metadata || {}).lockupMetadataViewModel || {}).title || {}).content || '';
+      if (v.contentId && JSON.stringify(v).includes('BADGE_STYLE_LIVE')) out.push({ videoId: v.contentId, title });
+    }
+    Object.values(o).forEach(walk);
+  })(data);
+  return out;
+}
+async function refreshLiveStreams() {
+  try {
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
+    const r = await fetch('https://www.youtube.com/channel/' + YT_CHANNEL_ID + '/streams',
+      { signal: ac.signal, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept-Language': 'en-US,en;q=0.8' } });
+    clearTimeout(to);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const live = liveLockups(await r.text());
+    const cams = [];
+    LIVE_CAMS.forEach(c => { const v = live.find(x => c.match.test(x.title)); if (v) cams.push({ key: c.key, label: c.label, videoId: v.videoId }); });
+    if (cams.length || !liveStreams.cams.length) liveStreams = { at: Date.now(), cams };
+  } catch (e) { console.error('📺 Live stream lookup failed:', e.message); }
+}
+refreshLiveStreams();
+setInterval(refreshLiveStreams, 10 * 60 * 1000);
+app.get('/api/live-streams', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=120');
+  res.json({ cams: liveStreams.cams, checkedAt: liveStreams.at || null, channel: 'https://www.youtube.com/@RivieraMotelMackinawCity/streams' });
+});
 
 // Health / status check (used by UptimeRobot and monitoring)
 app.get('/api/status', async (req, res) => {

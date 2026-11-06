@@ -55,6 +55,34 @@
   .wx { font-size:.83rem; color:#c8d4e0; }
   .empty, .status { color:var(--muted); padding:22px 0; }
   .note { color:var(--muted); font-size:.78rem; margin-top:26px; line-height:1.55; }
+  .site-nav { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 16px; }
+  .site-nav a { color:var(--muted); text-decoration:none; font-size:.85rem; padding:6px 12px; border:1px solid var(--line); border-radius:999px; background:var(--card); }
+  .site-nav a:hover { color:var(--text); border-color:#334155; }
+  .site-nav a[aria-current] { color:var(--text); border-color:var(--accent); }
+  .live { margin-bottom:20px; }
+  .live .tabs { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px; align-items:center; }
+  .live h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 6px 0 0; font-weight:600; }
+  .live .dot { width:8px; height:8px; border-radius:50%; background:#ff4e45; display:inline-block; margin-right:6px; vertical-align:1px; }
+  .player { position:relative; aspect-ratio:16/9; background:#000; border-radius:12px; overflow:hidden; border:1px solid var(--line); max-width:820px; }
+  .player iframe, .player button { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .player button { padding:0; background:#000 center/cover no-repeat; cursor:pointer; }
+  .player button::after { content:''; position:absolute; left:50%; top:50%; width:68px; height:48px; margin:-24px 0 0 -34px; border-radius:12px; background:rgba(255,0,0,.88)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5v14l11-7z' fill='white'/%3E%3C/svg%3E") center/26px no-repeat; }
+  .player button:hover::after { background-color:#f00; }
+  .cal { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:14px; }
+  .cal .head { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .cal h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0; font-weight:600; }
+  .cal input { background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 9px; font:inherit; font-size:.85rem; color-scheme:dark; }
+  .cal .grid7 { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+  .cal .dow { color:var(--muted); font-size:.7rem; text-align:center; text-transform:uppercase; padding-bottom:2px; }
+  .cal .d { background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--text); font:inherit; padding:6px 0 5px; display:flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer; min-width:0; }
+  .cal .d b { font-size:.9rem; }
+  .cal .d small { font-size:.7rem; color:var(--accent); min-height:1em; }
+  .cal .d:hover { border-color:#334155; }
+  .cal .d.on { background:var(--accent); border-color:var(--accent); color:#04121f; }
+  .cal .d.on small { color:#04121f; }
+  .cal .d:disabled { opacity:.35; cursor:default; }
+  .cal .d:disabled:hover { border-color:var(--line); }
   .back { display:inline-block; margin-bottom:12px; color:var(--accent); background:none; border:0; font:inherit; font-size:.88rem; cursor:pointer; padding:0; }
   .lb { position:fixed; inset:0; background:rgba(0,0,0,.88); display:none; align-items:center; justify-content:center; flex-direction:column; gap:10px; padding:16px; z-index:10; cursor:zoom-out; }
   .lb.on { display:flex; }
@@ -64,8 +92,14 @@
 </head>
 <body>
 <div class="wrap">
+  <nav class="site-nav" aria-label="Pages"><a href="/passages" aria-current="page">Ships Under the Bridge</a><a href="/traffic">Traffic</a><a href="/map">Live map</a></nav>
   <h1>Ships Under the Mackinac Bridge</h1>
   <div class="sub">Every freighter that passed under the bridge, month by month, with a picture from the live Freighter Cam and the weather when it went by. Times are local (Eastern). Tap a ship's name to see all of its passes.</div>
+
+  <section class="live" id="live" hidden aria-label="Watch live">
+    <div class="tabs" id="liveTabs"><h2><span class="dot" aria-hidden="true"></span>Watch live</h2></div>
+    <div class="player" id="player"></div>
+  </section>
 
   <div class="bar">
     <div class="months" id="months" role="tablist" aria-label="Month"></div>
@@ -92,17 +126,19 @@ const WX = { '01': '☀️', '02': '🌤️', '03': '⛅', '04': '☁️', '09':
 
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
-let state = { month: null, ship: null };
+let state = { month: null, ship: null, day: null };
 let timer = null;
 
 function readUrl() {
   const p = new URLSearchParams(location.search);
-  state = { month: p.get('month'), ship: p.get('ship') };
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(p.get('date') || '') ? p.get('date') : null;
+  state = { month: date ? date.slice(0, 7) : p.get('month'), ship: p.get('ship'), day: date };
 }
 function go(next, push = true) {
-  state = Object.assign({ month: null, ship: null }, next);
+  state = Object.assign({ month: null, ship: null, day: null }, next);
+  if (state.day) state.month = state.day.slice(0, 7);
   const p = new URLSearchParams();
-  if (state.ship) p.set('ship', state.ship); else if (state.month) p.set('month', state.month);
+  if (state.ship) p.set('ship', state.ship); else if (state.day) p.set('date', state.day); else if (state.month) p.set('month', state.month);
   if (push) history.pushState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
   load();
   window.scrollTo({ top: 0 });
@@ -146,7 +182,42 @@ function metric(label, big, detail, txt) {
   return m;
 }
 
+// A month calendar: each day shows how many ships passed and opens that day
+let allPasses = null;   // the month's full list, kept while one day of it is shown
+function calendar(d) {
+  const box = el('div', 'cal');
+  const head = el('div', 'head'); head.append(el('h2', null, 'Pick a day · ships that passed'));
+  const pick = el('input'); pick.type = 'date'; pick.setAttribute('aria-label', 'Go to a date');
+  const months = d.months || [];
+  if (months.length) pick.min = months[months.length - 1].month + '-01';
+  pick.max = fmtYmd.format(Date.now());
+  pick.value = state.day || '';
+  pick.onchange = () => { if (/^\d{4}-\d{2}-\d{2}$/.test(pick.value)) go({ day: pick.value }); };
+  head.append(pick); box.append(head);
+  const counts = {};
+  (allPasses || d.passes).forEach(p => { const k = fmtYmd.format(p.at); counts[k] = (counts[k] || 0) + 1; });
+  const [y, m] = d.month.split('-').map(Number);
+  const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const todayYmd = fmtYmd.format(Date.now());
+  const grid = el('div', 'grid7');
+  ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(n => grid.append(el('div', 'dow', n)));
+  for (let i = 0; i < first; i++) grid.append(el('div'));
+  for (let day = 1; day <= days; day++) {
+    const ymd = d.month + '-' + String(day).padStart(2, '0'), n = counts[ymd] || 0;
+    const b = el('button', 'd' + (ymd === state.day ? ' on' : '')); b.type = 'button';
+    b.append(el('b', null, day), el('small', null, n ? '🚢 ' + n : ''));
+    b.setAttribute('aria-label', fmtDay.format(new Date(ymd + 'T12:00:00Z')) + ': ' + n + (n === 1 ? ' ship' : ' ships'));
+    if (ymd === state.day) b.setAttribute('aria-pressed', 'true');
+    if (ymd > todayYmd) b.disabled = true;
+    else b.onclick = () => go(ymd === state.day ? { month: d.month } : { day: ymd });
+    grid.append(b);
+  }
+  box.append(grid);
+  return box;
+}
+
 function render(d) {
+  allPasses = d.passes;
   const v = $('view'); v.replaceChildren();
   const s = d.summary || { passes: 0 };
   if (d.ship) {
@@ -162,6 +233,19 @@ function render(d) {
       metric('Times passed', s.passes, split),
       metric('Last seen', d.passes.length ? fmtDayYear.format(d.passes[0].at) : '—', d.passes.length ? fmtTime.format(d.passes[0].at) : '', true),
       metric('First on record', first ? fmtDayYear.format(first) : '—', null, true));
+  } else if (state.day && d.month === state.day.slice(0, 7)) {
+    // One day of the month: count it here from the month's passes
+    const today = d.passes.filter(p => fmtYmd.format(p.at) === state.day);
+    const e = today.filter(p => p.direction === 'eastbound').length;
+    const daySplit = el('span'); daySplit.append(el('b', 'e', e), ' east · ', el('b', 'w', today.length - e), ' west');
+    const back = el('button', 'back', '← All of ' + monthName(d.month));
+    back.onclick = () => go({ month: d.month });
+    v.append(back);
+    cards.append(metric(fmtDayYear.format(new Date(state.day + 'T12:00:00Z')), today.length, daySplit),
+      metric('Different ships', new Set(today.map(p => p.name)).size),
+      metric('First of the day', today.length ? fmtTime.format(today[today.length - 1].at) : '—', today.length ? today[today.length - 1].name : '', true),
+      metric('With a picture', today.filter(p => p.photo).length));
+    d = Object.assign({}, d, { passes: today, summary: Object.assign({}, s, { topShips: [] }) });
   } else {
     cards.append(metric(monthName(d.month), s.passes, split),
       metric('Different ships', s.ships || 0),
@@ -169,15 +253,17 @@ function render(d) {
       metric('With a picture', s.photos || 0));
   }
   v.append(cards);
+  if (!d.ship && d.month) v.append(calendar(d));
 
-  if (!d.ship && s.topShips && s.topShips.length) {
+  const top = (d.summary || {}).topShips || [];
+  if (!d.ship && top.length) {
     const t = el('div', 'top'); t.append(el('h2', null, 'Most frequent this month'));
     const list = el('div', 'list');
-    s.topShips.forEach(x => { const b = el('button', 'chip', x.name); b.type = 'button'; b.append(el('b', null, '×' + x.passes)); b.onclick = () => go({ ship: x.name }); list.append(b); });
+    top.forEach(x => { const b = el('button', 'chip', x.name); b.type = 'button'; b.append(el('b', null, '×' + x.passes)); b.onclick = () => go({ ship: x.name }); list.append(b); });
     t.append(list); v.append(t);
   }
 
-  if (!d.passes.length) { v.append(el('div', 'empty', d.ship ? 'No passes found for that name. Try part of the name as it shows on the banner.' : 'No passes recorded this month yet.')); return; }
+  if (!d.passes.length) { v.append(el('div', 'empty', d.ship ? 'No passes found for that name. Try part of the name as it shows on the banner.' : state.day ? 'No ships passed the bridge that day.' : 'No passes recorded this month yet.')); return; }
 
   // Group by local day, newest first
   const days = [];
@@ -233,9 +319,38 @@ $('lb').onclick = () => $('lb').classList.remove('on');
 document.addEventListener('keydown', e => { if (e.key === 'Escape') $('lb').classList.remove('on'); });
 $('search').onsubmit = e => { e.preventDefault(); const q = $('q').value.trim(); if (q) go({ ship: q }); };
 
+// Watch live: the channel's streams, found by the tracker (their video IDs change when a stream restarts).
+// Only a thumbnail loads until someone presses play.
+let liveCam = null;
+function showCam(c) {
+  liveCam = c.key;
+  document.querySelectorAll('#liveTabs .chip').forEach(b => { const on = b.dataset.key === c.key; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  const play = el('button'); play.type = 'button'; play.setAttribute('aria-label', 'Play the ' + c.label + ' live stream');
+  play.style.backgroundImage = 'url(https://i.ytimg.com/vi/' + encodeURIComponent(c.videoId) + '/hqdefault_live.jpg)';
+  play.onclick = () => {
+    const f = document.createElement('iframe');
+    f.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(c.videoId) + '?autoplay=1&playsinline=1&rel=0';
+    f.title = c.label + ' live stream'; f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
+    $('player').replaceChildren(f);
+  };
+  $('player').replaceChildren(play);
+}
+async function loadLive() {
+  try {
+    const r = await fetch('/api/live-streams');
+    const cams = r.ok ? (await r.json()).cams || [] : [];
+    if (!cams.length) { $('live').hidden = true; return; }
+    const tabs = $('liveTabs'); tabs.querySelectorAll('.chip').forEach(b => b.remove());
+    cams.forEach(c => { const b = el('button', 'chip', c.label); b.type = 'button'; b.dataset.key = c.key; b.setAttribute('role', 'tab'); b.onclick = () => showCam(c); tabs.append(b); });
+    $('live').hidden = false;
+    showCam(cams.find(c => c.key === liveCam) || cams[0]);
+  } catch (e) { $('live').hidden = true; }
+}
+
 readUrl();
 if (state.ship) $('q').value = state.ship;
 load();
+loadLive();
 </script>
 </body>
 </html>

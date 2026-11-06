@@ -47,10 +47,15 @@
   .vrow .vname { flex:1; }
   .vrow .vtime { color:var(--muted); font-variant-numeric:tabular-nums; font-size:.82rem; }
   .empty { color:var(--muted); font-style:italic; padding:8px 0; }
+  .site-nav { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 16px; }
+  .site-nav a { color:var(--muted); text-decoration:none; font-size:.85rem; padding:6px 12px; border:1px solid var(--line); border-radius:999px; background:var(--card); }
+  .site-nav a:hover { color:var(--text); border-color:#334155; }
+  .site-nav a[aria-current] { color:var(--text); border-color:var(--accent); }
   .note { color:var(--muted); font-size:.78rem; margin-top:6px; max-width:820px; line-height:1.5; }
 </style>
 </head>
 <body>
+  <nav class="site-nav" aria-label="Pages"><a href="/passages">Ships Under the Bridge</a><a href="/traffic" aria-current="page">Traffic</a><a href="/map">Live map</a></nav>
   <h1>Straits Traffic Report</h1>
   <div class="sub">Every freighter that crossed under the Mackinac Bridge, counted by day. Times are local (Eastern). Tap a day to see the ships. Pictures and the full history by month are on <a href="/passages" style="color:var(--accent)">Ships under the bridge</a>.</div>
 

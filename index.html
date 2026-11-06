@@ -31,6 +31,11 @@
 
         .bridge-icon { font-size: 22px; line-height: 1; }
 
+        .site-nav { position: fixed; top: 10px; right: 10px; z-index: 1100; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 20px); }
+        .site-nav a { color: #cfd8e3; text-decoration: none; font: 13px 'Segoe UI', system-ui, sans-serif; padding: 6px 12px; border-radius: 999px;
+            background: rgba(0,0,0,0.82); border: 1px solid rgba(255,255,255,0.25); }
+        .site-nav a:hover { color: #fff; border-color: rgba(79,195,247,0.6); }
+        .site-nav a[aria-current] { color: #fff; border-color: #4fc3f7; }
         .map-counter {
             position: fixed;
             bottom: 20px; left: 420px;
@@ -135,7 +140,7 @@
 
         .ship-tracker {
             position: fixed;
-            top: 20px;
+            top: 56px;   /* below the page menu */
             right: 20px;
             z-index: 1000;
             background: rgba(0, 0, 0, 0.85);
@@ -436,6 +441,7 @@
 </head>
 <body>
     <div id="map"></div>
+    <nav class="site-nav" aria-label="Pages"><a href="/passages">Ships Under the Bridge</a><a href="/traffic">Traffic</a><a href="/map" aria-current="page">Live map</a></nav>
 
     <div class="map-counter">
         <div class="counter-title">AIS Messages</div>
@@ -815,7 +821,6 @@
             if (!map || !ship.lat || !ship.lon) return;
             const color = getMarkerColor(ship);
             const popup = `<b>${ship.name || 'Unknown'}</b><br>
-                MMSI: ${ship.mmsi}<br>
                 Speed: ${ship.speed ? ship.speed.toFixed(1) + ' kts' : '—'}<br>
                 Distance: ${ship.distance ? ship.distance.toFixed(1) + ' km from bridge' : '—'}<br>
                 Direction: ${ship.direction || '—'}`;
