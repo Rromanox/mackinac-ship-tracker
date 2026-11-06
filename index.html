@@ -437,6 +437,30 @@
             margin-top: 8px;
             font-style: italic;
         }
+
+        /* Phones: the map fills the screen, the menu is one line on top, and the ship lists live in a
+           pull-up sheet at the bottom (applyPhoneLayout moves the "ships near bridge" box into it) */
+        @media (max-width: 768px) {
+            .site-nav { top: 0; left: 0; right: 0; max-width: none; padding: 8px 10px; flex-wrap: nowrap; justify-content: flex-start;
+                overflow-x: auto; scrollbar-width: none; background: rgba(8,12,18,0.96); border-bottom: 1px solid rgba(255,255,255,0.14); }
+            .site-nav::-webkit-scrollbar { display: none; }
+            .site-nav a { flex: none; }
+            #map, #map.full { top: 48px; bottom: 46px; left: 0; width: 100%; height: auto; }
+            #shipsPanel, #shipsPanel.collapsed { top: auto; bottom: 0; left: 0; width: 100%; height: 62vh; border-right: 0;
+                border-top: 1px solid rgba(255,255,255,0.25); border-radius: 14px 14px 0 0; background: rgba(8,12,18,0.97); transition: height 0.25s ease; }
+            #shipsPanel.collapsed { height: 46px; }
+            #shipsPanel.collapsed .panel-title, #shipsPanel.collapsed .panel-count { display: inline; }
+            .panel-header { min-height: 46px; padding: 0 14px; gap: 10px; }
+            .panel-title { font-size: 12px; flex: 1; }
+            .panel-count { font-size: 12px; }
+            .panel-toggle { font-size: 16px; color: #4fc3f7; }
+            .panel-note { display: none !important; }
+            .map-counter { display: none; }
+            .map-legend { left: 8px !important; bottom: 54px; padding: 6px 8px; font-size: 10px; }
+            .ship-tracker { position: static; min-width: 0; max-width: none; margin: 10px; padding: 12px; border-width: 1px; border-radius: 12px;
+                box-shadow: none; backdrop-filter: none; }
+            .ships-table th:nth-child(2), .ships-table td:nth-child(2), .ships-table th:nth-child(5), .ships-table td:nth-child(5) { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -466,7 +490,7 @@
             <span class="panel-count" id="panelCount">0 ships</span>
             <span class="panel-toggle" id="panelToggle">‹</span>
         </div>
-        <div style="padding:4px 12px 6px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
+        <div class="panel-note" style="padding:4px 12px 6px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:10px;color:rgba(255,255,255,0.3);">AIS data is real-time · positions refresh every 2–10 sec</span>
             <span style="font-size:10px;color:rgba(79,195,247,0.6);font-family:monospace;font-weight:bold;">v34</span>
         </div>
@@ -735,10 +759,34 @@
                 counter.style.left = '420px';
                 legend.style.left = '580px';
             }
-            document.getElementById('panelToggle').textContent = panelCollapsed ? '›' : '‹';
+            setPanelArrow();
             // Let Leaflet know the map container resized
             setTimeout(() => map && map.invalidateSize(), 260);
         }
+
+        const phoneLayout = window.matchMedia('(max-width: 768px)');
+        function setPanelArrow() {
+            document.getElementById('panelToggle').textContent = phoneLayout.matches
+                ? (panelCollapsed ? '▲' : '▼')
+                : (panelCollapsed ? '›' : '‹');
+        }
+        // Phones start with the sheet closed and the "ships near bridge" box inside it
+        function applyPhoneLayout() {
+            const tracker = document.querySelector('.ship-tracker');
+            const panel = document.getElementById('shipsPanel');
+            if (phoneLayout.matches) {
+                panel.querySelector('.panel-body').prepend(tracker);
+                if (!panelCollapsed) togglePanel();
+                const nav = document.querySelector('.site-nav'), here = nav.querySelector('[aria-current]');
+                nav.scrollLeft = here.offsetLeft - (nav.clientWidth - here.offsetWidth) / 2;   // keep this page's link in view
+            } else {
+                panel.after(tracker);
+                if (panelCollapsed) togglePanel();
+            }
+            setPanelArrow();
+            setTimeout(() => map && map.invalidateSize(), 260);
+        }
+        phoneLayout.addEventListener('change', applyPhoneLayout);
 
         function updateShipsList() {
             const ships = Object.values(allShipsData)
@@ -1576,6 +1624,7 @@
         setInterval(updateShipsList, 5000);
 
         initMap();
+        applyPhoneLayout();
         console.log('🚢 Starting Mackinac Bridge Ship Tracker (Proxy Mode)');
         console.log('📍 Bridge Location:', BRIDGE_LAT.toFixed(4) + '°N,', BRIDGE_LON.toFixed(4) + '°W');
         console.log('📡 Search Radius:', SEARCH_RADIUS_KM, 'km (~' + kmToMiles(SEARCH_RADIUS_KM).toFixed(1) + ' miles)');
