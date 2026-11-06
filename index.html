@@ -774,6 +774,7 @@
         function applyPhoneLayout() {
             const tracker = document.querySelector('.ship-tracker');
             const panel = document.getElementById('shipsPanel');
+            panel.style.transition = 'none';   // switch layouts at once, without the sheet sliding
             if (phoneLayout.matches) {
                 panel.querySelector('.panel-body').prepend(tracker);
                 if (!panelCollapsed) togglePanel();
@@ -783,6 +784,8 @@
                 panel.after(tracker);
                 if (panelCollapsed) togglePanel();
             }
+            void panel.offsetHeight;
+            panel.style.transition = '';
             setPanelArrow();
             setTimeout(() => map && map.invalidateSize(), 260);
         }
