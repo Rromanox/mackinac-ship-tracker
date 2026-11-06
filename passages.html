@@ -64,11 +64,7 @@
   .live h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 6px 0 0; font-weight:600; }
   .live .dot { width:8px; height:8px; border-radius:50%; background:#ff4e45; display:inline-block; margin-right:6px; vertical-align:1px; }
   .player { position:relative; aspect-ratio:16/9; background:#000; border-radius:12px; overflow:hidden; border:1px solid var(--line); max-width:820px; }
-  .player iframe, .player button { position:absolute; inset:0; width:100%; height:100%; border:0; }
-  .player button { padding:0; background:#000 center/cover no-repeat; cursor:pointer; }
-  .player button::after { content:''; position:absolute; left:50%; top:50%; width:68px; height:48px; margin:-24px 0 0 -34px; border-radius:12px; background:rgba(255,0,0,.88)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5v14l11-7z' fill='white'/%3E%3C/svg%3E") center/26px no-repeat; }
-  .player button:hover::after { background-color:#f00; }
+  .player iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
   .cal { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:14px; }
   .cal .head { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
   .cal h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0; font-weight:600; }
@@ -342,20 +338,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') $('lb').clas
 $('search').onsubmit = e => { e.preventDefault(); const q = $('q').value.trim(); if (q) go({ ship: q }); };
 
 // Watch live: the channel's streams, found by the tracker (their video IDs change when a stream restarts).
-// Only a thumbnail loads until someone presses play.
+// The first one (Freighter Cam) starts playing by itself, muted: browsers only autoplay muted video.
 let liveCam = null;
 function showCam(c) {
   liveCam = c.key;
   document.querySelectorAll('#liveTabs .chip').forEach(b => { const on = b.dataset.key === c.key; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-  const play = el('button'); play.type = 'button'; play.setAttribute('aria-label', 'Play the ' + c.label + ' live stream');
-  play.style.backgroundImage = 'url(https://i.ytimg.com/vi/' + encodeURIComponent(c.videoId) + '/hqdefault_live.jpg)';
-  play.onclick = () => {
-    const f = document.createElement('iframe');
-    f.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(c.videoId) + '?autoplay=1&playsinline=1&rel=0';
-    f.title = c.label + ' live stream'; f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
-    $('player').replaceChildren(f);
-  };
-  $('player').replaceChildren(play);
+  const f = document.createElement('iframe');
+  f.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(c.videoId) + '?autoplay=1&mute=1&playsinline=1&rel=0';
+  f.title = c.label + ' live stream'; f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
+  $('player').replaceChildren(f);
 }
 async function loadLive() {
   try {

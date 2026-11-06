@@ -567,15 +567,19 @@ app.get('/site.js', (req, res) => {
 });
 
 // ── The channel's live streams, for the player on Ships Under the Bridge ──
-// A stream's video ID changes whenever it restarts, so read the channel's Live tab every 10 minutes and
-// pick each camera by its title. If YouTube can't be read, the last good answer is kept.
+// A stream's video ID changes whenever it restarts, so every 10 minutes look each camera up by its title:
+// first on the channel's Live tab, then in the channel's video feed (YouTube sometimes serves the Live tab
+// to servers without the list). The last IDs found are saved, so a restart or a failed lookup keeps them.
 const YT_CHANNEL_ID = 'UCfNWUHvOsckqB-h6OMZBUMg';   // Riviera Motel Mackinaw City
-const LIVE_CAMS = [
-  { key: 'bridge',    label: 'Bridge Cam',      match: /mackinac bridge camera/i },
-  { key: 'freighter', label: 'Freighter Cam',   match: /freighter cam/i },
-  { key: 'aurora',    label: 'Northern Lights', match: /all-sky|northern lights|aurora/i }
+const LIVE_CAMS = [   // shown in this order; the first one plays by itself
+  // match: on the Live tab (already live only). feed: stricter, since the feed also lists ship clips titled "... | Freighter Cam"
+  { key: 'freighter', label: 'Freighter Cam',   match: /freighter cam/i,            feed: /live freighter cam/i },
+  { key: 'bridge',    label: 'Bridge Cam',      match: /mackinac bridge camera/i,   feed: /live\W*mackinac bridge camera/i },
+  { key: 'aurora',    label: 'Northern Lights', match: /all-sky|northern lights|aurora/i, feed: /northern lights live|all-sky aurora cam/i }
 ];
-let liveStreams = { at: 0, cams: [] };
+// Last known IDs (2026-11-06), used until a lookup or the saved copy says otherwise
+let liveIds = { freighter: 'oDDBvHSIBcA', bridge: 'Mf_qId_7mlM', aurora: 'CVZSqQVU6l0' };
+let liveStreams = { at: 0, source: 'built-in' };
 function liveLockups(html) {
   const start = html.indexOf('var ytInitialData = ');
   if (start < 0) return [];
@@ -593,24 +597,57 @@ function liveLockups(html) {
   })(data);
   return out;
 }
-async function refreshLiveStreams() {
-  try {
-    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
-    const r = await fetch('https://www.youtube.com/channel/' + YT_CHANNEL_ID + '/streams',
-      { signal: ac.signal, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept-Language': 'en-US,en;q=0.8' } });
-    clearTimeout(to);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const live = liveLockups(await r.text());
-    const cams = [];
-    LIVE_CAMS.forEach(c => { const v = live.find(x => c.match.test(x.title)); if (v) cams.push({ key: c.key, label: c.label, videoId: v.videoId }); });
-    if (cams.length || !liveStreams.cams.length) liveStreams = { at: Date.now(), cams };
-  } catch (e) { console.error('📺 Live stream lookup failed:', e.message); }
+function feedEntries(xml) {   // newest first, as the feed lists them
+  const out = [], re = /<yt:videoId>([\w-]{11})<\/yt:videoId>[\s\S]*?<title>([^<]*)<\/title>/g;
+  let m; while ((m = re.exec(xml))) out.push({ videoId: m[1], title: m[2] });
+  return out;
 }
-refreshLiveStreams();
-setInterval(refreshLiveStreams, 10 * 60 * 1000);
+async function ytGet(url) {
+  const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
+  try {
+    const r = await fetch(url, { signal: ac.signal, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept-Language': 'en-US,en;q=0.8', 'Cookie': 'CONSENT=YES+1; SOCS=CAI' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.text();
+  } finally { clearTimeout(to); }
+}
+let liveTimer = null;
+async function refreshLiveStreams() {
+  clearTimeout(liveTimer);
+  const found = {}; let source = null;
+  try {
+    const live = liveLockups(await ytGet('https://www.youtube.com/channel/' + YT_CHANNEL_ID + '/streams'));
+    LIVE_CAMS.forEach(c => { const v = live.find(x => c.match.test(x.title)); if (v) found[c.key] = v.videoId; });
+    if (Object.keys(found).length) source = 'live tab';
+  } catch (e) { console.error('📺 Live tab lookup failed:', e.message); }
+  if (Object.keys(found).length < LIVE_CAMS.length) {
+    try {
+      const feed = feedEntries(await ytGet('https://www.youtube.com/feeds/videos.xml?channel_id=' + YT_CHANNEL_ID));
+      LIVE_CAMS.forEach(c => { if (found[c.key]) return; const v = feed.find(x => c.feed.test(x.title)); if (v) { found[c.key] = v.videoId; source = source ? source + ' + feed' : 'feed'; } });
+    } catch (e) { console.error('📺 Feed lookup failed:', e.message); }
+  }
+  if (Object.keys(found).length) {
+    const changed = LIVE_CAMS.some(c => found[c.key] && found[c.key] !== liveIds[c.key]);
+    liveIds = Object.assign({}, liveIds, found);
+    liveStreams = { at: Date.now(), source };
+    if (changed) console.log('📺 Live streams now:', JSON.stringify(liveIds));
+    if (configCollection) configCollection.updateOne({ _id: 'live_streams' }, { $set: { ids: liveIds, at: new Date() } }, { upsert: true }).catch(() => {});
+  }
+  // Nothing found at all: try again sooner
+  liveTimer = setTimeout(refreshLiveStreams, (Object.keys(found).length ? 10 : 2) * 60 * 1000);
+}
+(async function startLiveStreams() {
+  // Wait for the database (up to ~20 s) so the saved IDs load before the first lookup
+  for (let i = 0; i < 20 && !configCollection; i++) await new Promise(r => setTimeout(r, 1000));
+  try {
+    const doc = configCollection && await configCollection.findOne({ _id: 'live_streams' });
+    if (doc && doc.ids) { liveIds = Object.assign({}, liveIds, doc.ids); liveStreams.source = 'saved'; }
+  } catch (e) { /* keep the built-in IDs */ }
+  refreshLiveStreams();
+})();
 app.get('/api/live-streams', (req, res) => {
   res.set('Cache-Control', 'public, max-age=120');
-  res.json({ cams: liveStreams.cams, checkedAt: liveStreams.at || null, channel: 'https://www.youtube.com/@RivieraMotelMackinawCity/streams' });
+  const cams = LIVE_CAMS.filter(c => liveIds[c.key]).map(c => ({ key: c.key, label: c.label, videoId: liveIds[c.key] }));
+  res.json({ cams, checkedAt: liveStreams.at || null, source: liveStreams.source, channel: 'https://www.youtube.com/@RivieraMotelMackinawCity/streams' });
 });
 
 // Health / status check (used by UptimeRobot and monitoring)
