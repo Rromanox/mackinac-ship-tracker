@@ -390,6 +390,7 @@ function shipLenMi(mmsi, name) {
   if (unit) return unit.lenFt / 5280;
   if (isTow) return 800 / 5280;
   if (info.length) return info.length * 3.28084 / 5280;
+  if (SHIP_LEN_FT[lenKey(name)]) return SHIP_LEN_FT[lenKey(name)] / 5280;
   const db = DB_LEN_M[lenKey(name)];
   return (db && db * 3.28084 >= 300) ? db * 3.28084 / 5280 : 700 / 5280;
 }
@@ -611,6 +612,7 @@ function trkAim(v, now) {
   let lenM = TRK_DEFAULT_LEN_M, lenSrc = 'est';
   if (unit) { lenM = unit.lenFt * 0.3048; lenSrc = 'tow'; }
   else if (info.length && !isTow) { lenM = info.length; lenSrc = 'ais'; }
+  else if (SHIP_LEN_FT[lenKey(v.name)]) { lenM = SHIP_LEN_FT[lenKey(v.name)] * 0.3048; lenSrc = 'name'; }
   else if (!isTow && dbLenM && dbLenM * 3.28084 >= 300) { lenM = dbLenM; lenSrc = 'db'; }
   const lenKnown = lenSrc !== 'est';
   // How long the ship LOOKS from the mast: full length broadside, much less bow- or stern-on
@@ -863,6 +865,8 @@ const TOW_UNITS = {
   REBECCALYNN:        { lenFt: 379 },    // + ENDURANCE (est: 300-ft barge)
 };
 function towUnit(name) { return TOW_UNITS[lenKey(name)] || null; }
+// Short ships (under the 300-ft database floor) that AIS sends without a size, by their AIS name
+const SHIP_LEN_FT = { MACKINAW: 240 };  // USCGC MACKINAW icebreaker
 
 const CG_SMALL_BOATS = new Set(); // runtime: MMSIs of small USCG response boats (AIS name "CG#####")
 // Named cutters ("CG NEAH BAY", "USCGC MACKINAW") have letters, not digits, so they stay visible (Biscayne Bay is blocklisted by MMSI).
