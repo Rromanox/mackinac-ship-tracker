@@ -2036,6 +2036,54 @@ app.get('/api/ships/coming', (req, res) => {
   res.json({ ships: shipsComing(Math.min(parseInt(req.query.limit) || 8, 20), req.query.source === 'local') });
 });
 
+// ── Latest report of each ship, for the live map ──
+// The map only draws a ship when her next report arrives, and ships far out can take minutes to report, so a new
+// visitor would see an empty map. Keep each visible ship's latest report and hand them over when the map opens.
+// Saved every 2 minutes so a restart doesn't empty the map either. Hidden vessels never reach noteMapShip.
+const MAP_KEEP_MS = 30 * 60 * 1000;
+let mapShips = {};   // mmsi → { mmsi, name, shipType, lat, lon, sog, cog, destination, dimension, at, heardAt }
+function noteMapShip(message) {
+  const mmsi = message.MetaData && message.MetaData.MMSI;
+  if (!mmsi) return;
+  const e = mapShips[mmsi] || (mapShips[mmsi] = { mmsi });
+  e.heardAt = Date.now();
+  if (message.MessageType === 'PositionReport') {
+    const p = message.Message && message.Message.PositionReport;
+    if (!p || typeof p.Latitude !== 'number' || typeof p.Longitude !== 'number' || Math.abs(p.Latitude) > 90 || Math.abs(p.Longitude) > 180) return;
+    Object.assign(e, { name: (message.MetaData.ShipName || '').trim() || e.name || null, shipType: message.MetaData.ShipType || e.shipType || null,
+      lat: p.Latitude, lon: p.Longitude, sog: p.Sog || 0, cog: p.Cog || 0, at: Date.now() });
+  } else if (message.MessageType === 'ShipStaticData') {
+    const sd = message.Message && message.Message.ShipStaticData;
+    if (!sd) return;
+    e.destination = (sd.Destination || '').trim() || e.destination || null;
+    e.dimension = sd.Dimension || e.dimension || null;
+    if (!e.name && sd.Name) e.name = sd.Name.trim();
+  }
+}
+function pruneMapShips() {
+  const now = Date.now();
+  Object.keys(mapShips).forEach(k => { if (now - (mapShips[k].at || mapShips[k].heardAt) > MAP_KEEP_MS) delete mapShips[k]; });
+}
+app.get('/api/map/ships', (req, res) => {
+  pruneMapShips();
+  const now = Date.now();
+  const ships = Object.values(mapShips).filter(e => e.at && !shouldHideVessel(e.mmsi, e.name, e.sog)).map(e => ({ mmsi: e.mmsi, name: e.name, shipType: e.shipType, lat: e.lat, lon: e.lon, sog: e.sog, cog: e.cog,
+    destination: e.destination || null, dimension: e.dimension || null, ageSec: Math.round((now - e.at) / 1000) }));
+  res.set('Cache-Control', 'no-store').json({ ships });
+});
+(async function startMapShips() {
+  for (let i = 0; i < 20 && !configCollection; i++) await new Promise(r => setTimeout(r, 1000));
+  try {
+    const doc = configCollection && await configCollection.findOne({ _id: 'map_ships' });
+    (doc && doc.ships || []).forEach(e => { if (!mapShips[e.mmsi] || !mapShips[e.mmsi].at) mapShips[e.mmsi] = e; });
+    pruneMapShips();
+  } catch (e) { /* the map just fills in from live reports */ }
+  setInterval(() => {
+    pruneMapShips();
+    if (configCollection) configCollection.updateOne({ _id: 'map_ships' }, { $set: { ships: Object.values(mapShips), at: new Date() } }, { upsert: true }).catch(() => {});
+  }, 2 * 60 * 1000);
+})();
+
 // Watchdog — if no message arrives within this window, assume zombie connection and reconnect
 const WATCHDOG_MS = 5 * 60 * 1000; // 5 minutes
 let watchdogTimer = null;
@@ -2287,6 +2335,8 @@ function processAisMessage(message, source) {
       if (si.type) meta.VesselType = si.type;
     }
   }
+
+  noteMapShip(message);
 
   // Forward all messages to connected clients (banners)
   broadcastToClients({

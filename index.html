@@ -1290,7 +1290,26 @@
             };
         }
 
-        function processShipData(data) {
+        // savedAt: this report came from the tracker's saved list (its real time, in ms), not the live feed
+        // Draw the ships the tracker already knows about straight away, instead of waiting for each one's next report
+        async function loadSavedShips() {
+            try {
+                const r = await fetch(`${HTTP_SERVER_URL}/api/map/ships`, { cache: 'no-store' });
+                if (!r.ok) return;
+                const now = Date.now();
+                ((await r.json()).ships || []).forEach(s => {
+                    if (allShipsData[s.mmsi]) return;   // a live report already beat it here
+                    if (s.destination || s.dimension) {
+                        processShipData({ MessageType: 'ShipStaticData', MetaData: { MMSI: s.mmsi },
+                            Message: { ShipStaticData: { Name: s.name, Destination: s.destination, Dimension: s.dimension } } }, now);
+                    }
+                    processShipData({ MessageType: 'PositionReport', MetaData: { MMSI: s.mmsi, ShipName: s.name, ShipType: s.shipType },
+                        Message: { PositionReport: { Latitude: s.lat, Longitude: s.lon, Sog: s.sog, Cog: s.cog } } }, now - s.ageSec * 1000);
+                });
+            } catch (e) { console.log('Saved ships not loaded:', e.message); }
+        }
+
+        function processShipData(data, savedAt) {
             // Handle ShipStaticData messages (contains destination)
             if (data.MessageType === "ShipStaticData" && data.Message && data.Message.ShipStaticData) {
                 const staticData = data.Message.ShipStaticData;
@@ -1334,13 +1353,13 @@
                     speed: position.Sog || 0,
                     course: position.Cog || 0,
                     type: getShipType(metadata.ShipType),
-                    lastUpdate: Date.now()
+                    lastUpdate: savedAt || Date.now()
                 };
                 
                 ship.distance = calculateDistance(BRIDGE_LAT, BRIDGE_LON, ship.lat, ship.lon);
                 ship.direction = getDirection(ship.lat, ship.lon, ship.course);
 
-                incrementAISCounter();
+                if (!savedAt) incrementAISCounter();
                 updateMapMarker(ship);
                 updateRouteLine(ship);
 
@@ -1349,6 +1368,8 @@
                 updateShipsList();
 
                 if (ship.distance > SEARCH_RADIUS_KM) return;
+                // A saved report 10+ minutes old stays on the map, but would count as "went stale" in the near-bridge box
+                if (savedAt && Date.now() - savedAt >= 600000) return;
                 
                 const existingIndex = shipData.findIndex(s => s.mmsi === ship.mmsi);
                 if (existingIndex >= 0) {
@@ -1358,7 +1379,7 @@
                     console.log('➕ New vessel:', ship.name, '(' + ship.type + ')');
                     
                     // Trigger alert if approaching and not seen before
-                    if (ship.direction === 'Approaching' && !knownShipMMSIs.has(ship.mmsi)) {
+                    if (!savedAt && ship.direction === 'Approaching' && !knownShipMMSIs.has(ship.mmsi)) {
                         console.log('🔔 Alert: New approaching ship -', ship.name);
                         triggerAlert();
                     }
@@ -1637,6 +1658,7 @@
             console.log('⚠️ TEST MODE ENABLED');
             generateTestData();
         } else {
+            loadSavedShips();
             connectToProxy();
         }
     </script>
