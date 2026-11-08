@@ -1879,6 +1879,7 @@ async function narrateVessel(mmsi, name, direction, speed) {
       outTok: llmUsage ? (llmUsage.output_tokens || 0) : 0
     }).catch(e => console.error('🎙️ recordNarration:', e.message));
     broadcastToClients({ type: 'narrate', data: { mmsi: mmsi, name: name, at: narratedAt, url: '/api/narration/' + mmsi + '?t=' + narratedAt } });
+    lastNarrationSent = { name, at: narratedAt };
   } catch (e) {
     console.error('🎙️ Narration failed (' + name + '):', e.message);
     // A failed try doesn't count as narrated: the next trigger (the bridge crossing after the approach) tries
@@ -2083,6 +2084,55 @@ app.get('/api/map/ships', (req, res) => {
     if (configCollection) configCollection.updateOne({ _id: 'map_ships' }, { $set: { ships: Object.values(mapShips), at: new Date() } }, { upsert: true }).catch(() => {});
   }, 2 * 60 * 1000);
 })();
+
+// ── Overlay health ──
+// The banner and narration pages report every 60 s whether they still hear ships. The streaming PC's guardian
+// reads /api/overlay-health and refreshes a blind OBS source (Nov 7 2026: both banners sat on a dead socket all night).
+const overlayBeats = new Map();   // page id → latest report (newest last, max 50, dropped after 15 min)
+let lastNarrationSent = null;     // { name, at } of the last narration broadcast to the pages
+function pruneOverlayBeats() {
+  const cut = Date.now() - 15 * 60 * 1000;
+  for (const [k, v] of overlayBeats) if (v.at < cut) overlayBeats.delete(k);
+  while (overlayBeats.size > 50) overlayBeats.delete(overlayBeats.keys().next().value);
+}
+app.post('/api/overlay-heartbeat', express.text({ type: '*/*', limit: '2kb' }), (req, res) => {
+  let b;
+  try { b = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; } catch (e) { b = null; }
+  const id = b && String(b.id || '');
+  if (!b || !/^[a-z0-9]{4,24}$/i.test(id)) return res.status(400).json({ error: 'bad heartbeat' });
+  const num = v => (typeof v === 'number' && isFinite(v) ? v : null);
+  overlayBeats.delete(id);
+  overlayBeats.set(id, { id, page: String(b.page || '').slice(0, 40), loadedAt: num(b.loadedAt), wsOpen: b.wsOpen === true,
+    lastMsgAgeS: num(b.lastMsgAgeS), lastShipMsgAgeS: num(b.lastShipMsgAgeS), shipMsgs2m: num(b.shipMsgs2m),
+    visible: num(b.visible), hero: typeof b.hero === 'string' ? b.hero.slice(0, 60) : null,
+    lastNarrateAt: num(b.lastNarrateAt), lastNarrateName: typeof b.lastNarrateName === 'string' ? b.lastNarrateName.slice(0, 60) : null,
+    lastPlayedAt: num(b.lastPlayedAt), lastPlayError: typeof b.lastPlayError === 'string' ? b.lastPlayError.slice(0, 120) : null, at: Date.now() });
+  pruneOverlayBeats();
+  res.status(204).end();
+});
+// How many ships the banner should list now, by its own rules: moving over 0.5 kn, reported in the last 10 min,
+// approaching within 100 mi or departing within 15 mi (hidden vessels never reach mapShips)
+function bannerExpectedCount() {
+  const now = Date.now(), kmLon = Math.cos(BRIDGE_LAT * Math.PI / 180);
+  return Object.values(mapShips).filter(e => {
+    if (!e.at || now - e.at > 10 * 60 * 1000 || !(e.sog > 0.5) || shouldHideVessel(e.mmsi, e.name, e.sog)) return false;
+    const mi = haversineKm(BRIDGE_LAT, BRIDGE_LON, e.lat, e.lon) * 0.621371;
+    const dLat = e.lat - BRIDGE_LAT, dLon = (e.lon - BRIDGE_LON) * kmLon;
+    const toBridge = (Math.atan2(-dLon, -dLat) * 180 / Math.PI + 360) % 360;
+    const approaching = Math.abs(((e.cog - toBridge) + 180 + 360) % 360 - 180) < 90;
+    return approaching ? mi <= 100 : mi <= 15;
+  }).length;
+}
+app.get('/api/overlay-health', (req, res) => {
+  pruneOverlayBeats();
+  const now = Date.now(), s = t => (t ? Math.round((now - t) / 1000) : null);
+  let expectedVisible = null;
+  try { expectedVisible = bannerExpectedCount(); } catch (e) { /* leave null */ }
+  res.set('Cache-Control', 'no-store').json({ now, expectedVisible, lastNarration: lastNarrationSent,
+    overlays: [...overlayBeats.values()].reverse().map(v => ({ id: v.id, page: v.page, ageS: s(v.at), loadedAgoS: s(v.loadedAt),
+      wsOpen: v.wsOpen, lastMsgAgeS: v.lastMsgAgeS, lastShipMsgAgeS: v.lastShipMsgAgeS, shipMsgs2m: v.shipMsgs2m, visible: v.visible, hero: v.hero,
+      ...(v.page === 'narration' ? { lastNarrateAt: v.lastNarrateAt, lastNarrateName: v.lastNarrateName, lastPlayedAt: v.lastPlayedAt, lastPlayError: v.lastPlayError } : {}) })) });
+});
 
 // Watchdog — if no message arrives within this window, assume zombie connection and reconnect
 const WATCHDOG_MS = 5 * 60 * 1000; // 5 minutes

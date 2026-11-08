@@ -715,6 +715,7 @@ function connect() {
   ws.onmessage = function (e) {
     lastMsgAt = Date.now();
     try { var m = JSON.parse(e.data);
+      noteWsMsg(m.type === 'ship_data');
       if (m.type === 'ship_data') processMessage(m.data);
       else if (m.type === 'bridge_passing') refreshPassedShips();
     } catch (ex) {}
@@ -735,6 +736,27 @@ setInterval(function () {
   console.log('No messages for ' + Math.round((Date.now() - lastMsgAt) / 1000) + ' s: reconnecting');
   setLive(false); connect(); refreshPassedShips();
 }, 30000);
+
+// Health report for the streaming PC's guardian, every 60 s: is this page still hearing ships? (it refreshes
+// the OBS source when a page goes blind). Sent as text/plain so it never needs a CORS preflight.
+var PAGE_ID = Math.random().toString(36).slice(2, 12), PAGE_LOADED_AT = Date.now(), lastAnyMsgAt = 0, lastShipMsgAt = 0, shipMsgTimes = [], heroName = null;
+function noteWsMsg(isShip) {
+  var now = Date.now(); lastAnyMsgAt = now;
+  if (!isShip) return;
+  lastShipMsgAt = now; shipMsgTimes.push(now);
+  if (shipMsgTimes.length > 5000) shipMsgTimes.shift();
+}
+function sendHeartbeat() {
+  var now = Date.now(), ago = function (t) { return t ? Math.round((now - t) / 1000) : null; };
+  while (shipMsgTimes.length && shipMsgTimes[0] < now - 120000) shipMsgTimes.shift();
+  var beat = { id: PAGE_ID, page: 'banner4', loadedAt: PAGE_LOADED_AT, wsOpen: !!(ws && ws.readyState === 1),
+               lastMsgAgeS: ago(lastAnyMsgAt), lastShipMsgAgeS: ago(lastShipMsgAt), shipMsgs2m: shipMsgTimes.length,
+               visible: getVisibleShips().filter(function (s) { return s.direction === 'Approaching' || toMiles(s.distance) <= DEPART_MAX_MI; }).length,
+               hero: heroName };
+  try { fetch(HTTP_BASE + '/api/overlay-heartbeat', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' },
+                                                     body: JSON.stringify(beat) }).catch(function () {}); } catch (ex) {}
+}
+if (!DEMO) setTimeout(function () { sendHeartbeat(); setInterval(sendHeartbeat, 60000); }, 20000);
 
 // ── Render ──────────────────────────────────────────────────────
 var heroKey = '';
@@ -764,6 +786,7 @@ function render() {
   passedShips = passedShips.filter(function (p) { return Date.now() - p.passedTime < PASSED_MAX_AGE_MS; });
   var held = all.filter(clearingBridge).sort(byDist);   // just went under, still in frame
   var hero = held[0] || approaching[0] || departing[0] || null;
+  heroName = hero ? hero.name : null;
   renderHero(hero);
   maybeMoment(hero);
 

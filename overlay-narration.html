@@ -26,11 +26,13 @@ var queue = [], audio = null, playing = false;
 var played = [];   // keys of clips already queued (live event + catch-up can both deliver the same one)
 
 // Queue clips so two narrations never overlap.
+var lastNarrateAt = 0, lastNarrateName = null, lastPlayedAt = 0, lastPlayError = null;   // for the heartbeat
 function enqueue(d) {
   if (!d || !d.url) return;
   var key = d.mmsi + '@' + (d.at || d.url);
-  if (played.indexOf(key) !== -1) return;
+  if (played.indexOf(key) !== -1) return;   // a repeat (live + catch-up) must not look like a new, unplayed clip
   played.push(key); if (played.length > 50) played.shift();
+  lastNarrateAt = Date.now(); lastNarrateName = d.name || null;
   queue.push(d); playNext();
 }
 // On every (re)connect, play anything the server narrated in the last ~90 s that we missed while
@@ -48,11 +50,12 @@ function playNext() {
   if (!audio) {
     audio = new Audio();
     audio.addEventListener('ended', function () { playing = false; playNext(); });
-    audio.addEventListener('error', function () { playing = false; playNext(); });
+    audio.addEventListener('playing', function () { lastPlayedAt = Date.now(); lastPlayError = null; });
+    audio.addEventListener('error', function () { lastPlayError = 'audio error ' + (audio.error ? audio.error.code : ''); playing = false; playNext(); });
   }
   audio.src = HTTP_BASE + d.url;
   var p = audio.play();
-  if (p && p.catch) p.catch(function () { playing = false; playNext(); });
+  if (p && p.catch) p.catch(function (err) { lastPlayError = String((err && (err.name + ': ' + err.message)) || 'play failed').slice(0, 120); playing = false; playNext(); });
 }
 
 function connect() {
@@ -63,7 +66,7 @@ function connect() {
   ws.onopen = function () { reconnectAttempts = 0; catchUp(); };   // reset backoff, or every later reconnect waits 30 s
   ws.onmessage = function (e) {
     lastMsgAt = Date.now();
-    try { var m = JSON.parse(e.data); if (m.type === 'narrate') enqueue(m.data); } catch (ex) {}
+    try { var m = JSON.parse(e.data); noteWsMsg(m.type === 'ship_data'); if (m.type === 'narrate') enqueue(m.data); } catch (ex) {}
   };
   ws.onerror = function () {};
   ws.onclose = function () {
@@ -85,6 +88,25 @@ setInterval(function () {
   console.log('No messages for ' + Math.round((Date.now() - lastMsgAt) / 1000) + ' s: reconnecting');
   connect();
 }, 30000);
+// Health report for the streaming PC's guardian, every 60 s: is this page still hearing ships? (it refreshes
+// the OBS source when a page goes blind). Sent as text/plain so it never needs a CORS preflight.
+var PAGE_ID = Math.random().toString(36).slice(2, 12), PAGE_LOADED_AT = Date.now(), lastAnyMsgAt = 0, lastShipMsgAt = 0, shipMsgTimes = [], heroName = null;
+function noteWsMsg(isShip) {
+  var now = Date.now(); lastAnyMsgAt = now;
+  if (!isShip) return;
+  lastShipMsgAt = now; shipMsgTimes.push(now);
+  if (shipMsgTimes.length > 5000) shipMsgTimes.shift();
+}
+function sendHeartbeat() {
+  var now = Date.now(), ago = function (t) { return t ? Math.round((now - t) / 1000) : null; };
+  while (shipMsgTimes.length && shipMsgTimes[0] < now - 120000) shipMsgTimes.shift();
+  var beat = { id: PAGE_ID, page: 'narration', loadedAt: PAGE_LOADED_AT, wsOpen: !!(ws && ws.readyState === 1),
+               lastMsgAgeS: ago(lastAnyMsgAt), lastShipMsgAgeS: ago(lastShipMsgAt), shipMsgs2m: shipMsgTimes.length,
+               lastNarrateAt: lastNarrateAt || null, lastNarrateName: lastNarrateName, lastPlayedAt: lastPlayedAt || null, lastPlayError: lastPlayError };
+  try { fetch(HTTP_BASE + '/api/overlay-heartbeat', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' },
+                                                     body: JSON.stringify(beat) }).catch(function () {}); } catch (ex) {}
+}
+setTimeout(function () { sendHeartbeat(); setInterval(sendHeartbeat, 60000); }, 20000);
 document.addEventListener('visibilitychange', function () {
   if (!document.hidden && (!ws || ws.readyState === WebSocket.CLOSED)) connect();
 });
