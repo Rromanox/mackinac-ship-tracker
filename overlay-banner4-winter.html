@@ -723,9 +723,11 @@ function connect() {
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
   setLive(false);
+  lastMsgAt = Date.now();
   ws = new WebSocket(WS_URL);
   ws.onopen = function () { reconnectAttempts = 0; setLive(true); render(); };
   ws.onmessage = function (e) {
+    lastMsgAt = Date.now();
     try { var m = JSON.parse(e.data);
       if (m.type === 'ship_data') processMessage(m.data);
       else if (m.type === 'bridge_passing') refreshPassedShips();
@@ -734,6 +736,19 @@ function connect() {
   ws.onerror = function () { setLive(false); };
   ws.onclose = function () { setLive(false); reconnectAttempts++; reconnectTimer = setTimeout(connect, Math.min(2000 * Math.pow(2, reconnectAttempts - 1), 30000)); };
 }
+
+// A dropped network can leave the socket looking open while nothing arrives, and onclose never fires
+// (Nov 7 2026: the banner showed "No ships" all night on both OBS). Ship data comes several times a
+// minute, so 2 minutes of silence means the link is dead: drop it and connect again.
+var lastMsgAt = Date.now(), SILENT_MS = 120000;
+setInterval(function () {
+  if (!ws || ws.readyState > 1 || Date.now() - lastMsgAt < SILENT_MS) return;
+  var dead = ws; ws = null;
+  dead.onopen = dead.onmessage = dead.onerror = dead.onclose = null;
+  try { dead.close(); } catch (ex) {}
+  console.log('No messages for ' + Math.round((Date.now() - lastMsgAt) / 1000) + ' s: reconnecting');
+  setLive(false); connect(); refreshPassedShips();
+}, 30000);
 
 // ── Render ──────────────────────────────────────────────────────
 var heroKey = '';
